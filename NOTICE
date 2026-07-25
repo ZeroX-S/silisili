@@ -1,0 +1,13 @@
+silisili v1.0
+
+This project is a Sailfish OS port and modification derived from wiliwili
+1.6.0 (https://github.com/xfangfang/wiliwili). Upstream copyright notices
+and the GPL-3.0 license remain in effect.
+
+The vendored third-party components retain their own copyright and license
+notices. Source identities, exact revisions, patches, and binary-runtime
+provenance are documented in packaging/apps/silisili/UPSTREAM.md.
+
+silisili is an unofficial client and is not affiliated with or endorsed by
+Bilibili or its related companies. Names and marks belong to their respective
+owners.

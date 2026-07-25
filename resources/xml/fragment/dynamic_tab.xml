@@ -1,0 +1,54 @@
+<brls:Box
+        axis="row"
+        width="100%">
+    <RecyclingGrid
+            id="dynamic/up/recyclingGrid"
+            width="154"
+            shrink="0"
+            paddingLeft="6"
+            paddingRight="6"
+            marginTop="8"
+            marginBottom="8"
+            itemHeight="60"
+            preFetchLine="2"
+            spanCount="1"
+            wireframe="false"
+            lineColor="@theme/color/line"
+            lineRight="1"/>
+    <AutoTabFrame
+            id="dynamic/tab/frame"
+            demandMode="false"
+            grow="1"
+            defaultTab="0"
+            tabHeight="56"
+            tabItemActiveTextColor="@theme/color/bilibili"
+            sidebarPosition="top">
+        <Tab label="@i18n/silisili/dynamic/video" fontSize="18">
+            <RecyclingGrid
+                    id="dynamic/videoList"
+                    paddingLeft="12"
+                    paddingRight="12"
+                    paddingBottom="8"
+                    itemHeight="236"
+                    grow="1"
+                    preFetchLine="2"
+                    spanCount="2"
+                    portraitSpanCount="2"
+                    landscapeSpanCount="4"
+                    wireframe="false"/>
+        </Tab>
+        <Tab label="@i18n/silisili/dynamic/article" fontSize="18">
+            <RecyclingGrid
+                    id="dynamic/articleList"
+                    paddingLeft="12"
+                    paddingRight="12"
+                    paddingBottom="8"
+                    grow="1"
+                    preFetchLine="2"
+                    spanCount="1"
+                    flowMode="true"
+                    itemHeight="1000"
+                    wireframe="false"/>
+        </Tab>
+    </AutoTabFrame>
+</brls:Box>

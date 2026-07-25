@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=generic
+Name=silisili
+Comment=Sailfish OS Bilibili client derived from wiliwili
+Exec=/usr/bin/silisili
+Icon=silisili-sailfish
+Terminal=false
+Categories=AudioVideo;Audio;Video;
+
+[X-Sailjail]
+OrganizationName=cn.silisili
+ApplicationName=app
+Sandboxing=Disabled

@@ -1,0 +1,24 @@
+<brls:Box>
+    <AutoTabFrame
+            id="home/tab/frame"
+            defaultTab="1"
+            tabHeight="58"
+            tabItemActiveTextColor="@theme/color/bilibili"
+            sidebarPosition="top">
+        <Tab label="@i18n/silisili/home/live/tab" fontSize="18">
+            <HomeLive/>
+        </Tab>
+        <Tab label="@i18n/silisili/home/rcmd/tab" fontSize="18">
+            <HomeRecommends/>
+        </Tab>
+        <Tab label="@i18n/silisili/home/hots/tab" fontSize="18">
+            <HomeHots/>
+        </Tab>
+        <Tab label="@i18n/silisili/home/bangumi/tab" fontSize="18">
+            <HomeBangumi/>
+        </Tab>
+        <Tab label="@i18n/silisili/home/cinema/tab" fontSize="18">
+            <HomeCinema/>
+        </Tab>
+    </AutoTabFrame>
+</brls:Box>

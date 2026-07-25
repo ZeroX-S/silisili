@@ -1,0 +1,20 @@
+From: Bonito Port Team <noreply@localhost>
+Subject: [PATCH] opengl: skip swapchain fences for external FBO contexts
+
+libmpv's OpenGL render API passes an empty ra_ctx_params because its caller
+owns presentation. Without a swap_buffers callback, the fence queue can never
+be drained. Backport the current mpv behavior and avoid creating the latency
+simulation fences for that external swapchain.
+
+diff --git a/video/out/opengl/context.c b/video/out/opengl/context.c
+--- a/video/out/opengl/context.c
++++ b/video/out/opengl/context.c
+@@ -232,7 +232,7 @@ bool ra_gl_ctx_submit_frame(struct ra_swapchain *sw, const struct vo_frame *fram
+     if (p->opts->use_glfinish)
+         gl->Finish();
+ 
+-    if (gl->FenceSync) {
++    if (gl->FenceSync && p->params.swap_buffers) {
+         GLsync fence = gl->FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+         if (fence)
+             MP_TARRAY_APPEND(p, p->vsync_fences, p->num_vsync_fences, fence);

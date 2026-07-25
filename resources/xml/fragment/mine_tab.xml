@@ -1,0 +1,108 @@
+<brls:Box
+        width="100%"
+        axis="column">
+    <brls:Box
+            id="user_home/goto_userspace"
+            width="auto"
+            height="152"
+            shrink="0"
+            axis="column"
+            backgroundColor="@theme/color/grey_1"
+            focusable="true"
+            hideHighlightBackground="true"
+            cornerRadius="4"
+            marginTop="10"
+            marginRight="12"
+            marginLeft="12">
+        <brls:Box
+                width="100%"
+                height="84"
+                shrink="0"
+                alignItems="center">
+            <brls:Image
+                    id="mine/image/avatar"
+                    width="64"
+                    height="64"
+                    shrink="0"
+                    cornerRadius="32"
+                    marginLeft="12"
+                    marginRight="12"
+                    image="@res/pictures/default_avatar.png"/>
+            <brls:Box
+                    axis="column"
+                    grow="1"
+                    marginRight="12"
+                    justifyContent="center">
+                <brls:Label
+                        id="mine/label/username"
+                        fontSize="20"
+                        singleLine="true"
+                        text="@i18n/silisili/mine/login/check"/>
+                <brls:Label
+                        id="mine/label/sign"
+                        marginTop="5"
+                        fontSize="14"
+                        singleLine="true"
+                        textColor="@theme/font/grey"
+                        text=""/>
+            </brls:Box>
+        </brls:Box>
+        <brls:Box
+                width="100%"
+                height="60"
+                shrink="0"
+                paddingLeft="8"
+                paddingRight="8"
+                alignItems="center">
+            <brls:Box grow="1" axis="column" alignItems="center" justifyContent="center">
+                <brls:Label id="mine/label/dynamic" fontSize="17" text="0"/>
+                <brls:Label fontSize="12" textColor="@theme/font/grey" text="@i18n/silisili/mine/activity"/>
+            </brls:Box>
+            <brls:Rectangle height="24" width="1" color="@theme/color/line"/>
+            <brls:Box grow="1" axis="column" alignItems="center" justifyContent="center">
+                <brls:Label id="mine/label/following" fontSize="17" text="0"/>
+                <brls:Label fontSize="12" textColor="@theme/font/grey" text="@i18n/silisili/mine/following"/>
+            </brls:Box>
+            <brls:Rectangle height="24" width="1" color="@theme/color/line"/>
+            <brls:Box grow="1" axis="column" alignItems="center" justifyContent="center">
+                <brls:Label id="mine/label/follower" fontSize="17" text="0"/>
+                <brls:Label fontSize="12" textColor="@theme/font/grey" text="@i18n/silisili/mine/follower"/>
+            </brls:Box>
+            <brls:Rectangle height="24" width="1" color="@theme/color/line"/>
+            <brls:Box grow="1" axis="column" alignItems="center" justifyContent="center">
+                <brls:Label id="mine/label/coins" fontSize="17" text="0"/>
+                <brls:Label fontSize="12" textColor="@theme/font/grey" text="@i18n/silisili/mine/coin"/>
+            </brls:Box>
+        </brls:Box>
+    </brls:Box>
+
+    <AutoTabFrame
+            id="mine/tab/frame"
+            grow="1"
+            marginTop="6"
+            marginBottom="4"
+            defaultTab="0"
+            tabHeight="56"
+            tabFontSize="15"
+            tabItemActiveTextColor="@theme/color/bilibili"
+            sidebarPosition="top">
+        <Tab label="@i18n/silisili/mine/history" fontSize="15">
+            <MineHistory id="mine/history"/>
+        </Tab>
+        <Tab label="@i18n/silisili/mine/collection" fontSize="15">
+            <MineCollection id="mine/collection" type="1"/>
+        </Tab>
+        <Tab label="@i18n/silisili/mine/subscription" fontSize="15">
+            <MineCollection id="mine/subscription" type="2"/>
+        </Tab>
+        <Tab label="@i18n/silisili/mine/anime" fontSize="15">
+            <MineBangumi id="mine/anime" type="1"/>
+        </Tab>
+        <Tab label="@i18n/silisili/mine/series" fontSize="15">
+            <MineBangumi id="mine/series" type="2"/>
+        </Tab>
+        <Tab label="@i18n/silisili/mine/later" fontSize="15">
+            <MineLater id="mine/later"/>
+        </Tab>
+    </AutoTabFrame>
+</brls:Box>

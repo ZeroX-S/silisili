@@ -1,0 +1,84 @@
+<brls:Box
+        width="auto"
+        height="auto"
+        marginBottom="@style/silisili/setting/about/bottom">
+
+    <brls:Box
+            grow="1.0"
+            width="auto"
+            height="auto"
+            axis="column"
+            hideHighlightBackground="true"
+            hideHighlightBorder="true"
+            wireframe="false"
+            paddingLeft="@style/brls/tab_frame/content_padding_sides"
+            paddingRight="@style/brls/tab_frame/content_padding_sides"
+            paddingTop="@style/silisili/tab_frame/content_padding_top_bottom"
+            paddingBottom="@style/silisili/tab_frame/content_padding_top_bottom">
+
+        <brls:Box
+                justifyContent="center"
+                alignItems="center"
+                marginBottom="@style/silisili/margin/20">
+            <brls:Image
+                    width="200"
+                    height="48"
+                    scalingType="fit"
+                    marginRight="12"
+                    image="@res/icon/silisili-logo.png"/>
+            <brls:Label
+                    id="setting/about/version"
+                    marginRight="20"
+                    lineHeight="1"
+                    textColor="@theme/font/grey"/>
+        </brls:Box>
+
+
+        <brls:Header
+                title="@i18n/silisili/setting/about/brief_header"
+                marginBottom="@style/silisili/margin/20"/>
+
+        <brls:Label
+                marginLeft="20"
+                marginBottom="@style/silisili/margin/20"
+                text="@i18n/silisili/setting/about/brief"/>
+        <brls:Header
+                title="@i18n/silisili/setting/about/repo_header"
+                marginBottom="@style/silisili/margin/20"/>
+        <brls:Label
+                textColor="#6693B6"
+                marginLeft="20"
+                marginBottom="@style/silisili/margin/20"
+                text="@i18n/silisili/github"/>
+
+        <brls:Header
+                width="@style/silisili/about/speech/header"
+                title="@i18n/silisili/setting/about/author_header"
+                marginBottom="@style/silisili/margin/20"/>
+
+        <brls:Box
+                wireframe="false">
+            <brls:Image
+                    height="50"
+                    width="50"
+                    margin="10"
+                    cornerRadius="50"
+                    image="@res/pictures/default_avatar.png"/>
+            <brls:Image
+                    height="16"
+                    width="16"
+                    marginTop="10"
+                    marginRight="8"
+                    image="@res/pictures/icon-quotation.png"/>
+            <brls:Label
+                    width="@style/silisili/about/speech/width"
+                    fontSize="18"
+                    marginTop="@style/silisili/margin/20"
+                    textColor="@theme/font/grey"
+                    text="@i18n/silisili/setting/about/author"/>
+        </brls:Box>
+
+
+    </brls:Box>
+
+</brls:Box>

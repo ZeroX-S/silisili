@@ -1,0 +1,18 @@
+<brls:Box
+        wireframe="false"
+        axis="column"
+        width="auto"
+        marginTop="5"
+        height="auto">
+    <RecyclingGrid
+            paddingLeft="30"
+            paddingRight="20"
+            itemHeight="250"
+            grow="1"
+            preFetchLine="1"
+            spanCount="@style/silisili/grid/span/4"
+            portraitSpanCount="2"
+            landscapeSpanCount="4"
+            wireframe="false"
+            id="search/video/recyclingGrid"/>
+</brls:Box>
