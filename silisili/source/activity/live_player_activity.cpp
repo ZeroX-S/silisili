@@ -164,6 +164,17 @@ void LiveActivity::onContentAvailable()
 
     this->video->registerCommonActions(this);
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    this->video->setCustomCloseAction([this]() { this->close(); });
+    this->registerAction(
+        "hints/back"_i18n, brls::ControllerButton::BUTTON_B,
+        [this](brls::View*) {
+            this->close();
+            return true;
+        },
+        true);
+#endif
+
     brls::Logger::debug("LiveActivity: onContentAvailable");
 
     MPVCore::instance().setAspect(
@@ -273,6 +284,14 @@ void LiveActivity::onContentAvailable()
 
     GA("open_live", {{"id", std::to_string(this->liveData.roomid)}})
     GA("open_live", {{"live_id", std::to_string(this->liveData.roomid)}})
+}
+
+void LiveActivity::close() {
+    if (this->closing) return;
+
+    this->closing = true;
+    brls::Logger::info("LiveActivity: close requested");
+    if (!brls::Application::popActivity(brls::TransitionAnimation::NONE)) this->closing = false;
 }
 
 std::vector<std::string> LiveActivity::getQualityDescriptionList() {

@@ -3,8 +3,9 @@
 //
 
 #include <algorithm>
-#include <limits>
 #include <cmath>
+#include <limits>
+#include <utility>
 
 #include <borealis/views/label.hpp>
 #include <borealis/views/progress_spinner.hpp>
@@ -79,14 +80,18 @@ VideoView::VideoView() {
     input = brls::Application::getPlatform()->getInputManager();
 
 #ifdef SILISILI_SAILFISH_MOBILE
-    this->btnBackBox->registerClickAction([this](...) {
+    auto closeAction = [this]() {
         if (this->isFullscreen())
             this->setFullScreen(false);
         else
-            this->dismiss();
+            this->closePlayer();
+    };
+    this->btnBackBox->registerClickAction([closeAction](...) {
+        closeAction();
         return true;
     });
-    this->btnBackBox->addGestureRecognizer(new brls::TapGestureRecognizer(this->btnBackBox));
+    this->btnBackBox->addGestureRecognizer(
+        new brls::TapGestureRecognizer(this->btnBackBox, closeAction));
 #endif
 
     this->registerBoolXMLAttribute("allowFullscreen", [this](bool value) {
@@ -96,7 +101,7 @@ VideoView::VideoView() {
             this->registerAction(
                 "cancel", brls::ControllerButton::BUTTON_B,
                 [this](brls::View* view) -> bool {
-                    this->dismiss();
+                    this->closePlayer();
                     return true;
                 },
                 true);
@@ -502,7 +507,7 @@ VideoView::VideoView() {
                 }
                 this->setFullScreen(false);
             } else {
-                this->dismiss();
+                this->closePlayer();
             }
             return true;
         },
@@ -979,6 +984,15 @@ void VideoView::togglePlay() {
 }
 
 void VideoView::setCustomToggleAction(std::function<void()> action) { this->customToggleAction = action; }
+
+void VideoView::setCustomCloseAction(std::function<void()> action) { this->customCloseAction = std::move(action); }
+
+void VideoView::closePlayer() {
+    if (this->customCloseAction)
+        this->customCloseAction();
+    else
+        this->dismiss();
+}
 
 void VideoView::setSpeed(float speed) { mpvCore->setSpeed(speed); }
 

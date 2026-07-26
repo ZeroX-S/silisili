@@ -31,7 +31,7 @@
 
 ```text
 silisili-sailfish-1.0.0-1.aarch64.rpm
-SHA-256: 351ddeaed154a5d6374ea8a5c59a6d95d9bf16be9defc4e668c36b9164e6870b
+SHA-256: 97f852af49de3e02c8afce2fc2dfbbda5d3f4933b71602cd227eb12502445cde
 ```
 
 新包会替换旧的 `wiliwili-sailfish` 包，但保留旧配置目录作为迁移来源。应用运行路径为 `/usr/bin/silisili`，桌面 ID 为 `cn.silisili.app`。

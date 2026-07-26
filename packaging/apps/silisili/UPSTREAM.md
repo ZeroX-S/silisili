@@ -28,7 +28,7 @@
 - Complete silisili Sailfish source patch (application, Borealis, and GLFW):
   `patches/silisili-sailfish-mobile.patch`
   SHA-256
-  `6ec211d9f4e51365acc20edd251d712a12f634b1a393afc54d16dcde4c3e8d47`.
+  `8bddf70d3a888e0966a283781191cecc6b6a976d5cceb7906b7fbe6f8c4bed3d`.
 - Mobile interaction reference: https://github.com/0xjax/bilibili-mobile
   commit `1e868592c31463b90d4db4d3e6e9bccd3e4ccb32`. It is a userscript and no
   source code is included; only its complete search/menu/history/activity

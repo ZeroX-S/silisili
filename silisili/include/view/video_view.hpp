@@ -166,6 +166,9 @@ public:
     /// 设置自定义的切换播放状态的按钮事件
     void setCustomToggleAction(std::function<void()> action);
 
+    /// 设置承载播放器的页面关闭动作
+    void setCustomCloseAction(std::function<void()> action);
+
     /// 番剧自定义菜单信息
     void setBangumiCustomSetting(const std::string& title, uint64_t seasonId);
 
@@ -306,6 +309,7 @@ private:
     MPVEvent::Subscription eventSubscribeID;
     CustomEvent::Subscription customEventSubscribeID;
     std::function<void()> customToggleAction = nullptr;
+    std::function<void()> customCloseAction = nullptr;
     brls::ActionListener seasonAction = nullptr;
     brls::InputManager* input;
     NVGcolor bottomBarColor = brls::Application::getTheme().getColor("color/bilibili");
@@ -405,4 +409,6 @@ private:
     void _setTvControlMode(bool state);
 
     float getRealDuration();
+
+    void closePlayer();
 };

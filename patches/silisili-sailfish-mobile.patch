@@ -5755,9 +5755,27 @@ similarity index 100%
 rename from wiliwili/include/activity/hint_activity.hpp
 rename to silisili/include/activity/hint_activity.hpp
 diff --git a/wiliwili/include/activity/live_player_activity.hpp b/silisili/include/activity/live_player_activity.hpp
-similarity index 100%
+similarity index 99%
 rename from wiliwili/include/activity/live_player_activity.hpp
 rename to silisili/include/activity/live_player_activity.hpp
+index 9461869f6eccd7a7400acb33d2dcb822cb59a66e..be760e1a7c1502b5f5c5f4ebae9d218b45a1d2ba 100644
+--- a/wiliwili/include/activity/live_player_activity.hpp
++++ b/silisili/include/activity/live_player_activity.hpp
+@@ -99,6 +99,8 @@ public:
+     ~LiveActivity() override;
+ 
+ private:
++    void close();
++
+     // 关注/取关主播
+     void follow_anchor(bool follow);
+ 
+@@ -147,4 +149,5 @@ private:
+         std::atomic<bool> isActive{true};
+     };
+     std::shared_ptr<ThreadSafeState> threadState{std::make_shared<ThreadSafeState>()};
++    bool closing = false;
+ };
 diff --git a/wiliwili/include/activity/main_activity.hpp b/silisili/include/activity/main_activity.hpp
 similarity index 92%
 rename from wiliwili/include/activity/main_activity.hpp
@@ -6980,13 +6998,23 @@ similarity index 100%
 rename from wiliwili/include/view/video_snapshot_core.hpp
 rename to silisili/include/view/video_snapshot_core.hpp
 diff --git a/wiliwili/include/view/video_view.hpp b/silisili/include/view/video_view.hpp
-similarity index 98%
+similarity index 96%
 rename from wiliwili/include/view/video_view.hpp
 rename to silisili/include/view/video_view.hpp
-index 286b9014a62b5c2e06a752e1996ec69eca603eba..7d7d24b7dd715a9191f5919a70acbaab9b0dfa50 100644
+index 286b9014a62b5c2e06a752e1996ec69eca603eba..c3fb9c3f7845bd72181057d97a3b2d8fb5dc4153 100644
 --- a/wiliwili/include/view/video_view.hpp
 +++ b/silisili/include/view/video_view.hpp
-@@ -219,6 +219,8 @@ public:
+@@ -166,6 +166,9 @@ public:
+     /// 设置自定义的切换播放状态的按钮事件
+     void setCustomToggleAction(std::function<void()> action);
+ 
++    /// 设置承载播放器的页面关闭动作
++    void setCustomCloseAction(std::function<void()> action);
++
+     /// 番剧自定义菜单信息
+     void setBangumiCustomSetting(const std::string& title, uint64_t seasonId);
+ 
+@@ -219,6 +222,8 @@ public:
  
      void setFullScreen(bool fs);
  
@@ -6995,7 +7023,7 @@ index 286b9014a62b5c2e06a752e1996ec69eca603eba..7d7d24b7dd715a9191f5919a70acbaab
      /// 分集点击事件
      void setSeasonAction(brls::ActionListener action);
  
-@@ -298,6 +300,7 @@ private:
+@@ -298,11 +303,13 @@ private:
      bool isTvControlMode = false;
      // 是否展示重播按钮
      bool showReplay = false;
@@ -7003,7 +7031,13 @@ index 286b9014a62b5c2e06a752e1996ec69eca603eba..7d7d24b7dd715a9191f5919a70acbaab
      std::string bangumiTitle;
      unsigned int bangumiSeasonId = 0;
      MPVEvent::Subscription eventSubscribeID;
-@@ -310,6 +313,7 @@ private:
+     CustomEvent::Subscription customEventSubscribeID;
+     std::function<void()> customToggleAction = nullptr;
++    std::function<void()> customCloseAction = nullptr;
+     brls::ActionListener seasonAction = nullptr;
+     brls::InputManager* input;
+     NVGcolor bottomBarColor = brls::Application::getTheme().getColor("color/bilibili");
+@@ -310,6 +317,7 @@ private:
      ///OSD
      BRLS_BIND(brls::Label, videoTitleLabel, "video/osd/title");
      BRLS_BIND(brls::Label, videoOnlineCountLabel, "video/view/label/people");
@@ -7011,7 +7045,7 @@ index 286b9014a62b5c2e06a752e1996ec69eca603eba..7d7d24b7dd715a9191f5919a70acbaab
      BRLS_BIND(brls::Box, osdTopBox, "video/osd/top/box");
      BRLS_BIND(brls::Box, osdBottomBox, "video/osd/bottom/box");
      // 用于显示缓冲组件
-@@ -373,6 +377,9 @@ private:
+@@ -373,6 +381,9 @@ private:
       */
      void requestSeeking(int seek, int delay = 400);
  
@@ -7021,6 +7055,13 @@ index 286b9014a62b5c2e06a752e1996ec69eca603eba..7d7d24b7dd715a9191f5919a70acbaab
      bool is_seeking     = false;  // 是否正在请求跳转
      int seeking_range   = 0;      // 跳转的目标进度, 跳转结束后归零
      size_t seeking_iter = 0;      // 请求跳转的延迟函数 handle
+@@ -398,4 +409,6 @@ private:
+     void _setTvControlMode(bool state);
+ 
+     float getRealDuration();
++
++    void closePlayer();
+ };
 diff --git a/wiliwili/wiliwili.ico b/silisili/silisili.ico
 similarity index 100%
 rename from wiliwili/wiliwili.ico
@@ -7181,10 +7222,10 @@ index a8dee2f3903f65e0cb4901e43c266be127b1bad5..7a227fec457a50f4b35d98d0ed1b7fa3
  #endif
  }
 diff --git a/wiliwili/source/activity/live_player_activity.cpp b/silisili/source/activity/live_player_activity.cpp
-similarity index 98%
+similarity index 97%
 rename from wiliwili/source/activity/live_player_activity.cpp
 rename to silisili/source/activity/live_player_activity.cpp
-index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2eccf97edb 100644
+index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..9d24b474a81768763a967b32b9e45fe92cbfb98f 100644
 --- a/wiliwili/source/activity/live_player_activity.cpp
 +++ b/silisili/source/activity/live_player_activity.cpp
 @@ -100,7 +100,7 @@ void LiveActivity::setCommonData() {
@@ -7205,7 +7246,25 @@ index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2e
              [this](int selected) {
                  defaultQuality = liveUrl.accept_qn[selected];
                  this->requestData(this->liveData.roomid);
-@@ -203,7 +203,7 @@ void LiveActivity::onContentAvailable()
+@@ -164,6 +164,17 @@ void LiveActivity::onContentAvailable()
+ 
+     this->video->registerCommonActions(this);
+ 
++#ifdef SILISILI_SAILFISH_MOBILE
++    this->video->setCustomCloseAction([this]() { this->close(); });
++    this->registerAction(
++        "hints/back"_i18n, brls::ControllerButton::BUTTON_B,
++        [this](brls::View*) {
++            this->close();
++            return true;
++        },
++        true);
++#endif
++
+     brls::Logger::debug("LiveActivity: onContentAvailable");
+ 
+     MPVCore::instance().setAspect(
+@@ -203,7 +214,7 @@ void LiveActivity::onContentAvailable()
                  if (std::to_string(uid) == ProgramConfig::instance().getUserID()) return true;
  
                  if (this->anchor_following) {
@@ -7214,7 +7273,7 @@ index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2e
                      dialog->addButton("hints/cancel"_i18n, []() {});
                      dialog->addButton("hints/ok"_i18n, [this]() { this->follow_anchor(false); });
                      dialog->open();
-@@ -253,7 +253,7 @@ void LiveActivity::onContentAvailable()
+@@ -253,7 +264,7 @@ void LiveActivity::onContentAvailable()
      });
      
      // 调整清晰度
@@ -7223,7 +7282,22 @@ index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2e
                           [this](brls::View* view) -> bool {
                               this->setVideoQuality();
                               return true;
-@@ -297,7 +297,7 @@ void LiveActivity::onLiveData(const bilibili::LiveRoomPlayInfo &result)
+@@ -275,6 +286,14 @@ void LiveActivity::onContentAvailable()
+     GA("open_live", {{"live_id", std::to_string(this->liveData.roomid)}})
+ }
+ 
++void LiveActivity::close() {
++    if (this->closing) return;
++
++    this->closing = true;
++    brls::Logger::info("LiveActivity: close requested");
++    if (!brls::Application::popActivity(brls::TransitionAnimation::NONE)) this->closing = false;
++}
++
+ std::vector<std::string> LiveActivity::getQualityDescriptionList() {
+     std::vector<std::string> res;
+     for (auto& i : liveUrl.accept_qn) {
+@@ -297,7 +316,7 @@ void LiveActivity::onLiveData(const bilibili::LiveRoomPlayInfo &result)
      if (result.is_locked) {
          brls::Logger::debug("LiveActivity: live {} is locked", result.room_id);
          this->video->showOSD(false);
@@ -7232,7 +7306,7 @@ index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2e
                     "pictures/room-block.png", true);
          return;
      }
-@@ -1049,7 +1049,7 @@ void LiveActivity::updateWatchedCount(int watched_count) {
+@@ -1049,7 +1068,7 @@ void LiveActivity::updateWatchedCount(int watched_count) {
      brls::Logger::debug("LiveActivity: 更新看过人数: {}", watched_count);
      
      // 格式化看过人数显示文本
@@ -7241,7 +7315,7 @@ index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..83153c609409012a6db30af8528fdd2e
      
      // 更新liveData中的看过人数
      this->liveData.watched_show.text_large = watched_text;
-@@ -1066,7 +1066,7 @@ void LiveActivity::updateOnlineCount(int online_count) {
+@@ -1066,7 +1085,7 @@ void LiveActivity::updateOnlineCount(int online_count) {
      brls::Logger::debug("LiveActivity: 更新在线人数: {}", online_count);
      
      // 格式化在线人数显示文本
@@ -12024,10 +12098,10 @@ similarity index 100%
 rename from wiliwili/source/view/animation_image.cpp
 rename to silisili/source/view/animation_image.cpp
 diff --git a/wiliwili/source/view/auto_tab_frame.cpp b/silisili/source/view/auto_tab_frame.cpp
-similarity index 92%
+similarity index 91%
 rename from wiliwili/source/view/auto_tab_frame.cpp
 rename to silisili/source/view/auto_tab_frame.cpp
-index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced826413946 100644
+index b8ab4d4de288efc79427bec281713b4701ac7332..a8807990d8ca00dd5e6feaf8fb85fb2f69edfbdb 100644
 --- a/wiliwili/source/view/auto_tab_frame.cpp
 +++ b/silisili/source/view/auto_tab_frame.cpp
 @@ -55,6 +55,7 @@ AutoTabFrame::AutoTabFrame() {
@@ -12078,7 +12152,19 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
      this->activeTab = newContent;
      // onHide will be called
      auto v = dynamic_cast<AttachedView*>(this->activeTab);
-@@ -682,6 +698,62 @@ const std::string autoSidebarItemPlainXML = R"xml(
+@@ -407,7 +423,11 @@ void AutoTabFrame::setHorizontalMode(bool value) {
+         ((AutoSidebarItem*)item)->setHorizontalMode(value);
+     }
+     if (value) {
++#ifdef SILISILI_SAILFISH_MOBILE
++        this->sidebar->setPadding(8, 8, 8, 8);
++#else
+         this->sidebar->setPadding(8, 20, 8, 20);
++#endif
+         this->sidebar->setAxis(brls::Axis::ROW);
+     } else {
+         this->sidebar->setPadding(32, 10, 47, 10);
+@@ -682,6 +702,62 @@ const std::string autoSidebarItemPlainXML = R"xml(
      </brls:Box>
  )xml";
  
@@ -12141,7 +12227,7 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
  const std::string autoSidebarItemInlineXML = R"xml(
  <brls:Box
      wireframe="false"
-@@ -763,6 +835,7 @@ AutoSidebarItem::AutoSidebarItem() : Box(brls::Axis::ROW) {
+@@ -763,6 +839,7 @@ AutoSidebarItem::AutoSidebarItem() : Box(brls::Axis::ROW) {
                                           {"accent", AutoTabBarStyle::ACCENT},
                                           {"plain", AutoTabBarStyle::PLAIN},
                                           {"inline", AutoTabBarStyle::INLINE},
@@ -12149,7 +12235,20 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
                                       });
  
      this->setFocusSound(brls::SOUND_FOCUS_SIDEBAR);
-@@ -811,6 +884,9 @@ void AutoSidebarItem::setTabStyle(AutoTabBarStyle style) {
+@@ -803,6 +880,12 @@ void AutoSidebarItem::setTabStyle(AutoTabBarStyle style) {
+     if (style == AutoTabBarStyle::NONE) brls::fatal("SidebarItem style cannot be set to \"None\"");
+     if (this->tabStyle != AutoTabBarStyle::NONE) return;
+ 
++#ifdef SILISILI_SAILFISH_MOBILE
++    // Mobile tabs share one compact, in-flow label/subtitle layout. The TV
++    // accent style places counters absolutely and lets them cover labels.
++    if (style == AutoTabBarStyle::ACCENT) style = AutoTabBarStyle::COMPACT;
++#endif
++
+     this->tabStyle = style;
+     switch (style) {
+         case AutoTabBarStyle::PLAIN:
+@@ -811,6 +894,9 @@ void AutoSidebarItem::setTabStyle(AutoTabBarStyle style) {
          case AutoTabBarStyle::INLINE:
              this->inflateFromXMLString(autoSidebarItemInlineXML);
              break;
@@ -12159,7 +12258,7 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
          default:
              this->inflateFromXMLString(autoSidebarItemXML);
      }
-@@ -823,7 +899,8 @@ void AutoSidebarItem::setActive(bool active) {
+@@ -823,7 +909,8 @@ void AutoSidebarItem::setActive(bool active) {
  
      if (active) {
          this->activeEvent.fire(this);
@@ -12169,7 +12268,7 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
              this->accent->setVisibility(brls::Visibility::VISIBLE);
          else if (this->tabStyle == AutoTabBarStyle::PLAIN) {
              this->setBackgroundColor(this->tabItemActiveBackgroundColor);
-@@ -838,7 +915,8 @@ void AutoSidebarItem::setActive(bool active) {
+@@ -838,7 +925,8 @@ void AutoSidebarItem::setActive(bool active) {
                  this->icon->setImageFromSVGFile(this->iconDefault);
          }
      } else {
@@ -12179,7 +12278,20 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
              this->accent->setVisibility(brls::Visibility::INVISIBLE);
          else if (this->tabStyle == AutoTabBarStyle::PLAIN) {
              this->setBackgroundColor(this->tabItemBackgroundColor);
-@@ -930,6 +1008,11 @@ void AutoSidebarItem::setHorizontalMode(bool value) {
+@@ -924,12 +1012,24 @@ void AutoSidebarItem::setFontSize(float size) {
+ void AutoSidebarItem::setHorizontalMode(bool value) {
+     if (value) {
+         this->setAxis(brls::Axis::COLUMN);
++#ifdef SILISILI_SAILFISH_MOBILE
++        this->setGrow(1.0f);
++        this->setShrink(1.0f);
++        this->setMinWidth(64);
++        this->setPadding(0, 6, 0, 6);
++#else
+         this->setPadding(0, 10, 0, 10);
++#endif
+         if (this->tabStyle == AutoTabBarStyle::ACCENT) {
+             this->accent->setSize(brls::Size(View::AUTO, 4));
              this->accent->setMarginTop(0);
              this->icon_box->setMarginRight(0);
              this->icon_box->setMarginBottom(0);
@@ -12191,7 +12303,7 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
          }
      } else {
          this->setAxis(brls::Axis::ROW);
-@@ -967,6 +1050,8 @@ AutoTabBarStyle AutoSidebarItem::getTabStyle(std::string value) {
+@@ -967,6 +1067,8 @@ AutoTabBarStyle AutoSidebarItem::getTabStyle(std::string value) {
      std::unordered_map<std::string, AutoTabBarStyle> enumMap = {
          {"accent", AutoTabBarStyle::ACCENT},
          {"plain", AutoTabBarStyle::PLAIN},
@@ -12200,7 +12312,7 @@ index b8ab4d4de288efc79427bec281713b4701ac7332..c4cde7ecfe046a7eb0ef87d626baced8
      };
      if (enumMap.count(value) > 0)
          return enumMap[value];
-@@ -1059,4 +1144,4 @@ void AttachedView::registerTabAction(const std::string& hintText, const brls::Co
+@@ -1059,4 +1161,4 @@ void AttachedView::registerTabAction(const std::string& hintText, const brls::Co
  
  AttachedView::AttachedView() { this->setGrow(1); }
  
@@ -12834,21 +12946,23 @@ similarity index 100%
 rename from wiliwili/source/view/video_snapshot_core.cpp
 rename to silisili/source/view/video_snapshot_core.cpp
 diff --git a/wiliwili/source/view/video_view.cpp b/silisili/source/view/video_view.cpp
-similarity index 92%
+similarity index 91%
 rename from wiliwili/source/view/video_view.cpp
 rename to silisili/source/view/video_view.cpp
-index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59e4ac47ea 100644
+index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b1154189f 100644
 --- a/wiliwili/source/view/video_view.cpp
 +++ b/silisili/source/view/video_view.cpp
-@@ -2,6 +2,7 @@
+@@ -2,13 +2,16 @@
  // Created by fang on 2022/4/23.
  //
  
+-#include <limits>
 +#include <algorithm>
- #include <limits>
  #include <cmath>
++#include <limits>
++#include <utility>
  
-@@ -9,6 +10,7 @@
+ #include <borealis/views/label.hpp>
  #include <borealis/views/progress_spinner.hpp>
  #include <borealis/core/touch/tap_gesture.hpp>
  #include <borealis/core/thread.hpp>
@@ -12856,7 +12970,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  #include <borealis/views/slider.hpp>
  #include <borealis/views/applet_frame.hpp>
  #include <pystring.h>
-@@ -63,10 +65,30 @@ VideoView::VideoView() {
+@@ -63,10 +66,34 @@ VideoView::VideoView() {
      this->setHideHighlightBackground(true);
      this->setHideClickAnimation(true);
  
@@ -12874,20 +12988,32 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      input = brls::Application::getPlatform()->getInputManager();
  
 +#ifdef SILISILI_SAILFISH_MOBILE
-+    this->btnBackBox->registerClickAction([this](...) {
++    auto closeAction = [this]() {
 +        if (this->isFullscreen())
 +            this->setFullScreen(false);
 +        else
-+            this->dismiss();
++            this->closePlayer();
++    };
++    this->btnBackBox->registerClickAction([closeAction](...) {
++        closeAction();
 +        return true;
 +    });
-+    this->btnBackBox->addGestureRecognizer(new brls::TapGestureRecognizer(this->btnBackBox));
++    this->btnBackBox->addGestureRecognizer(
++        new brls::TapGestureRecognizer(this->btnBackBox, closeAction));
 +#endif
 +
      this->registerBoolXMLAttribute("allowFullscreen", [this](bool value) {
          this->allowFullscreen = value;
          if (!value) {
-@@ -81,6 +103,7 @@ VideoView::VideoView() {
+@@ -74,13 +101,14 @@ VideoView::VideoView() {
+             this->registerAction(
+                 "cancel", brls::ControllerButton::BUTTON_B,
+                 [this](brls::View* view) -> bool {
+-                    this->dismiss();
++                    this->closePlayer();
+                     return true;
+                 },
+                 true);
          }
      });
  
@@ -12895,7 +13021,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      // 快退
      auto rewindFunc = [this](...) -> bool {
          CHECK_OSD(true);
-@@ -147,6 +170,7 @@ VideoView::VideoView() {
+@@ -147,6 +175,7 @@ VideoView::VideoView() {
              return false;
          },
          true, true);
@@ -12903,7 +13029,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  
      this->registerMpvEvent();
  
-@@ -164,7 +188,7 @@ VideoView::VideoView() {
+@@ -164,7 +193,7 @@ VideoView::VideoView() {
  
      osdSlider->getProgressEvent()->subscribe([this](float progress) {
          this->showOSD(false);
@@ -12912,7 +13038,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
          auto& snapshot             = VideoSnapshotCore::instance();
          this->showThumbnailPreview = snapshot.isValid();
          // 预加载当前位置需要的精灵图
-@@ -206,7 +230,7 @@ VideoView::VideoView() {
+@@ -206,7 +235,7 @@ VideoView::VideoView() {
                  float SPEED = MPVCore::VIDEO_SPEED == 100 ? 2.0 : MPVCore::VIDEO_SPEED * 0.01f;
                  this->setSpeed(SPEED);
                  // 绘制临时加速标识
@@ -12921,7 +13047,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                  this->speedHintBox->setVisibility(brls::Visibility::VISIBLE);
                  break;
              }
-@@ -221,25 +245,42 @@ VideoView::VideoView() {
+@@ -221,25 +250,42 @@ VideoView::VideoView() {
                  break;
              case OsdGestureType::HORIZONTAL_PAN_START:
                  if (is_osd_lock) break;
@@ -12964,7 +13090,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                  break;
              case OsdGestureType::LEFT_VERTICAL_PAN_START:
                  if (is_osd_lock) break;
-@@ -305,8 +346,11 @@ VideoView::VideoView() {
+@@ -305,8 +351,11 @@ VideoView::VideoView() {
      };
      this->videoQuality->getParent()->registerClickAction(qualityFunc);
      this->videoQuality->getParent()->addGestureRecognizer(new brls::TapGestureRecognizer(videoQuality->getParent()));
@@ -12977,7 +13103,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      /// 视频详情信息
      auto profileFunc = [this](...) {
          CHECK_OSD(true);
-@@ -314,6 +358,7 @@ VideoView::VideoView() {
+@@ -314,6 +363,7 @@ VideoView::VideoView() {
          return true;
      };
      this->registerAction("profile", brls::ControllerButton::BUTTON_BACK, profileFunc, true);
@@ -12985,7 +13111,14 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  
      /// 倍速按钮
      auto showSpeedFunc = [](...) {
-@@ -463,7 +508,7 @@ VideoView::VideoView() {
+@@ -457,13 +507,13 @@ VideoView::VideoView() {
+                 }
+                 this->setFullScreen(false);
+             } else {
+-                this->dismiss();
++                this->closePlayer();
+             }
+             return true;
          },
          true);
  
@@ -12994,7 +13127,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
          CHECK_OSD(false);
          if (this->isFullscreen()) {
              this->showOSD(true);
-@@ -481,6 +526,7 @@ VideoView::VideoView() {
+@@ -481,6 +531,7 @@ VideoView::VideoView() {
          return true;
      });
  
@@ -13002,7 +13135,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      // TV模式下，全屏+OSD隐藏时，可以使用左右键直接调整进度
      auto sliderFunc = [this](...) {
          CHECK_OSD(true);
-@@ -494,6 +540,7 @@ VideoView::VideoView() {
+@@ -494,6 +545,7 @@ VideoView::VideoView() {
      };
      this->registerAction("", brls::ControllerButton::BUTTON_RIGHT, sliderFunc, true);
      this->registerAction("", brls::ControllerButton::BUTTON_LEFT, sliderFunc, true);
@@ -13010,7 +13143,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  
      // 自定义的mpv事件
      customEventSubscribeID = APP_E->subscribe([this](const std::string& event, void* data) {
-@@ -505,7 +552,7 @@ VideoView::VideoView() {
+@@ -505,7 +557,7 @@ VideoView::VideoView() {
              this->setQuality((const char*)data);
          } else if (event == VideoView::REAL_DURATION) {
              this->real_duration = *(int*)data;
@@ -13019,7 +13152,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
              this->setProgress((float)mpvCore->playback_time / (float)real_duration);
          } else if (event == VideoView::LAST_TIME) {
              if (*(int64_t*)data == VideoView::POSITION_DISCARD)
-@@ -557,6 +604,51 @@ void VideoView::requestBrightness(float brightness) {
+@@ -557,6 +609,51 @@ void VideoView::requestBrightness(float brightness) {
      setCenterHintText(fmt::format("{} %", (int)(brightness * 100)));
  }
  
@@ -13071,7 +13204,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  void VideoView::requestSeeking(int seek, int delay) {
      if (getRealDuration() <= 0) {
          seeking_range = 0;
-@@ -580,7 +672,7 @@ void VideoView::requestSeeking(int seek, int delay) {
+@@ -580,7 +677,7 @@ void VideoView::requestSeeking(int seek, int delay) {
      }
      setCenterHintText(fmt::format("{:+d} s", seek));
      osdSlider->setProgress((float)progress);
@@ -13080,7 +13213,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  
      // 更新缩略图预览
      auto& snapshot             = VideoSnapshotCore::instance();
-@@ -629,7 +721,6 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -629,7 +726,6 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      float alpha        = this->getAlpha();
      brls::Time current = brls::getCPUTimeUsec();
      bool drawOSD       = this->osd_state == OSDState::ALWAYS_ON || current < this->osdLastShowTime;
@@ -13088,7 +13221,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      // draw video
      mpvCore->draw(brls::Rect(x, y, width, height), alpha);
  
-@@ -642,7 +733,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -642,7 +738,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      // draw bottom bar
      if (BOTTOM_BAR && showBottomLineSetting) {
          bottomBarColor.a = alpha;
@@ -13097,7 +13230,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
          progress         = progress > 1.0f ? 1.0f : progress;
          nvgFillColor(vg, bottomBarColor);
          nvgBeginPath(vg);
-@@ -652,9 +743,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -652,9 +748,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
  
      // draw danmaku
      if (enableDanmaku) {
@@ -13109,7 +13242,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      }
  
      // draw osd
-@@ -668,7 +758,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -668,7 +763,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
          if (!is_osd_lock) {
              // draw highlight progress
              auto sliderRect = osdSlider->getFrame();
@@ -13118,7 +13251,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                                    alpha);
  
              // draw osd
-@@ -695,7 +785,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -695,7 +790,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      // draw subtitle
      // 在正常显示 osd 时，将字幕向上偏移，避免被 OSD 挡住
      if (showSubtitleSetting)
@@ -13128,7 +13261,23 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                                                alpha);
  
      if (current > this->hintLastShowTime && this->hintBox->getVisibility() == brls::Visibility::VISIBLE) {
-@@ -978,7 +1069,7 @@ void VideoView::showSpeedList() {
+@@ -889,6 +985,15 @@ void VideoView::togglePlay() {
+ 
+ void VideoView::setCustomToggleAction(std::function<void()> action) { this->customToggleAction = action; }
+ 
++void VideoView::setCustomCloseAction(std::function<void()> action) { this->customCloseAction = std::move(action); }
++
++void VideoView::closePlayer() {
++    if (this->customCloseAction)
++        this->customCloseAction();
++    else
++        this->dismiss();
++}
++
+ void VideoView::setSpeed(float speed) { mpvCore->setSpeed(speed); }
+ 
+ void VideoView::setLastPlayedPosition(int64_t p) { lastPlayedPosition = p; }
+@@ -978,7 +1083,7 @@ void VideoView::showSpeedList() {
  
      // 展示倍速列表
      auto dropdown = BaseDropdown::text(
@@ -13137,7 +13286,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
          [conf](int selected) {
              // 设置播放器倍速
              MPVCore::instance().setSpeed(conf.rawOptionList[selected] * 0.01);
-@@ -1090,6 +1181,9 @@ void VideoView::setLiveMode() {
+@@ -1090,6 +1195,9 @@ void VideoView::setLiveMode() {
  }
  
  void VideoView::setTvControlMode(bool state) {
@@ -13147,7 +13296,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      isTvControlMode = state;
      // 直播模式下不显示进度条
      _setTvControlMode(isTvControlMode && !isLiveMode);
-@@ -1098,6 +1192,16 @@ void VideoView::setTvControlMode(bool state) {
+@@ -1098,6 +1206,16 @@ void VideoView::setTvControlMode(bool state) {
  bool VideoView::getTvControlMode() const { return isTvControlMode; }
  
  void VideoView::_setTvControlMode(bool state) {
@@ -13164,7 +13313,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      btnToggle->setCustomNavigationRoute(brls::FocusDirection::RIGHT, state ? osdSlider : iconBox);
      btnVolumeIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
      btnDanmakuSettingIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
-@@ -1107,6 +1211,7 @@ void VideoView::_setTvControlMode(bool state) {
+@@ -1107,6 +1225,7 @@ void VideoView::_setTvControlMode(bool state) {
      btnFullscreenIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
      osdLockBox->setCustomNavigationRoute(brls::FocusDirection::DOWN, state ? osdSlider : iconBox);
      osdSlider->setFocusable(state);
@@ -13172,7 +13321,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  }
  
  void VideoView::setStatusLabelLeft(const std::string& value) { leftStatusLabel->setText(value); }
-@@ -1215,8 +1320,18 @@ void VideoView::setBangumiCustomSetting(const std::string& title, uint64_t seaso
+@@ -1215,8 +1334,18 @@ void VideoView::setBangumiCustomSetting(const std::string& title, uint64_t seaso
  brls::View* VideoView::create() { return new VideoView(); }
  
  bool VideoView::isFullscreen() {
@@ -13191,7 +13340,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  }
  
  void VideoView::setFullScreen(bool fs) {
-@@ -1230,6 +1345,17 @@ void VideoView::setFullScreen(bool fs) {
+@@ -1230,6 +1359,17 @@ void VideoView::setFullScreen(bool fs) {
          return;
      }
  
@@ -13209,7 +13358,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      brls::Logger::info("VideoView set fullscreen state: {}", fs);
      if (fs) {
          this->unRegisterMpvEvent();
-@@ -1432,6 +1558,9 @@ brls::View* VideoView::getNextFocus(brls::FocusDirection direction, View* curren
+@@ -1432,6 +1572,9 @@ brls::View* VideoView::getNextFocus(brls::FocusDirection direction, View* curren
  }
  
  void VideoView::buttonProcessing() {
@@ -13219,7 +13368,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      // 获取按键数据
      auto state           = brls::Application::getControllerState();
      auto speedUpShortcut = ShortcutHelper::getVideoSpeedUp();
-@@ -1480,7 +1609,7 @@ void VideoView::buttonProcessing() {
+@@ -1480,7 +1623,7 @@ void VideoView::buttonProcessing() {
                  rsb_press_time = brls::getCPUTimeUsec();
                  click_state    = ClickState::PRESS;
                  // 绘制临时加速标识
@@ -13228,7 +13377,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                  speedHintBox->setVisibility(brls::Visibility::VISIBLE);
              }
              break;
-@@ -1510,7 +1639,7 @@ void VideoView::buttonProcessing() {
+@@ -1510,7 +1653,7 @@ void VideoView::buttonProcessing() {
                      click_state    = ClickState::PRESS;
                  }
                  // 绘制临时加速标识
@@ -13237,7 +13386,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                  speedHintBox->setVisibility(brls::Visibility::VISIBLE);
              }
              break;
-@@ -1537,6 +1666,7 @@ void VideoView::buttonProcessing() {
+@@ -1537,6 +1680,7 @@ void VideoView::buttonProcessing() {
              break;
      }
  
@@ -13245,7 +13394,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
  #endif
  }
  
-@@ -1572,28 +1702,28 @@ void VideoView::registerMpvEvent() {
+@@ -1572,28 +1716,28 @@ void VideoView::registerMpvEvent() {
                  this->showOSD(false);
                  break;
              case MpvEventEnum::MPV_LOADED:
@@ -13279,7 +13428,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
                  } else {
                      this->videoSpeed->setText(fmt::format("{}x", mpvCore->video_speed));
                  }
-@@ -1670,6 +1800,10 @@ void VideoView::onChildFocusGained(View* directChild, View* focusedView) {
+@@ -1670,6 +1814,10 @@ void VideoView::onChildFocusGained(View* directChild, View* focusedView) {
  float VideoView::getRealDuration() { return real_duration > 0 ? (float)real_duration : (float)mpvCore->duration; }
  
  void VideoView::registerCommonActions(brls::Activity* activity) {
@@ -13290,7 +13439,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..f1020d00fbf2dd7ebdd165ac82ce0b59
      activity->registerAction(
          ShortcutHelper::getVideoPause(), [this](...) -> bool {
              CHECK_OSD(true);
-@@ -1745,5 +1879,5 @@ void VideoView::registerCommonActions(brls::Activity* activity) {
+@@ -1745,5 +1893,5 @@ void VideoView::registerCommonActions(brls::Activity* activity) {
          toggleVideoProfile();
          return true;
      });
@@ -13503,6 +13652,7 @@ index 30da769b927695390dab46901d57431beb8275ae..00000000000000000000000000000000
 -    };
 -}
 \ No newline at end of file
+
 diff --git a/library/borealis/library/include/borealis/core/application.hpp b/library/borealis/library/include/borealis/core/application.hpp
 index cfff62bf9edebb44efc387c49405fe6adea880c8..7ef8e45e6b91de8406bee89ac38cb58d636ccf13 100644
 --- a/library/borealis/library/include/borealis/core/application.hpp
@@ -15611,6 +15761,7 @@ index 61978bd523cfb692a115dbce8ba473ef22c9661e..65f8ef330432a5455a69da9be21951c4
  float ScrollingFrame::getContentHeight()
  {
      if (!this->contentView)
+
 diff --git a/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml b/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml
 new file mode 100644
 index 0000000000000000000000000000000000000000..d2056eb637502a0da46ee9ad8dfc54755a95cba8

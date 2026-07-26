@@ -423,7 +423,11 @@ void AutoTabFrame::setHorizontalMode(bool value) {
         ((AutoSidebarItem*)item)->setHorizontalMode(value);
     }
     if (value) {
+#ifdef SILISILI_SAILFISH_MOBILE
+        this->sidebar->setPadding(8, 8, 8, 8);
+#else
         this->sidebar->setPadding(8, 20, 8, 20);
+#endif
         this->sidebar->setAxis(brls::Axis::ROW);
     } else {
         this->sidebar->setPadding(32, 10, 47, 10);
@@ -876,6 +880,12 @@ void AutoSidebarItem::setTabStyle(AutoTabBarStyle style) {
     if (style == AutoTabBarStyle::NONE) brls::fatal("SidebarItem style cannot be set to \"None\"");
     if (this->tabStyle != AutoTabBarStyle::NONE) return;
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    // Mobile tabs share one compact, in-flow label/subtitle layout. The TV
+    // accent style places counters absolutely and lets them cover labels.
+    if (style == AutoTabBarStyle::ACCENT) style = AutoTabBarStyle::COMPACT;
+#endif
+
     this->tabStyle = style;
     switch (style) {
         case AutoTabBarStyle::PLAIN:
@@ -1002,7 +1012,14 @@ void AutoSidebarItem::setFontSize(float size) {
 void AutoSidebarItem::setHorizontalMode(bool value) {
     if (value) {
         this->setAxis(brls::Axis::COLUMN);
+#ifdef SILISILI_SAILFISH_MOBILE
+        this->setGrow(1.0f);
+        this->setShrink(1.0f);
+        this->setMinWidth(64);
+        this->setPadding(0, 6, 0, 6);
+#else
         this->setPadding(0, 10, 0, 10);
+#endif
         if (this->tabStyle == AutoTabBarStyle::ACCENT) {
             this->accent->setSize(brls::Size(View::AUTO, 4));
             this->accent->setMarginTop(0);

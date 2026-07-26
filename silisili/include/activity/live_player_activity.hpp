@@ -99,6 +99,8 @@ public:
     ~LiveActivity() override;
 
 private:
+    void close();
+
     // 关注/取关主播
     void follow_anchor(bool follow);
 
@@ -147,4 +149,5 @@ private:
         std::atomic<bool> isActive{true};
     };
     std::shared_ptr<ThreadSafeState> threadState{std::make_shared<ThreadSafeState>()};
+    bool closing = false;
 };

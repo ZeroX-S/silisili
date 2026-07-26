@@ -15,6 +15,12 @@ This is the first public release of `silisili`, a Sailfish OS port and modificat
 - Renamed application identity, source namespace, configuration directory and Sailfish launcher assets.
 - First-run private migration from an existing wiliwili configuration when no silisili configuration exists.
 
+## Current package fixes
+
+- Live pages now use one Activity-level close path for both system Back and the player OSD Back button.
+- The OSD Back touch target invokes its close action directly, including live layouts without an AppletFrame.
+- Comment, episode and recommendation tabs use compact in-flow counters that cannot overlap their labels.
+
 ## Tested device
 
 - Google Pixel 3a XL (`bonito`)
@@ -25,11 +31,11 @@ This is the first public release of `silisili`, a Sailfish OS port and modificat
 
 ```text
 silisili-sailfish-1.0.0-1.aarch64.rpm
-SHA-256: 351ddeaed154a5d6374ea8a5c59a6d95d9bf16be9defc4e668c36b9164e6870b
+SHA-256: 97f852af49de3e02c8afce2fc2dfbbda5d3f4933b71602cd227eb12502445cde
 ```
 
 Source patch SHA-256:
 
 ```text
-6ec211d9f4e51365acc20edd251d712a12f634b1a393afc54d16dcde4c3e8d47  patches/silisili-sailfish-mobile.patch
+8bddf70d3a888e0966a283781191cecc6b6a976d5cceb7906b7fbe6f8c4bed3d  patches/silisili-sailfish-mobile.patch
 ```
