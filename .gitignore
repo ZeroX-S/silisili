@@ -30,6 +30,17 @@ android-project
 credentials/
 secrets/
 output/
+__pycache__/
+*.py[cod]
+/docs/screenshots/5x-test/*
+!/docs/screenshots/5x-test/23-interface-settings-no-window-fullscreen.png
+!/docs/screenshots/5x-test/25-enlarged-player-osd.png
+!/docs/screenshots/5x-test/26-player-settings-no-window-fullscreen.png
+!/docs/screenshots/5x-test/33-fullscreen-cycle-1-enter.png
+!/docs/screenshots/5x-test/34-fullscreen-cycle-1-exit.png
+!/docs/screenshots/5x-test/35-fullscreen-cycle-2-baseline.png
+!/docs/screenshots/5x-test/36-fullscreen-cycle-2-enter.png
+!/docs/screenshots/5x-test/37-fullscreen-cycle-2-exit.png
 # Github Copilot
 .github/copilot-instructions.md
 .github/instructions/

@@ -71,6 +71,7 @@ VideoView::VideoView() {
     static bool mobileTouchMarkerLogged = false;
     if (!mobileTouchMarkerLogged) {
         brls::Logger::info("Sailfish player touch: tap OSD; center double-tap play; release-to-seek; multi-touch cancellation");
+        brls::Logger::info("Sailfish player controls: 56pt primary touch targets; 52pt secondary touch targets");
         mobileTouchMarkerLogged = true;
     }
 #else

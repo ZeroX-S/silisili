@@ -3,18 +3,16 @@
 
 Name:           silisili-sailfish
 Version:        1.0.0
-Release:        1
+Release:        2
 Summary:        silisili Bilibili client for Sailfish OS
-License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and (GPL-3.0-or-later WITH GCC-exception-3.1)
+License:        GPL-3.0-or-later and GPL-2.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC
 Group:          Applications/Multimedia
 BuildArch:      aarch64
 AutoReqProv:    no
 Requires:       ca-certificates
 Requires:       dbus-libs
 Requires:       jolla-keyboard
-Requires:       libcurl
 Requires:       libstdc++
-Requires:       openssl-libs
 Requires:       pulseaudio
 Requires:       wayland
 Requires:       zlib
@@ -28,8 +26,10 @@ Obsoletes:      wiliwili-sailfish <= 1.6.0-1.bonito31
 silisili is a Sailfish OS port and modification derived from wiliwili 1.6.0,
 developed with Vibe Coding and distributed under GPL-3.0-or-later. It is
 packaged as a native AArch64 ELF for Sailfish OS.
-The package carries a private minimal mpv, FFmpeg, libplacebo, libass, and GNU
-C++ runtime while using the system network, TLS, PulseAudio, and graphics stack.
+The package carries private FFmpeg, mpv, libplacebo, libass, curl, and OpenSSL
+builds. It uses the Sailfish OS GNU C++ runtime, PulseAudio, and graphics
+libraries, and is built against the Sailfish OS 5.0 SDK for 5.0 and 5.1
+compatibility.
 
 %prep
 
@@ -63,6 +63,13 @@ find %{buildroot}/usr/share/silisili %{buildroot}/usr/share/licenses/%{name} \
 /usr/share/silisili
 
 %changelog
+* Tue Jul 28 2026 silisili contributors <noreply@localhost> - 1.0.0-2
+- Rebuild the application and private runtime against Sailfish OS 5.0.0.62.
+- Support Sailfish OS 5.0 and 5.1 from one AArch64 package.
+- Package an HTTPS-enabled private FFmpeg 5.1 with mpv, libplacebo, libass,
+  curl, and OpenSSL while retaining Sailfish GCC 10 libstdc++.
+- Enforce GLIBC 2.30, GLIBCXX 3.4.28, and CXXABI 1.3.12 ceilings.
+
 * Sun Jul 26 2026 silisili contributors <noreply@localhost> - 1.0.0-1
 - Publish silisili v1.0 as a renamed Sailfish OS port derived from wiliwili
   1.6.0, with retained upstream copyright and third-party licenses.

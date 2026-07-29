@@ -398,7 +398,7 @@ void SettingActivity::onContentAvailable() {
 #endif
 
 /// Fullscreen
-#ifdef ALLOW_FULLSCREEN
+#if defined(ALLOW_FULLSCREEN) && !defined(SILISILI_SAILFISH_MOBILE)
     cellFullscreen->init("silisili/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
                          [](bool value) {
                              ProgramConfig::instance().setSettingItem(SettingItem::FULLSCREEN, value);

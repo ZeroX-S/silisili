@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE=silisili-sailfish
-EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-1}"
+EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-2}"
 APP_USER=defaultuser
 APP_UID="$(id -u "$APP_USER")"
 APP_RUNTIME_DIR="/run/user/$APP_UID"
@@ -14,7 +14,6 @@ DESKTOP=/usr/share/applications/cn.silisili.app.desktop
 ICON_KEY=silisili-sailfish
 LEGACY_CONFIG_DIR="/home/$APP_USER/.config/wiliwili"
 CONFIG_DIR="/home/$APP_USER/.config/silisili"
-EXPECTED_LIBSTDCXX_SHA=c5cf486565ca33f11a7841f6a8f67797c9c8a484a235c3cd36ca6b41328c67b2
 SAMPLE_SECONDS="${SAMPLE_SECONDS:-10}"
 LOG_WAIT_SECONDS="${LOG_WAIT_SECONDS:-30}"
 EVIDENCE="${EVIDENCE:-/var/lib/bonito-debug-evidence/silisili-$(date +%Y%m%d-%H%M%S)}"
@@ -261,15 +260,24 @@ runuser -u "$APP_USER" -- test -x "$REAL_APP" ||
     fail "defaultuser cannot execute the real application"
 runuser -u "$APP_USER" -- test -r "$LIBDIR/libmpv.so.2" ||
     fail "defaultuser cannot read private libmpv"
-test "$(sha256sum "$LIBDIR/libstdc++.so.6.0.34" | awk '{print $1}')" = \
-    "$EXPECTED_LIBSTDCXX_SHA" || fail "private libstdc++ identity mismatch"
+runuser -u "$APP_USER" -- test -r "$LIBDIR/libcurl.so.4" ||
+    fail "defaultuser cannot read private curl"
+runuser -u "$APP_USER" -- test -r "$LIBDIR/libavformat.so.59" ||
+    fail "defaultuser cannot read private FFmpeg"
+test ! -e "$LIBDIR/libstdc++.so.6" || fail "private libstdc++ is packaged"
 
 LD_LIBRARY_PATH="$LIBDIR" ldd "$REAL_APP" >"$EVIDENCE/static/ldd.txt" 2>&1 ||
     fail "ldd failed"
 ! grep -Eiq 'not found' "$EVIDENCE/static/ldd.txt" ||
     fail "runtime dependency is unresolved"
-grep -Fq "libstdc++.so.6 => $LIBDIR/libstdc++.so.6" \
-    "$EVIDENCE/static/ldd.txt" || fail "private libstdc++ is not resolved"
+grep -Eq 'libstdc\+\+\.so\.6 => /usr/lib64/libstdc\+\+\.so\.6' \
+    "$EVIDENCE/static/ldd.txt" || fail "Sailfish system libstdc++ is not resolved"
+grep -Fq "libcurl.so.4 => $LIBDIR/libcurl.so.4" \
+    "$EVIDENCE/static/ldd.txt" || fail "private curl is not resolved"
+grep -Fq "libssl.so.3 => $LIBDIR/libssl.so.3" \
+    "$EVIDENCE/static/ldd.txt" || fail "private OpenSSL is not resolved"
+grep -Fq "libavformat.so.59 => $LIBDIR/libavformat.so.59" \
+    "$EVIDENCE/static/ldd.txt" || fail "private FFmpeg is not resolved"
 
 pulse_socket="/run/user/$APP_UID/pulse/native"
 test -S "$pulse_socket" || fail "PulseAudio socket is unavailable"
@@ -377,10 +385,16 @@ if printf '%s\n' "$app_environment" | grep -q '^LD_PRELOAD='; then
     fail "application inherited LD_PRELOAD"
 fi
 
-grep -Fq "$LIBDIR/libstdc++.so.6.0.34" "/proc/$app_pid/maps" ||
-    fail "private libstdc++ is not mapped"
-grep -Fq "$LIBDIR/libmpv.so.2.5.0" "/proc/$app_pid/maps" ||
+grep -Fq '/usr/lib64/libstdc++.so.6.' "/proc/$app_pid/maps" ||
+    fail "Sailfish system libstdc++ is not mapped"
+grep -Fq "$LIBDIR/libmpv.so.2." "/proc/$app_pid/maps" ||
     fail "private libmpv is not mapped"
+grep -Fq "$LIBDIR/libcurl.so.4." "/proc/$app_pid/maps" ||
+    fail "private curl is not mapped"
+grep -Fq "$LIBDIR/libavcodec.so.59." "/proc/$app_pid/maps" ||
+    fail "private FFmpeg codec library is not mapped"
+grep -Fq "$LIBDIR/libavformat.so.59." "/proc/$app_pid/maps" ||
+    fail "private FFmpeg format library is not mapped"
 grep -Fq '/usr/lib64/libhybris/eglplatform_wayland.so' "/proc/$app_pid/maps" ||
     fail "Wayland EGL platform is not mapped"
 grep -Fq '/dev/kgsl-3d0' "/proc/$app_pid/maps" ||

@@ -8,7 +8,9 @@ The application source is under `silisili/`. Sailfish package metadata is under 
 
 ## CMake build
 
-The Sailfish build requires an AArch64 C/C++ cross-toolchain, CMake, Ninja, OpenSSL, curl, Wayland, EGL/GLES2, mpv and the remaining libraries listed by the top-level CMake files.
+The release build uses the Sailfish OS `5.0.0.62-aarch64` target and
+`5.0.0.62-i486` tooling. Building against 5.0 is the compatibility baseline;
+the resulting AArch64 package also runs on Sailfish OS 5.1.
 
 ```sh
 cmake -S . -B build -G Ninja \
@@ -26,16 +28,33 @@ cmake --build build
 
 ## Reproducible Sailfish RPM
 
-`vm-deploy/scripts/build-silisili-sailfish-rpm.sh` is the exact builder used for `v1.0`. It intentionally starts from clean wiliwili 1.6.0 and applies the published patch, then verifies every pinned input before assembling the package.
+`vm-deploy/scripts/build-silisili-sailfish-5x-runtime.sh` builds the pinned
+private runtime with the 5.0 SDK. It produces private OpenSSL 3.0.16, curl
+8.9.1, FFmpeg 5.1.6 with HTTPS, libass 0.17.3, libplacebo 6.338.2, and mpv
+0.37.0 libraries. All C++ code uses Sailfish GCC 10 libstdc++.
 
-The script expects a Linux AArch64 cross-build environment with RPM tooling and these inputs:
+`vm-deploy/scripts/build-silisili-sailfish-rpm.sh` then rebuilds the complete
+application with the same SDK and assembles `silisili-sailfish-1.0.0-2`.
+Before packaging, it checks AArch64 identity, reviewed `DT_NEEDED` entries,
+private RPATHs, and these Sailfish 5.0 ceilings:
 
-- clean wiliwili commit `88e5876bea9502d06f46a8656e3530684d3aaf7d`
-- Borealis commit `5f08b286f3df737f3321d2247a6fe633fcead03c`
-- the validated base runtime RPM and development packages listed in `packaging/apps/silisili/UPSTREAM.md`
-- Pillow for deterministic PNG generation
+```text
+GLIBC_2.30
+GLIBCXX_3.4.28
+CXXABI_1.3.12
+```
 
-Set `PROJECT_ROOT`, `UPSTREAM_SOURCE_ROOT`, `BASE_RPM`, `DEV_DEB_DIR`, and `OUTPUT_DIR` as needed. The builder verifies the pinned SHA-256 values before using any input.
+Run both scripts from the Sailfish SDK chroot. The runtime sources must be at
+the pinned commits documented in `packaging/apps/silisili/UPSTREAM.md`:
+
+- `SailfishOS-5.0.0.62-aarch64` target
+- `SailfishOS-5.0.0.62-i486` tooling
+- the complete silisili source tree
+- pinned runtime source trees under `$HOME/silisili-5x-work`
+
+The checked-in launcher PNGs are generated with
+`packaging/apps/silisili/generate-launcher-icons.py`; Pillow is only needed
+when regenerating those assets, not while compiling the RPM.
 
 ## Verification
 

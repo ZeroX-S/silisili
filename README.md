@@ -27,14 +27,22 @@
 
 ## 安装
 
-从 `v1.0` Release 下载 AArch64 Sailfish RPM：
+从 `v1.0` Release 下载同一个 AArch64 Sailfish RPM，可用于 Sailfish OS 5.0
+和 5.1：
 
 ```text
-silisili-sailfish-1.0.0-1.aarch64.rpm
-SHA-256: 97f852af49de3e02c8afce2fc2dfbbda5d3f4933b71602cd227eb12502445cde
+silisili-sailfish-1.0.0-2.aarch64.rpm
+SHA-256: 8ec6612503596e026a5205618d564c592473a076ba30eee7a476ec1da1d4bee8
 ```
 
 新包会替换旧的 `wiliwili-sailfish` 包，但保留旧配置目录作为迁移来源。应用运行路径为 `/usr/bin/silisili`，桌面 ID 为 `cn.silisili.app`。
+
+该包以 Sailfish OS `5.0.0.62` SDK 为最低编译基线，并在 Pixel 3a XL
+的 Sailfish OS `5.1.0.11` 上做实机验证。5.0 当前完成 SDK、依赖和 ABI
+兼容校验，不标注为 5.0 真机测试。
+
+`1.0.0-2` 同时修复了 Sailfish 手机端重复切换桌面全屏后窗口缩小的
+问题，并放大播放器 OSD 控件与触控区域。
 
 ## 构建
 
@@ -55,6 +63,8 @@ cmake --build build
 ```
 
 工具链、RPM 复现条件和校验方式见 [BUILDING.md](BUILDING.md)。完整基线、依赖版本和补丁哈希见 [UPSTREAM.md](packaging/apps/silisili/UPSTREAM.md)。
+Sailfish OS 5.0 ABI 校验与 5.1 真机回归记录见
+[docs/SAILFISH_5X_VALIDATION.md](docs/SAILFISH_5X_VALIDATION.md)。
 
 ## 上游与许可
 

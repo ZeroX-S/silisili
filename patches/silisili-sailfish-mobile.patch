@@ -4593,7 +4593,7 @@ index c74593e7c0f3b6803ef1923dba18710809fc6c71..a1c4f67225adf4876f389f97e1cb645f
              width="30"
              height="30"/>
 diff --git a/resources/xml/views/video_view.xml b/resources/xml/views/video_view.xml
-index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf2b8469d8 100644
+index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..a409a35c4f5034977e06ab1d92fc2d06a33a81da 100644
 --- a/resources/xml/views/video_view.xml
 +++ b/resources/xml/views/video_view.xml
 @@ -4,92 +4,96 @@
@@ -4605,7 +4605,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
              id="video/osd/top/box"
              width="100%"
 -            height="80"
-+            height="52"
++            height="64"
              backgroundStartColor="#000000CC"
              backgroundEndColor="#00000000"
              background="vertical_linear">
@@ -4613,15 +4613,15 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 +                id="video/osd/back"
 +                positionType="absolute"
 +                positionLeft="4"
-+                positionTop="2"
-+                width="44"
-+                height="44"
++                positionTop="4"
++                width="56"
++                height="56"
 +                alignItems="center"
 +                justifyContent="center"
 +                hideClickAnimation="true">
 +            <SVGImage
-+                    width="26"
-+                    height="26"
++                    width="30"
++                    height="30"
 +                    SVG="@res/svg/bpx-svg-sprite-back.svg"/>
 +        </brls:Box>
          <brls:Label
@@ -4630,10 +4630,10 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                marginLeft="20"
 -                marginRight="120"
 +                width="100%"
-+                height="28"
-+                marginLeft="52"
-+                marginRight="108"
-+                fontSize="17"
++                height="34"
++                marginLeft="64"
++                marginRight="132"
++                fontSize="19"
                  singleLine="true"
                  textColor="#FFFFFF"/>
          <brls:Box
@@ -4641,22 +4641,21 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                positionBottom="0"
 -                positionLeft="20"
                  positionType="absolute"
-+                positionLeft="52"
++                positionLeft="64"
 +                positionBottom="4"
-+                height="18"
++                height="22"
                  alignItems="center">
 -            <SVGImage
 -                    width="16"
 -                    height="16"
 -                    SVG="@res/svg/widget-people.svg"/>
-+            <SVGImage width="12" height="12" SVG="@res/svg/widget-people.svg"/>
++            <SVGImage width="14" height="14" SVG="@res/svg/widget-people.svg"/>
              <brls:Label
 -                    marginLeft="8"
 -                    textColor="#FFFFFF"
                      id="video/view/label/people"
--                    fontSize="13"
 +                    marginLeft="5"
-+                    fontSize="11"
+                     fontSize="13"
 +                    singleLine="true"
 +                    textColor="#FFFFFF"
                      text="N人正在看"/>
@@ -4666,12 +4665,11 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                  id="video/osd/cast"
 -                hideClickAnimation="true"
                  positionType="absolute"
--                positionRight="60"
+                 positionRight="60"
 -                positionTop="10"
-+                positionRight="48"
-+                positionTop="2"
-+                width="44"
-+                height="44"
++                positionTop="4"
++                width="56"
++                height="56"
                  alignItems="center"
                  justifyContent="center"
 -                height="60"
@@ -4679,8 +4677,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 +                hideClickAnimation="true">
              <SVGImage
                      id="video/osd/cast/icon"
-+                    width="24"
-+                    height="24"
++                    width="30"
++                    height="30"
                      focusable="true"
 -                    focusUp="video/osd/cast/icon"
 -                    focusLeft="video/osd/cast/icon"
@@ -4690,7 +4688,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                    highlightCornerRadius="30"
 -                    height="30"
 -                    width="30"
-+                    highlightCornerRadius="22"
++                    highlightCornerRadius="28"
                      SVG="@res/svg/bpx-svg-sprite-cast.svg"/>
          </brls:Box>
          <brls:Box
@@ -4701,9 +4699,9 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                positionRight="10"
 -                positionTop="10"
 +                positionRight="4"
-+                positionTop="2"
-+                width="44"
-+                height="44"
++                positionTop="4"
++                width="56"
++                height="56"
                  alignItems="center"
                  justifyContent="center"
 -                height="60"
@@ -4711,8 +4709,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 +                hideClickAnimation="true">
              <SVGImage
                      id="video/osd/setting/icon"
-+                    width="24"
-+                    height="24"
++                    width="30"
++                    height="30"
                      focusable="true"
 -                    focusUp="video/osd/setting/icon"
 -                    focusLeft="video/osd/cast/icon"
@@ -4722,7 +4720,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                    highlightCornerRadius="30"
 -                    height="30"
 -                    width="30"
-+                    highlightCornerRadius="22"
++                    highlightCornerRadius="28"
                      SVG="@res/svg/bpx-svg-sprite-setting.svg"/>
          </brls:Box>
          <brls:Box
@@ -4758,8 +4756,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
  
      <brls:Box
 +            id="video/osd/center/box2"
-+            width="84"
-+            height="72"
++            width="96"
++            height="82"
              axis="column"
              alignItems="center"
              justifyContent="center"
@@ -4775,15 +4773,15 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                width="30"
 -                marginBottom="20"/>
 +            backgroundColor="#303030A0">
-+        <SVGImage id="video/osd/center/icon2" width="24" height="24" marginBottom="8"/>
++        <SVGImage id="video/osd/center/icon2" width="30" height="30" marginBottom="8"/>
          <brls:Label
                  id="video/osd/center/label2"
 -                textColor="#FFFFFF"
 -                fontSize="24"
 -                height="16"
-+                width="80"
-+                height="18"
-+                fontSize="14"
++                width="92"
++                height="20"
++                fontSize="16"
                  horizontalAlign="center"
 -                verticalAlign="center"/>
 +                verticalAlign="center"
@@ -4800,11 +4798,11 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                width="100"
 -                height="100"/>
 +            alignItems="center">
-+        <brls:ProgressSpinner id="video/osd/loading" width="48" height="48"/>
++        <brls:ProgressSpinner id="video/osd/loading" width="56" height="56"/>
          <brls:Label
                  id="video/osd/center/label"
-+                height="18"
-+                fontSize="13"
++                height="20"
++                fontSize="15"
                  visibility="invisible"
                  cornerRadius="4"
                  backgroundColor="#303030A0"
@@ -4822,7 +4820,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
              width="100%"
 -            height="120"
 -            alignItems="center"
-+            height="72"
++            height="88"
              axis="row"
 +            alignItems="center"
 +            backgroundStartColor="#00000000"
@@ -4838,8 +4836,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                hideHighlightBackground="true"
 -                highlightCornerRadius="100"
 -                hideClickAnimation="true"
-+                width="48"
-+                height="48"
++                width="60"
++                height="60"
 +                marginLeft="8"
                  alignItems="center"
                  justifyContent="center"
@@ -4849,15 +4847,15 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                width="100">
 +                focusable="true"
 +                hideHighlightBackground="true"
-+                highlightCornerRadius="24"
++                highlightCornerRadius="30"
 +                hideClickAnimation="true">
              <SVGImage
                      id="video/osd/toggle/icon"
 -                    wireframe="false"
 -                    height="100"
 -                    width="100"
-+                    width="28"
-+                    height="28"
++                    width="34"
++                    height="34"
                      SVG="@res/svg/bpx-svg-sprite-play.svg"/>
          </brls:Box>
 -        <brls:Box
@@ -4865,34 +4863,34 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                grow="1"
 -                height="130"
 -                axis="column">
-+        <brls:Box width="auto" height="72" grow="1" axis="column">
++        <brls:Box width="auto" height="88" grow="1" axis="column">
              <VideoProgressSlider
 -                    focusable="false"
                      id="video/osd/bottom/progress"
 -                    focusUp="video/osd/lock/box"
 -                    focusRight="video/osd/bottom/progress"
--                    width="100%"
+                     width="100%"
 -                    height="50"
 -                    marginTop="10"
 -                    grow="1"/>
 -            <brls:Box
-                     width="100%"
+-                    width="100%"
 -                    height="80"
 -                    alignItems="center"
 -                    grow="1">
-+                    height="20"
++                    height="28"
 +                    marginTop="2"
 +                    focusable="false"/>
-+            <brls:Box width="100%" height="48" alignItems="center">
++            <brls:Box width="100%" height="58" alignItems="center">
                  <brls:Label
 -                        wireframe="false"
 -                        horizontalAlign="right"
                          id="video/left/status"
 -                        height="100%"
 -                        width="100"
-+                        width="42"
-+                        height="48"
-+                        fontSize="12"
++                        width="46"
++                        height="58"
++                        fontSize="14"
 +                        horizontalAlign="right"
 +                        verticalAlign="center"
                          textColor="#FFFFFF"
@@ -4900,8 +4898,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                  <brls:Label
                          id="video/center/status"
 +                        width="10"
-+                        height="48"
-+                        fontSize="12"
++                        height="58"
++                        fontSize="14"
                          horizontalAlign="center"
 -                        height="100%"
 +                        verticalAlign="center"
@@ -4913,16 +4911,16 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                          id="video/right/status"
 -                        height="100%"
 -                        width="100"
-+                        width="42"
-+                        height="48"
-+                        fontSize="12"
++                        width="46"
++                        height="58"
++                        fontSize="14"
 +                        horizontalAlign="left"
 +                        verticalAlign="center"
                          textColor="#FFFFFF"
                          text="00:00"/>
                  <brls:Box
                          id="video/osd/icon/box"
-+                        height="48"
++                        height="58"
                          positionType="absolute"
 -                        positionRight="20">
 +                        positionRight="2"
@@ -4978,8 +4976,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                      <brls:Box
                              id="video/osd/danmaku/box/toggle"
 -                            hideClickAnimation="true"
-+                            width="42"
-+                            height="42"
++                            width="52"
++                            height="52"
                              alignItems="center"
                              justifyContent="center"
 -                            height="60"
@@ -4987,8 +4985,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 +                            hideClickAnimation="true">
                          <SVGImage
                                  id="video/osd/danmaku/icon"
-+                                width="24"
-+                                height="24"
++                                width="30"
++                                height="30"
                                  focusable="true"
 -                                focusUp="video/osd/lock/box"
 -                                focusDown="video/osd/danmaku/icon"
@@ -4997,15 +4995,15 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                                wireframe="false"
 -                                height="30"
 -                                width="30"
-+                                highlightCornerRadius="21"
++                                highlightCornerRadius="26"
                                  SVG="@res/svg/bpx-svg-sprite-danmu-switch-on.svg"/>
                      </brls:Box>
                      <brls:Box
 -                            hideClickAnimation="true"
 -                            marginLeft="10"
 -                            marginRight="10"
-+                            width="58"
-+                            height="42"
++                            width="66"
++                            height="52"
                              alignItems="center"
                              justifyContent="center"
 -                            height="60">
@@ -5016,8 +5014,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                                focusable="true"
 -                                focusUp="video/osd/lock/box"
 -                                focusDown="video/quality"
-+                                width="58"
-+                                fontSize="12"
++                                width="66"
++                                fontSize="14"
                                  horizontalAlign="center"
 +                                singleLine="true"
 +                                focusable="true"
@@ -5030,8 +5028,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                            hideClickAnimation="true"
 -                            marginLeft="10"
 -                            marginRight="10"
-+                            width="48"
-+                            height="42"
++                            width="54"
++                            height="52"
                              alignItems="center"
                              justifyContent="center"
 -                            height="60">
@@ -5042,8 +5040,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                                focusable="true"
 -                                focusUp="video/osd/lock/box"
 -                                focusDown="video/speed"
-+                                width="48"
-+                                fontSize="12"
++                                width="54"
++                                fontSize="14"
                                  horizontalAlign="center"
 -                                text="@i18n/wiliwili/player/speed"
 -                                hideHighlightBackground="true"
@@ -5079,8 +5077,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                      <brls:Box
                              id="video/osd/fullscreen"
 -                            hideClickAnimation="true"
-+                            width="42"
-+                            height="42"
++                            width="52"
++                            height="52"
                              alignItems="center"
                              justifyContent="center"
 -                            height="60"
@@ -5089,8 +5087,8 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
                          <SVGImage
                                  id="video/osd/fullscreen/icon"
 -                                wireframe="false"
-+                                width="24"
-+                                height="24"
++                                width="30"
++                                height="30"
                                  focusable="true"
 -                                focusUp="video/osd/lock/box"
 -                                focusDown="video/osd/fullscreen/icon"
@@ -5099,7 +5097,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 -                                highlightCornerRadius="30"
 -                                height="30"
 -                                width="30"
-+                                highlightCornerRadius="21"
++                                highlightCornerRadius="26"
                                  SVG="@res/svg/bpx-svg-sprite-fullscreen.svg"/>
                      </brls:Box>
                  </brls:Box>
@@ -5112,7 +5110,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..75dcc6aca3972232a8464ca3e7e2aeaf
 +                    id="video/osd/hint/box"
 +                    height="28"
 +                    positionType="absolute"
-+                    positionBottom="44"
++                    positionBottom="56"
                      visibility="gone"
 -                    height="32"
 -                    id="video/osd/hint/box">
@@ -8327,7 +8325,7 @@ diff --git a/wiliwili/source/activity/setting_activity.cpp b/silisili/source/act
 similarity index 86%
 rename from wiliwili/source/activity/setting_activity.cpp
 rename to silisili/source/activity/setting_activity.cpp
-index 171381b9225dbb8228b0f86544acace06b77eba7..f9782083496a95c46443c80a7379dc4b133268a8 100644
+index 171381b9225dbb8228b0f86544acace06b77eba7..ad75cace24874fa577c38bee95c25f0a6fe9841c 100644
 --- a/wiliwili/source/activity/setting_activity.cpp
 +++ b/silisili/source/activity/setting_activity.cpp
 @@ -191,16 +191,16 @@ void SettingActivity::onContentAvailable() {
@@ -8443,11 +8441,13 @@ index 171381b9225dbb8228b0f86544acace06b77eba7..f9782083496a95c46443c80a7379dc4b
                          conf.getBoolOption(SettingItem::GAMEPAD_VIBRATION), [](bool value) {
                              ProgramConfig::instance().setSettingItem(SettingItem::GAMEPAD_VIBRATION, value);
                              VibrationHelper::GAMEPAD_VIBRATION = value;
-@@ -383,7 +399,7 @@ void SettingActivity::onContentAvailable() {
+@@ -382,8 +398,8 @@ void SettingActivity::onContentAvailable() {
+ #endif
  
  /// Fullscreen
- #ifdef ALLOW_FULLSCREEN
+-#ifdef ALLOW_FULLSCREEN
 -    cellFullscreen->init("wiliwili/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
++#if defined(ALLOW_FULLSCREEN) && !defined(SILISILI_SAILFISH_MOBILE)
 +    cellFullscreen->init("silisili/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
                           [](bool value) {
                               ProgramConfig::instance().setSettingItem(SettingItem::FULLSCREEN, value);
@@ -9925,7 +9925,7 @@ diff --git a/wiliwili/source/fragment/player_setting.cpp b/silisili/source/fragm
 similarity index 87%
 rename from wiliwili/source/fragment/player_setting.cpp
 rename to silisili/source/fragment/player_setting.cpp
-index 37a284a1f02e7508154eb469d863626581e3e1cc..b868d9a903010860189fb1bd72a63fbe4e18c4f7 100644
+index 37a284a1f02e7508154eb469d863626581e3e1cc..95a3dd5e008ca2fc5d282af704ed77b4fa7b5354 100644
 --- a/wiliwili/source/fragment/player_setting.cpp
 +++ b/silisili/source/fragment/player_setting.cpp
 @@ -60,7 +60,7 @@ brls::View* PlayerSetting::getDefaultFocus() { return this->settings->getDefault
@@ -10036,7 +10036,7 @@ index 37a284a1f02e7508154eb469d863626581e3e1cc..b868d9a903010860189fb1bd72a63fbe
                         [](bool value) {
                             ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_HIGHLIGHT_BAR, value);
                             VideoView::HIGHLIGHT_PROGRESS_BAR = value;
-@@ -208,29 +208,29 @@ void PlayerSetting::setupCommonSetting() {
+@@ -208,37 +208,37 @@ void PlayerSetting::setupCommonSetting() {
                         });
  
      /// Auto Sleep
@@ -10073,11 +10073,12 @@ index 37a284a1f02e7508154eb469d863626581e3e1cc..b868d9a903010860189fb1bd72a63fbe
              },
              -1);
          return true;
-@@ -238,7 +238,7 @@ void PlayerSetting::setupCommonSetting() {
+     });
  
  /// Fullscreen
- #ifdef ALLOW_FULLSCREEN
+-#ifdef ALLOW_FULLSCREEN
 -    btnFullscreen->init("wiliwili/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
++#if defined(ALLOW_FULLSCREEN) && !defined(SILISILI_SAILFISH_MOBILE)
 +    btnFullscreen->init("silisili/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
                          [](bool value) {
                              ProgramConfig::instance().setSettingItem(SettingItem::FULLSCREEN, value);
@@ -10203,9 +10204,10 @@ index 37a284a1f02e7508154eb469d863626581e3e1cc..b868d9a903010860189fb1bd72a63fbe
              ProgramConfig::instance().addSeasonCustomSetting(seasonId, setting);
          },
 -        "wiliwili/player/setting/season/unit"_i18n, 4);
-+        "silisili/player/setting/season/unit"_i18n, 4);
- }
+-}
 \ No newline at end of file
++        "silisili/player/setting/season/unit"_i18n, 4);
++}
 diff --git a/wiliwili/source/fragment/player_single_comment.cpp b/silisili/source/fragment/player_single_comment.cpp
 similarity index 98%
 rename from wiliwili/source/fragment/player_single_comment.cpp
@@ -12949,7 +12951,7 @@ diff --git a/wiliwili/source/view/video_view.cpp b/silisili/source/view/video_vi
 similarity index 91%
 rename from wiliwili/source/view/video_view.cpp
 rename to silisili/source/view/video_view.cpp
-index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b1154189f 100644
+index 66cb5c2d636c98441b1250d569270b512f9ceef9..acf5c4f1e60ceecf905327e47ddfdb625f3cca04 100644
 --- a/wiliwili/source/view/video_view.cpp
 +++ b/silisili/source/view/video_view.cpp
 @@ -2,13 +2,16 @@
@@ -12970,7 +12972,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  #include <borealis/views/slider.hpp>
  #include <borealis/views/applet_frame.hpp>
  #include <pystring.h>
-@@ -63,10 +66,34 @@ VideoView::VideoView() {
+@@ -63,10 +66,35 @@ VideoView::VideoView() {
      this->setHideHighlightBackground(true);
      this->setHideClickAnimation(true);
  
@@ -12979,6 +12981,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
 +    static bool mobileTouchMarkerLogged = false;
 +    if (!mobileTouchMarkerLogged) {
 +        brls::Logger::info("Sailfish player touch: tap OSD; center double-tap play; release-to-seek; multi-touch cancellation");
++        brls::Logger::info("Sailfish player controls: 56pt primary touch targets; 52pt secondary touch targets");
 +        mobileTouchMarkerLogged = true;
 +    }
 +#else
@@ -13005,7 +13008,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      this->registerBoolXMLAttribute("allowFullscreen", [this](bool value) {
          this->allowFullscreen = value;
          if (!value) {
-@@ -74,13 +101,14 @@ VideoView::VideoView() {
+@@ -74,13 +102,14 @@ VideoView::VideoView() {
              this->registerAction(
                  "cancel", brls::ControllerButton::BUTTON_B,
                  [this](brls::View* view) -> bool {
@@ -13021,7 +13024,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      // 快退
      auto rewindFunc = [this](...) -> bool {
          CHECK_OSD(true);
-@@ -147,6 +175,7 @@ VideoView::VideoView() {
+@@ -147,6 +176,7 @@ VideoView::VideoView() {
              return false;
          },
          true, true);
@@ -13029,7 +13032,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  
      this->registerMpvEvent();
  
-@@ -164,7 +193,7 @@ VideoView::VideoView() {
+@@ -164,7 +194,7 @@ VideoView::VideoView() {
  
      osdSlider->getProgressEvent()->subscribe([this](float progress) {
          this->showOSD(false);
@@ -13038,7 +13041,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
          auto& snapshot             = VideoSnapshotCore::instance();
          this->showThumbnailPreview = snapshot.isValid();
          // 预加载当前位置需要的精灵图
-@@ -206,7 +235,7 @@ VideoView::VideoView() {
+@@ -206,7 +236,7 @@ VideoView::VideoView() {
                  float SPEED = MPVCore::VIDEO_SPEED == 100 ? 2.0 : MPVCore::VIDEO_SPEED * 0.01f;
                  this->setSpeed(SPEED);
                  // 绘制临时加速标识
@@ -13047,7 +13050,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                  this->speedHintBox->setVisibility(brls::Visibility::VISIBLE);
                  break;
              }
-@@ -221,25 +250,42 @@ VideoView::VideoView() {
+@@ -221,25 +251,42 @@ VideoView::VideoView() {
                  break;
              case OsdGestureType::HORIZONTAL_PAN_START:
                  if (is_osd_lock) break;
@@ -13090,7 +13093,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                  break;
              case OsdGestureType::LEFT_VERTICAL_PAN_START:
                  if (is_osd_lock) break;
-@@ -305,8 +351,11 @@ VideoView::VideoView() {
+@@ -305,8 +352,11 @@ VideoView::VideoView() {
      };
      this->videoQuality->getParent()->registerClickAction(qualityFunc);
      this->videoQuality->getParent()->addGestureRecognizer(new brls::TapGestureRecognizer(videoQuality->getParent()));
@@ -13103,7 +13106,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      /// 视频详情信息
      auto profileFunc = [this](...) {
          CHECK_OSD(true);
-@@ -314,6 +363,7 @@ VideoView::VideoView() {
+@@ -314,6 +364,7 @@ VideoView::VideoView() {
          return true;
      };
      this->registerAction("profile", brls::ControllerButton::BUTTON_BACK, profileFunc, true);
@@ -13111,7 +13114,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  
      /// 倍速按钮
      auto showSpeedFunc = [](...) {
-@@ -457,13 +507,13 @@ VideoView::VideoView() {
+@@ -457,13 +508,13 @@ VideoView::VideoView() {
                  }
                  this->setFullScreen(false);
              } else {
@@ -13127,7 +13130,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
          CHECK_OSD(false);
          if (this->isFullscreen()) {
              this->showOSD(true);
-@@ -481,6 +531,7 @@ VideoView::VideoView() {
+@@ -481,6 +532,7 @@ VideoView::VideoView() {
          return true;
      });
  
@@ -13135,7 +13138,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      // TV模式下，全屏+OSD隐藏时，可以使用左右键直接调整进度
      auto sliderFunc = [this](...) {
          CHECK_OSD(true);
-@@ -494,6 +545,7 @@ VideoView::VideoView() {
+@@ -494,6 +546,7 @@ VideoView::VideoView() {
      };
      this->registerAction("", brls::ControllerButton::BUTTON_RIGHT, sliderFunc, true);
      this->registerAction("", brls::ControllerButton::BUTTON_LEFT, sliderFunc, true);
@@ -13143,7 +13146,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  
      // 自定义的mpv事件
      customEventSubscribeID = APP_E->subscribe([this](const std::string& event, void* data) {
-@@ -505,7 +557,7 @@ VideoView::VideoView() {
+@@ -505,7 +558,7 @@ VideoView::VideoView() {
              this->setQuality((const char*)data);
          } else if (event == VideoView::REAL_DURATION) {
              this->real_duration = *(int*)data;
@@ -13152,7 +13155,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
              this->setProgress((float)mpvCore->playback_time / (float)real_duration);
          } else if (event == VideoView::LAST_TIME) {
              if (*(int64_t*)data == VideoView::POSITION_DISCARD)
-@@ -557,6 +609,51 @@ void VideoView::requestBrightness(float brightness) {
+@@ -557,6 +610,51 @@ void VideoView::requestBrightness(float brightness) {
      setCenterHintText(fmt::format("{} %", (int)(brightness * 100)));
  }
  
@@ -13204,7 +13207,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  void VideoView::requestSeeking(int seek, int delay) {
      if (getRealDuration() <= 0) {
          seeking_range = 0;
-@@ -580,7 +677,7 @@ void VideoView::requestSeeking(int seek, int delay) {
+@@ -580,7 +678,7 @@ void VideoView::requestSeeking(int seek, int delay) {
      }
      setCenterHintText(fmt::format("{:+d} s", seek));
      osdSlider->setProgress((float)progress);
@@ -13213,7 +13216,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  
      // 更新缩略图预览
      auto& snapshot             = VideoSnapshotCore::instance();
-@@ -629,7 +726,6 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -629,7 +727,6 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      float alpha        = this->getAlpha();
      brls::Time current = brls::getCPUTimeUsec();
      bool drawOSD       = this->osd_state == OSDState::ALWAYS_ON || current < this->osdLastShowTime;
@@ -13221,7 +13224,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      // draw video
      mpvCore->draw(brls::Rect(x, y, width, height), alpha);
  
-@@ -642,7 +738,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -642,7 +739,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      // draw bottom bar
      if (BOTTOM_BAR && showBottomLineSetting) {
          bottomBarColor.a = alpha;
@@ -13230,7 +13233,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
          progress         = progress > 1.0f ? 1.0f : progress;
          nvgFillColor(vg, bottomBarColor);
          nvgBeginPath(vg);
-@@ -652,9 +748,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -652,9 +749,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
  
      // draw danmaku
      if (enableDanmaku) {
@@ -13242,7 +13245,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      }
  
      // draw osd
-@@ -668,7 +763,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -668,7 +764,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
          if (!is_osd_lock) {
              // draw highlight progress
              auto sliderRect = osdSlider->getFrame();
@@ -13251,7 +13254,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                                    alpha);
  
              // draw osd
-@@ -695,7 +790,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
+@@ -695,7 +791,8 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
      // draw subtitle
      // 在正常显示 osd 时，将字幕向上偏移，避免被 OSD 挡住
      if (showSubtitleSetting)
@@ -13261,7 +13264,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                                                alpha);
  
      if (current > this->hintLastShowTime && this->hintBox->getVisibility() == brls::Visibility::VISIBLE) {
-@@ -889,6 +985,15 @@ void VideoView::togglePlay() {
+@@ -889,6 +986,15 @@ void VideoView::togglePlay() {
  
  void VideoView::setCustomToggleAction(std::function<void()> action) { this->customToggleAction = action; }
  
@@ -13277,7 +13280,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  void VideoView::setSpeed(float speed) { mpvCore->setSpeed(speed); }
  
  void VideoView::setLastPlayedPosition(int64_t p) { lastPlayedPosition = p; }
-@@ -978,7 +1083,7 @@ void VideoView::showSpeedList() {
+@@ -978,7 +1084,7 @@ void VideoView::showSpeedList() {
  
      // 展示倍速列表
      auto dropdown = BaseDropdown::text(
@@ -13286,7 +13289,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
          [conf](int selected) {
              // 设置播放器倍速
              MPVCore::instance().setSpeed(conf.rawOptionList[selected] * 0.01);
-@@ -1090,6 +1195,9 @@ void VideoView::setLiveMode() {
+@@ -1090,6 +1196,9 @@ void VideoView::setLiveMode() {
  }
  
  void VideoView::setTvControlMode(bool state) {
@@ -13296,7 +13299,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      isTvControlMode = state;
      // 直播模式下不显示进度条
      _setTvControlMode(isTvControlMode && !isLiveMode);
-@@ -1098,6 +1206,16 @@ void VideoView::setTvControlMode(bool state) {
+@@ -1098,6 +1207,16 @@ void VideoView::setTvControlMode(bool state) {
  bool VideoView::getTvControlMode() const { return isTvControlMode; }
  
  void VideoView::_setTvControlMode(bool state) {
@@ -13313,7 +13316,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      btnToggle->setCustomNavigationRoute(brls::FocusDirection::RIGHT, state ? osdSlider : iconBox);
      btnVolumeIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
      btnDanmakuSettingIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
-@@ -1107,6 +1225,7 @@ void VideoView::_setTvControlMode(bool state) {
+@@ -1107,6 +1226,7 @@ void VideoView::_setTvControlMode(bool state) {
      btnFullscreenIcon->setCustomNavigationRoute(brls::FocusDirection::UP, state ? osdSlider : osdLockBox);
      osdLockBox->setCustomNavigationRoute(brls::FocusDirection::DOWN, state ? osdSlider : iconBox);
      osdSlider->setFocusable(state);
@@ -13321,7 +13324,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  }
  
  void VideoView::setStatusLabelLeft(const std::string& value) { leftStatusLabel->setText(value); }
-@@ -1215,8 +1334,18 @@ void VideoView::setBangumiCustomSetting(const std::string& title, uint64_t seaso
+@@ -1215,8 +1335,18 @@ void VideoView::setBangumiCustomSetting(const std::string& title, uint64_t seaso
  brls::View* VideoView::create() { return new VideoView(); }
  
  bool VideoView::isFullscreen() {
@@ -13340,7 +13343,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  }
  
  void VideoView::setFullScreen(bool fs) {
-@@ -1230,6 +1359,17 @@ void VideoView::setFullScreen(bool fs) {
+@@ -1230,6 +1360,17 @@ void VideoView::setFullScreen(bool fs) {
          return;
      }
  
@@ -13358,7 +13361,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      brls::Logger::info("VideoView set fullscreen state: {}", fs);
      if (fs) {
          this->unRegisterMpvEvent();
-@@ -1432,6 +1572,9 @@ brls::View* VideoView::getNextFocus(brls::FocusDirection direction, View* curren
+@@ -1432,6 +1573,9 @@ brls::View* VideoView::getNextFocus(brls::FocusDirection direction, View* curren
  }
  
  void VideoView::buttonProcessing() {
@@ -13368,7 +13371,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      // 获取按键数据
      auto state           = brls::Application::getControllerState();
      auto speedUpShortcut = ShortcutHelper::getVideoSpeedUp();
-@@ -1480,7 +1623,7 @@ void VideoView::buttonProcessing() {
+@@ -1480,7 +1624,7 @@ void VideoView::buttonProcessing() {
                  rsb_press_time = brls::getCPUTimeUsec();
                  click_state    = ClickState::PRESS;
                  // 绘制临时加速标识
@@ -13377,7 +13380,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                  speedHintBox->setVisibility(brls::Visibility::VISIBLE);
              }
              break;
-@@ -1510,7 +1653,7 @@ void VideoView::buttonProcessing() {
+@@ -1510,7 +1654,7 @@ void VideoView::buttonProcessing() {
                      click_state    = ClickState::PRESS;
                  }
                  // 绘制临时加速标识
@@ -13386,7 +13389,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                  speedHintBox->setVisibility(brls::Visibility::VISIBLE);
              }
              break;
-@@ -1537,6 +1680,7 @@ void VideoView::buttonProcessing() {
+@@ -1537,6 +1681,7 @@ void VideoView::buttonProcessing() {
              break;
      }
  
@@ -13394,7 +13397,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
  #endif
  }
  
-@@ -1572,28 +1716,28 @@ void VideoView::registerMpvEvent() {
+@@ -1572,28 +1717,28 @@ void VideoView::registerMpvEvent() {
                  this->showOSD(false);
                  break;
              case MpvEventEnum::MPV_LOADED:
@@ -13428,7 +13431,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
                  } else {
                      this->videoSpeed->setText(fmt::format("{}x", mpvCore->video_speed));
                  }
-@@ -1670,6 +1814,10 @@ void VideoView::onChildFocusGained(View* directChild, View* focusedView) {
+@@ -1670,6 +1815,10 @@ void VideoView::onChildFocusGained(View* directChild, View* focusedView) {
  float VideoView::getRealDuration() { return real_duration > 0 ? (float)real_duration : (float)mpvCore->duration; }
  
  void VideoView::registerCommonActions(brls::Activity* activity) {
@@ -13439,7 +13442,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..88ec7c34e11cac3ac6b6e833bc1fa92b
      activity->registerAction(
          ShortcutHelper::getVideoPause(), [this](...) -> bool {
              CHECK_OSD(true);
-@@ -1745,5 +1893,5 @@ void VideoView::registerCommonActions(brls::Activity* activity) {
+@@ -1745,5 +1894,5 @@ void VideoView::registerCommonActions(brls::Activity* activity) {
          toggleVideoProfile();
          return true;
      });
@@ -13652,7 +13655,6 @@ index 30da769b927695390dab46901d57431beb8275ae..00000000000000000000000000000000
 -    };
 -}
 \ No newline at end of file
-
 diff --git a/library/borealis/library/include/borealis/core/application.hpp b/library/borealis/library/include/borealis/core/application.hpp
 index cfff62bf9edebb44efc387c49405fe6adea880c8..7ef8e45e6b91de8406bee89ac38cb58d636ccf13 100644
 --- a/library/borealis/library/include/borealis/core/application.hpp
@@ -15761,7 +15763,6 @@ index 61978bd523cfb692a115dbce8ba473ef22c9661e..65f8ef330432a5455a69da9be21951c4
  float ScrollingFrame::getContentHeight()
  {
      if (!this->contentView)
-
 diff --git a/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml b/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml
 new file mode 100644
 index 0000000000000000000000000000000000000000..d2056eb637502a0da46ee9ad8dfc54755a95cba8
@@ -16051,10 +16052,26 @@ index 2c4c713a7e7686c11f432177bbbc699b1ec570d6..51bfdfcc1458be53a79d2d417f65d0a6
  void _glfwAddDataDeviceListenerWayland(struct wl_data_device* device);
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/wl_window.c b/library/borealis/library/lib/extern/glfw/src/wl_window.c
-index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f32125416 100644
+index c8855e919ed2b48a5a03f23617d01e48ef1d023c..563bfb269127201c1b86386c59498aa8f24b32d2 100644
 --- a/library/borealis/library/lib/extern/glfw/src/wl_window.c
 +++ b/library/borealis/library/lib/extern/glfw/src/wl_window.c
-@@ -53,10 +53,49 @@
+@@ -40,7 +40,15 @@
+ #include <sys/mman.h>
+ #include <sys/timerfd.h>
+ #include <poll.h>
++#if defined(__has_include)
++#if __has_include(<linux/input-event-codes.h>)
+ #include <linux/input-event-codes.h>
++#else
++#include <linux/input.h>
++#endif
++#else
++#include <linux/input.h>
++#endif
+ 
+ #include "wayland-client-protocol.h"
+ #include "xdg-shell-client-protocol.h"
+@@ -53,10 +61,49 @@
  #include "fractional-scale-v1-client-protocol.h"
  #include "text-input-unstable-v1-client-protocol.h"
  #include "text-input-unstable-v3-client-protocol.h"
@@ -16104,7 +16121,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
  static int createTmpfileCloexec(char* tmpname)
  {
      int fd;
-@@ -1053,6 +1092,18 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
+@@ -1053,6 +1100,18 @@ static GLFWbool createNativeSurface(_GLFWwindow* window,
                              &surfaceListener,
                              window);
  
@@ -16123,7 +16140,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
      window->wl.width = wndconfig->width;
      window->wl.height = wndconfig->height;
      window->wl.fbWidth = wndconfig->width;
-@@ -2045,7 +2096,9 @@ static void touchHandleCancel(void* data,
+@@ -2045,7 +2104,9 @@ static void touchHandleCancel(void* data,
          int id = _glfw.wl.touchIDs[i].id;
          _GLFWwindow* window = _glfw.wl.touchIDs[i].focus;
  
@@ -16134,7 +16151,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
          _glfw.wl.touchIDs[i].focus = NULL;
          _glfw.wl.touchIDs[i].id = -1;
      }
-@@ -2805,6 +2858,11 @@ void _glfwDestroyWindowWayland(_GLFWwindow* window)
+@@ -2805,6 +2866,11 @@ void _glfwDestroyWindowWayland(_GLFWwindow* window)
      if (window->wl.egl.window)
          wl_egl_window_destroy(window->wl.egl.window);
  
@@ -16146,7 +16163,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
      if (window->wl.surface)
          wl_surface_destroy(window->wl.surface);
  
-@@ -3986,5 +4044,37 @@ GLFWAPI struct wl_surface* glfwGetWaylandWindow(GLFWwindow* handle)
+@@ -3986,5 +4052,37 @@ GLFWAPI struct wl_surface* glfwGetWaylandWindow(GLFWwindow* handle)
      return window->wl.surface;
  }
  
@@ -16159,7 +16176,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
 +
 +    if (!window || !window->wl.extendedSurface)
 +        return GLFW_FALSE;
- 
++
 +    qt_extended_surface_set_content_orientation_mask(window->wl.extendedSurface,
 +                                                      orientationMask);
 +    fprintf(stderr, "Sailfish compositor orientation request: mask=%d app=%dx%d\n",
@@ -16167,7 +16184,7 @@ index c8855e919ed2b48a5a03f23617d01e48ef1d023c..02a386ef8f19c1a282bcb2ff6af2dd9f
 +    wl_display_flush(_glfw.wl.display);
 +    return GLFW_TRUE;
 +}
-+
+ 
 +GLFWAPI int glfwSetWindowIdleInhibit(GLFWwindow* handle, int enabled)
 +{
 +    _GLFWwindow* window = (_GLFWwindow*) handle;

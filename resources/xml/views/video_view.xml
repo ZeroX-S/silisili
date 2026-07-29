@@ -7,7 +7,7 @@
     <brls:Box
             id="video/osd/top/box"
             width="100%"
-            height="52"
+            height="64"
             backgroundStartColor="#000000CC"
             backgroundEndColor="#00000000"
             background="vertical_linear">
@@ -15,37 +15,37 @@
                 id="video/osd/back"
                 positionType="absolute"
                 positionLeft="4"
-                positionTop="2"
-                width="44"
-                height="44"
+                positionTop="4"
+                width="56"
+                height="56"
                 alignItems="center"
                 justifyContent="center"
                 hideClickAnimation="true">
             <SVGImage
-                    width="26"
-                    height="26"
+                    width="30"
+                    height="30"
                     SVG="@res/svg/bpx-svg-sprite-back.svg"/>
         </brls:Box>
         <brls:Label
                 id="video/osd/title"
                 width="100%"
-                height="28"
-                marginLeft="52"
-                marginRight="108"
-                fontSize="17"
+                height="34"
+                marginLeft="64"
+                marginRight="132"
+                fontSize="19"
                 singleLine="true"
                 textColor="#FFFFFF"/>
         <brls:Box
                 positionType="absolute"
-                positionLeft="52"
+                positionLeft="64"
                 positionBottom="4"
-                height="18"
+                height="22"
                 alignItems="center">
-            <SVGImage width="12" height="12" SVG="@res/svg/widget-people.svg"/>
+            <SVGImage width="14" height="14" SVG="@res/svg/widget-people.svg"/>
             <brls:Label
                     id="video/view/label/people"
                     marginLeft="5"
-                    fontSize="11"
+                    fontSize="13"
                     singleLine="true"
                     textColor="#FFFFFF"
                     text="N人正在看"/>
@@ -53,39 +53,39 @@
         <brls:Box
                 id="video/osd/cast"
                 positionType="absolute"
-                positionRight="48"
-                positionTop="2"
-                width="44"
-                height="44"
+                positionRight="60"
+                positionTop="4"
+                width="56"
+                height="56"
                 alignItems="center"
                 justifyContent="center"
                 hideClickAnimation="true">
             <SVGImage
                     id="video/osd/cast/icon"
-                    width="24"
-                    height="24"
+                    width="30"
+                    height="30"
                     focusable="true"
                     hideHighlightBackground="true"
-                    highlightCornerRadius="22"
+                    highlightCornerRadius="28"
                     SVG="@res/svg/bpx-svg-sprite-cast.svg"/>
         </brls:Box>
         <brls:Box
                 id="video/osd/setting"
                 positionType="absolute"
                 positionRight="4"
-                positionTop="2"
-                width="44"
-                height="44"
+                positionTop="4"
+                width="56"
+                height="56"
                 alignItems="center"
                 justifyContent="center"
                 hideClickAnimation="true">
             <SVGImage
                     id="video/osd/setting/icon"
-                    width="24"
-                    height="24"
+                    width="30"
+                    height="30"
                     focusable="true"
                     hideHighlightBackground="true"
-                    highlightCornerRadius="22"
+                    highlightCornerRadius="28"
                     SVG="@res/svg/bpx-svg-sprite-setting.svg"/>
         </brls:Box>
         <brls:Box
@@ -115,20 +115,20 @@
 
     <brls:Box
             id="video/osd/center/box2"
-            width="84"
-            height="72"
+            width="96"
+            height="82"
             axis="column"
             alignItems="center"
             justifyContent="center"
             visibility="gone"
             cornerRadius="4"
             backgroundColor="#303030A0">
-        <SVGImage id="video/osd/center/icon2" width="24" height="24" marginBottom="8"/>
+        <SVGImage id="video/osd/center/icon2" width="30" height="30" marginBottom="8"/>
         <brls:Label
                 id="video/osd/center/label2"
-                width="80"
-                height="18"
-                fontSize="14"
+                width="92"
+                height="20"
+                fontSize="16"
                 horizontalAlign="center"
                 verticalAlign="center"
                 textColor="#FFFFFF"/>
@@ -138,11 +138,11 @@
             id="video/osd/center/box"
             axis="column"
             alignItems="center">
-        <brls:ProgressSpinner id="video/osd/loading" width="48" height="48"/>
+        <brls:ProgressSpinner id="video/osd/loading" width="56" height="56"/>
         <brls:Label
                 id="video/osd/center/label"
-                height="18"
-                fontSize="13"
+                height="20"
+                fontSize="15"
                 visibility="invisible"
                 cornerRadius="4"
                 backgroundColor="#303030A0"
@@ -154,7 +154,7 @@
     <brls:Box
             id="video/osd/bottom/box"
             width="100%"
-            height="72"
+            height="88"
             axis="row"
             alignItems="center"
             backgroundStartColor="#00000000"
@@ -162,34 +162,34 @@
             background="vertical_linear">
         <brls:Box
                 id="video/osd/toggle"
-                width="48"
-                height="48"
+                width="60"
+                height="60"
                 marginLeft="8"
                 alignItems="center"
                 justifyContent="center"
                 focusable="true"
                 hideHighlightBackground="true"
-                highlightCornerRadius="24"
+                highlightCornerRadius="30"
                 hideClickAnimation="true">
             <SVGImage
                     id="video/osd/toggle/icon"
-                    width="28"
-                    height="28"
+                    width="34"
+                    height="34"
                     SVG="@res/svg/bpx-svg-sprite-play.svg"/>
         </brls:Box>
-        <brls:Box width="auto" height="72" grow="1" axis="column">
+        <brls:Box width="auto" height="88" grow="1" axis="column">
             <VideoProgressSlider
                     id="video/osd/bottom/progress"
                     width="100%"
-                    height="20"
+                    height="28"
                     marginTop="2"
                     focusable="false"/>
-            <brls:Box width="100%" height="48" alignItems="center">
+            <brls:Box width="100%" height="58" alignItems="center">
                 <brls:Label
                         id="video/left/status"
-                        width="42"
-                        height="48"
-                        fontSize="12"
+                        width="46"
+                        height="58"
+                        fontSize="14"
                         horizontalAlign="right"
                         verticalAlign="center"
                         textColor="#FFFFFF"
@@ -197,24 +197,24 @@
                 <brls:Label
                         id="video/center/status"
                         width="10"
-                        height="48"
-                        fontSize="12"
+                        height="58"
+                        fontSize="14"
                         horizontalAlign="center"
                         verticalAlign="center"
                         textColor="#FFFFFF"
                         text="/"/>
                 <brls:Label
                         id="video/right/status"
-                        width="42"
-                        height="48"
-                        fontSize="12"
+                        width="46"
+                        height="58"
+                        fontSize="14"
                         horizontalAlign="left"
                         verticalAlign="center"
                         textColor="#FFFFFF"
                         text="00:00"/>
                 <brls:Box
                         id="video/osd/icon/box"
-                        height="48"
+                        height="58"
                         positionType="absolute"
                         positionRight="2"
                         alignItems="center">
@@ -242,30 +242,30 @@
                     </brls:Box>
                     <brls:Box
                             id="video/osd/danmaku/box/toggle"
-                            width="42"
-                            height="42"
+                            width="52"
+                            height="52"
                             alignItems="center"
                             justifyContent="center"
                             hideClickAnimation="true">
                         <SVGImage
                                 id="video/osd/danmaku/icon"
-                                width="24"
-                                height="24"
+                                width="30"
+                                height="30"
                                 focusable="true"
                                 hideHighlightBackground="true"
-                                highlightCornerRadius="21"
+                                highlightCornerRadius="26"
                                 SVG="@res/svg/bpx-svg-sprite-danmu-switch-on.svg"/>
                     </brls:Box>
                     <brls:Box
-                            width="58"
-                            height="42"
+                            width="66"
+                            height="52"
                             alignItems="center"
                             justifyContent="center"
                             hideClickAnimation="true">
                         <brls:Label
                                 id="video/quality"
-                                width="58"
-                                fontSize="12"
+                                width="66"
+                                fontSize="14"
                                 horizontalAlign="center"
                                 singleLine="true"
                                 focusable="true"
@@ -274,15 +274,15 @@
                                 textColor="#FFFFFF"/>
                     </brls:Box>
                     <brls:Box
-                            width="48"
-                            height="42"
+                            width="54"
+                            height="52"
                             alignItems="center"
                             justifyContent="center"
                             hideClickAnimation="true">
                         <brls:Label
                                 id="video/speed"
-                                width="48"
-                                fontSize="12"
+                                width="54"
+                                fontSize="14"
                                 horizontalAlign="center"
                                 singleLine="true"
                                 focusable="true"
@@ -296,18 +296,18 @@
                     </brls:Box>
                     <brls:Box
                             id="video/osd/fullscreen"
-                            width="42"
-                            height="42"
+                            width="52"
+                            height="52"
                             alignItems="center"
                             justifyContent="center"
                             hideClickAnimation="true">
                         <SVGImage
                                 id="video/osd/fullscreen/icon"
-                                width="24"
-                                height="24"
+                                width="30"
+                                height="30"
                                 focusable="true"
                                 hideHighlightBackground="true"
-                                highlightCornerRadius="21"
+                                highlightCornerRadius="26"
                                 SVG="@res/svg/bpx-svg-sprite-fullscreen.svg"/>
                     </brls:Box>
                 </brls:Box>
@@ -316,7 +316,7 @@
                     id="video/osd/hint/box"
                     height="28"
                     positionType="absolute"
-                    positionBottom="44"
+                    positionBottom="56"
                     visibility="gone"
                     cornerRadius="4"
                     backgroundColor="@theme/brls/backdrop">

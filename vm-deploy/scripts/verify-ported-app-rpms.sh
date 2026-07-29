@@ -4,9 +4,8 @@ set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-/root/bonito-deploy}"
 APP_DIR="${APP_DIR:-$PROJECT_ROOT/artifacts/generated-blobs/apps}"
 LISTEN1_RPM="${LISTEN1_RPM:-$APP_DIR/listen1-sailfish-2.33.0-1.bonito1.aarch64.rpm}"
-SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-1}"
+SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-2}"
 SILISILI_RPM="${SILISILI_RPM:-$APP_DIR/silisili-sailfish-${SILISILI_EXPECTED_VERSION}.aarch64.rpm}"
-SILISILI_LIBSTDCXX_SHA=c5cf486565ca33f11a7841f6a8f67797c9c8a484a235c3cd36ca6b41328c67b2
 
 fail() {
     echo "Ported app RPM verification failed: $*" >&2
@@ -73,7 +72,7 @@ verify_needed() {
             private="$root/usr/lib64/silisili/$needed"
             test -e "$private" && continue
             case "$needed" in
-                ld-linux-aarch64.so.1|libc.so.6|libm.so.6|libgcc_s.so.1|libstdc++.so.6|libz.so.1|libwebp.so.7|libcurl.so.4|libssl.so.3|libcrypto.so.3|libdbus-1.so.3|libpulse.so.0|libfontconfig.so.1|libfreetype.so.6|libfribidi.so.0|libharfbuzz.so.0|libwayland-client.so.0|libwayland-cursor.so.0|libwayland-egl.so.1|libxkbcommon.so.0|libEGL.so.1|libGLESv2.so.2|libQt6Core.so.6|libQt6Gui.so.6|libQt6Network.so.6|libQt6Qml.so.6|libQt6WebEngineCore.so.6|libQt6WebEngineQuick.so.6)
+                ld-linux-aarch64.so.1|libc.so.6|libm.so.6|libdl.so.2|libpthread.so.0|librt.so.1|libgcc_s.so.1|libstdc++.so.6|libatomic.so.1|libz.so.1|libwebp.so.7|libcurl.so.4|libssl.so.3|libcrypto.so.3|libdbus-1.so.3|libpulse.so.0|libfontconfig.so.1|libfreetype.so.6|libfribidi.so.0|libharfbuzz.so.0|libwayland-client.so.0|libwayland-cursor.so.0|libwayland-egl.so.1|libxkbcommon.so.0|libEGL.so.1|libGLESv2.so.2|libavcodec.so.59|libavfilter.so.8|libavformat.so.59|libavutil.so.57|libswresample.so.4|libswscale.so.6|libQt6Core.so.6|libQt6Gui.so.6|libQt6Network.so.6|libQt6Qml.so.6|libQt6WebEngineCore.so.6|libQt6WebEngineQuick.so.6)
                     ;;
                 *)
                     echo "Unknown NEEDED entry in ${elf#$root}: $needed" >&2
@@ -88,13 +87,11 @@ verify_needed() {
 
 verify_silisili_linkage() {
     local root="$1" output
-    output="$(LD_LIBRARY_PATH="$root/usr/lib64/silisili" \
-        ldd "$root/usr/lib64/silisili/silisili.real" 2>&1 || true)"
-    printf '%s\n' "$output"
-    ! grep -Eiq 'not found' <<<"$output" ||
-        fail "silisili.real has unresolved runtime linkage"
-    grep -Fq "libstdc++.so.6 => $root/usr/lib64/silisili/libstdc++.so.6" \
-        <<<"$output" || fail "silisili.real does not resolve its private libstdc++"
+    output="$(readelf -d "$root/usr/lib64/silisili/silisili.real")"
+    grep -Fq 'Shared library: [libstdc++.so.6]' <<<"$output" ||
+        fail "silisili.real does not declare the Sailfish GNU C++ runtime"
+    test ! -e "$root/usr/lib64/silisili/libstdc++.so.6" ||
+        fail "silisili must not package a private GNU C++ runtime"
 }
 
 verify_sailfish_icons() {
@@ -407,26 +404,30 @@ for resource in hint_game_1.png hint_game_2.png; do
     test ! -e "$sili_root/usr/share/silisili/resources/pictures/$resource" ||
         fail "controller-only hint remains: $resource"
 done
-test -f "$sili_root/usr/lib64/silisili/libmpv.so.2.5.0" || fail "private libmpv missing"
-test -f "$sili_root/usr/lib64/silisili/libplacebo.so.338" || fail "private libplacebo missing"
-test -f "$sili_root/usr/lib64/silisili/libavcodec.so.60.31.102" || fail "private FFmpeg missing"
-test -f "$sili_root/usr/lib64/silisili/libass.so.9.4.1" || fail "private libass missing"
+test -e "$sili_root/usr/lib64/silisili/libmpv.so.2" || fail "private libmpv missing"
+test -e "$sili_root/usr/lib64/silisili/libplacebo.so.338" || fail "private libplacebo missing"
+test -e "$sili_root/usr/lib64/silisili/libass.so.9" || fail "private libass missing"
+test -e "$sili_root/usr/lib64/silisili/libcurl.so.4" || fail "private curl missing"
+test -e "$sili_root/usr/lib64/silisili/libssl.so.3" || fail "private OpenSSL SSL missing"
+test -e "$sili_root/usr/lib64/silisili/libcrypto.so.3" || fail "private OpenSSL crypto missing"
 test "$(stat -c '%a' "$sili_root/usr/lib64/silisili")" = 755 ||
     fail "silisili private runtime directory is not mode 0755"
-test -L "$sili_root/usr/lib64/silisili/libstdc++.so.6" ||
-    fail "private libstdc++ soname link missing"
-test "$(readlink "$sili_root/usr/lib64/silisili/libstdc++.so.6")" = \
-    libstdc++.so.6.0.34 || fail "private libstdc++ soname link is wrong"
-test "$(sha256sum "$sili_root/usr/lib64/silisili/libstdc++.so.6.0.34" | awk '{print $1}')" = \
-    "$SILISILI_LIBSTDCXX_SHA" || fail "private libstdc++ identity mismatch"
-grep -aFq CXXABI_1.3.15 "$sili_root/usr/lib64/silisili/libstdc++.so.6.0.34" ||
-    fail "private libstdc++ lacks CXXABI_1.3.15"
+test ! -e "$sili_root/usr/lib64/silisili/libstdc++.so.6" ||
+    fail "private libstdc++ must not be packaged"
+test -e "$sili_root/usr/lib64/silisili/libavcodec.so.59" ||
+    fail "private FFmpeg codec library is missing"
+test -e "$sili_root/usr/lib64/silisili/libavformat.so.59" ||
+    fail "private FFmpeg format library is missing"
+readelf -d "$sili_root/usr/lib64/silisili/libmpv.so.2" | grep -Fq libavcodec.so.59 ||
+    fail "libmpv is not linked to private FFmpeg 5.1"
+readelf -d "$sili_root/usr/lib64/silisili/libavformat.so.59" | grep -Fq libssl.so.3 ||
+    fail "private FFmpeg HTTPS is not linked to private OpenSSL 3"
+grep -aFq 'https' "$sili_root/usr/lib64/silisili/libavformat.so.59" ||
+    fail "private FFmpeg lacks HTTPS protocol support"
+readelf -d "$sili_root/usr/lib64/silisili/libcurl.so.4" | grep -Fq libssl.so.3 ||
+    fail "libcurl is not linked to private OpenSSL 3"
 ! grep -Fq libunwind <<<"$(readelf -d "$sili_root/usr/lib64/silisili/libplacebo.so.338")" ||
     fail "libplacebo unexpectedly requires libunwind"
-test -f "$sili_root/usr/share/licenses/silisili-sailfish/LICENSE.libstdc++-GPLv3" ||
-    fail "private libstdc++ GPLv3 text missing"
-test -f "$sili_root/usr/share/licenses/silisili-sailfish/LICENSE.libstdc++-runtime-exception" ||
-    fail "private libstdc++ runtime exception missing"
 test "$(find "$sili_root/usr/share/licenses/silisili-sailfish" -type f | wc -l)" -ge 10 ||
     fail "silisili license set is incomplete"
 verify_sailfish_icons "$sili_root" \
@@ -435,7 +436,7 @@ verify_sailfish_icons "$sili_root" \
 verify_needed "$listen_root"
 verify_needed "$sili_root"
 verify_elf_versions "$listen_root" GLIBC_2.41 GLIBCXX_3.4.32 CXXABI_1.3.14
-verify_elf_versions "$sili_root" GLIBC_2.41 GLIBCXX_3.4.34 CXXABI_1.3.15
+verify_elf_versions "$sili_root" GLIBC_2.30 GLIBCXX_3.4.28 CXXABI_1.3.12
 verify_silisili_linkage "$sili_root"
 
 echo "Ported app RPM verification passed"

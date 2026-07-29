@@ -4,31 +4,21 @@
   commit `88e5876bea9502d06f46a8656e3530684d3aaf7d`
 - Borealis submodule commit:
   `5f08b286f3df737f3321d2247a6fe633fcead03c`
-- Flathub GLES2 AArch64 bundle SHA-256:
-  `0e963675d82f9c9254b73b68be0673f6fe19e6c805fb5635f96582ee19aa3da3`
-- Flathub OSTree commit:
-  `41c830527b348a77b2c928d2b6363165d4b57237b159acac9b58b56ab825a4eb`
-- mpv 0.41.0 commit `41f6a645068483470267271e1d09966ca3b9f413`
-- FFmpeg 6.1.1 release
+- Sailfish SDK target `SailfishOS-5.0.0.62-aarch64`
+- Sailfish SDK tooling `SailfishOS-5.0.0.62-i486`
+- OpenSSL 3.0.16 commit
+  `fa1e5dfb142bb1c26c3c38a10aafa7a095df52e5`
+- curl 8.9.1 commit `83bedbd730d62b83744cc26fa0433d3f6e2e4cd6`
+- libass 0.17.3 commit `e46aedea0a0d17da4c4ef49d84b94a7994664ab5`
 - libplacebo 6.338.2 commit `64c1954570f1cd57f8570a57e51fb0249b57bb90`
-- Freedesktop Platform 25.08 AArch64 commit
-  `dca273214da6c8760a2ddde6fd107e293a4a1fa5dbe4968444034930b1f1bb3e`
-- GNU libstdc++ `libstdc++.so.6.0.34` SHA-256:
-  `c5cf486565ca33f11a7841f6a8f67797c9c8a484a235c3cd36ca6b41328c67b2`
-- bonito2 base RPM SHA-256:
-  `f7d323f445f34d4613dd1717b26a8c7503a17985cbf955395b9975c1997a004f`
-- Adapted wiliwili ELF SHA-256 inside the bonito2 base RPM:
-  `765c20ba8aeeed75ee07c65f7843e34e1d9f59219de1269a2e512cf848db951c`
-- Ubuntu AArch64 development-header packages used only while compiling the
-  responsive main ELF:
-  - `libmpv-dev_0.37.0-1ubuntu4_arm64.deb` SHA-256
-    `7919bdb8d5908b23453b8f9eb9cbfb393aa0540d521c614cbc3016d0878fe3c4`
-  - `libcurl4-openssl-dev_8.5.0-2ubuntu10.11_arm64.deb` SHA-256
-    `452a4e98bb15714688c1a53387192c91e0a320d045a1306d4e1f696c0296e0db`
+- mpv 0.37.0 commit `818ce7c51a6b9179307950e919983e0909942098`
+- FFmpeg 5.1.6 commit `6338d19eb349e23a2004eb6cdd863bdef454572d`
+- Sailfish GCC package family 10.3.1, providing `GLIBCXX_3.4.28` and
+  `CXXABI_1.3.12`
 - Complete silisili Sailfish source patch (application, Borealis, and GLFW):
   `patches/silisili-sailfish-mobile.patch`
   SHA-256
-  `8bddf70d3a888e0966a283781191cecc6b6a976d5cceb7906b7fbe6f8c4bed3d`.
+  `2f50d87181f42331955e1f332754ad9e8047662c31d1c29c219f2736dbd943e5`.
 - Mobile interaction reference: https://github.com/0xjax/bilibili-mobile
   commit `1e868592c31463b90d4db4d3e6e9bccd3e4ccb32`. It is a userscript and no
   source code is included; only its complete search/menu/history/activity
@@ -36,13 +26,15 @@
 - Sailfish 5.1 z1.5 media-player launcher template SHA-256:
   `a626c13264226d0f8060d773d99038f72c598d879d8823b2fd9efb85268d2e9a`
 
-The Sailfish package changes the Flatpak resource prefix, ELF RPATH, and
+The Sailfish package changes the resource prefix, ELF RPATH, and
 private-runtime packaging. A locally built GPL-3.0-or-later AArch64 ELF
 launcher replaces Lipstick's compositor-only EGL environment with Wayland
-before executing the adapted upstream binary. It carries a minimal
-software-decoding media runtime with common Bilibili codecs and protocols.
-The matching private GNU C++ runtime supplies `CXXABI_1.3.15`; its GPLv3 and
-GCC Runtime Library Exception texts are included in the RPM. No service
+before executing the adapted upstream binary. The application, OpenSSL, curl,
+FFmpeg, libass, libplacebo, and mpv are compiled against the Sailfish OS
+5.0.0.62 target. The private FFmpeg build includes HTTPS media transport;
+GCC 10 libstdc++ remains a system library. The release gate rejects payloads
+newer than `GLIBC_2.30`, `GLIBCXX_3.4.28`, or
+`CXXABI_1.3.12`, so one package supports Sailfish OS 5.0 and 5.1. No service
 credentials, DRM bypass, or proprietary decoders are included.
 
 The Sailfish window ignores saved desktop geometry and starts as a compositor
