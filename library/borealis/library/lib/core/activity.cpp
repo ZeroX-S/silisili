@@ -16,12 +16,136 @@
 
 #include <borealis/core/activity.hpp>
 #include <borealis/core/application.hpp>
+#include <borealis/core/gesture.hpp>
 #include <borealis/core/i18n.hpp>
+#include <borealis/core/thread.hpp>
+
+#include <algorithm>
+#include <cmath>
 
 using namespace brls::literals;
 
 namespace brls
 {
+
+#ifdef SILISILI_SAILFISH_MOBILE
+namespace
+{
+constexpr float SAILFISH_BACK_DIRECTION_LOCK = 1.4f;
+constexpr float SAILFISH_BACK_START_DISTANCE = 10.0f;
+constexpr float SAILFISH_BACK_COMMIT_FRACTION = 0.28f;
+
+class SailfishPageBackGestureRecognizer : public GestureRecognizer
+{
+  public:
+    explicit SailfishPageBackGestureRecognizer(Activity* activity)
+        : activity(activity)
+    {
+    }
+
+    GestureState recognitionLoop(TouchState touch, MouseState, View* view, Sound*) override
+    {
+        if (!enabled || touch.phase == TouchPhase::NONE)
+            return GestureState::FAILED;
+
+        if (touch.phase == TouchPhase::START)
+        {
+            this->fingerId = touch.fingerId;
+            this->startPosition = touch.position;
+            this->state = GestureState::UNSURE;
+            this->dragging = false;
+            view->setTranslationX(0.0f);
+            return this->state;
+        }
+
+        if (touch.fingerId != this->fingerId)
+            return this->fail(view);
+
+        if (this->state == GestureState::INTERRUPTED || this->state == GestureState::FAILED)
+            return this->fail(view);
+
+        const float distanceX = touch.position.x - this->startPosition.x;
+        const float distanceY = touch.position.y - this->startPosition.y;
+
+        if (this->state == GestureState::UNSURE)
+        {
+            if (touch.phase == TouchPhase::END)
+                return this->fail(view);
+
+            if (std::hypot(distanceX, distanceY) < SAILFISH_BACK_START_DISTANCE)
+                return this->state;
+
+            if (distanceX <= 0.0f || distanceX < std::fabs(distanceY) * SAILFISH_BACK_DIRECTION_LOCK ||
+                !this->canStart())
+                return this->fail(view);
+
+            this->dragging = true;
+            this->state = GestureState::START;
+            Logger::info("Sailfish page back swipe: started at {:.0f},{:.0f}",
+                         this->startPosition.x, this->startPosition.y);
+        }
+        else if (touch.phase == TouchPhase::STAY)
+        {
+            this->state = GestureState::STAY;
+        }
+
+        if (!this->dragging)
+            return this->state;
+
+        const float width = std::max(1.0f, view->getWidth());
+        view->setTranslationX(std::clamp(distanceX, 0.0f, width));
+
+        if (touch.phase != TouchPhase::END)
+            return this->state;
+
+        const bool commit = distanceX >= width * SAILFISH_BACK_COMMIT_FRACTION;
+        view->setTranslationX(0.0f);
+        this->dragging = false;
+        this->fingerId = -1;
+        this->state = GestureState::END;
+
+        Logger::info("Sailfish page back swipe: {} distance={:.0f} threshold={:.0f}",
+                     commit ? "committed" : "cancelled", distanceX,
+                     width * SAILFISH_BACK_COMMIT_FRACTION);
+
+        if (commit)
+        {
+            Activity* expectedActivity = this->activity;
+            brls::delay(1, [expectedActivity]() {
+                auto stack = Application::getActivitiesStack();
+                if (stack.size() > 1 && stack.back() == expectedActivity)
+                    Application::onControllerButtonPressed(BUTTON_B, false);
+            });
+        }
+
+        return this->state;
+    }
+
+  private:
+    bool canStart() const
+    {
+        auto stack = Application::getActivitiesStack();
+        return stack.size() > 1 && stack.back() == this->activity &&
+               this->activity->allowsSailfishPageBackGesture(this->startPosition);
+    }
+
+    GestureState fail(View* view)
+    {
+        if (this->dragging)
+            view->setTranslationX(0.0f);
+        this->dragging = false;
+        this->fingerId = -1;
+        this->state = GestureState::FAILED;
+        return this->state;
+    }
+
+    Activity* activity;
+    Point startPosition;
+    int fingerId = -1;
+    bool dragging = false;
+};
+} // namespace
+#endif
 
 Activity::Activity()
 {
@@ -43,6 +167,9 @@ void Activity::setContentView(View* view)
 
     this->contentView = view;
     this->contentView->setParentActivity(this);
+#ifdef SILISILI_SAILFISH_MOBILE
+    this->contentView->addGestureRecognizer(new SailfishPageBackGestureRecognizer(this));
+#endif
     // willAppear is only called when the activity is pushed onto the stack
 
     this->resizeToFitWindow();
@@ -164,6 +291,11 @@ void Activity::setAlpha(float alpha)
 View* Activity::getContentView()
 {
     return this->contentView;
+}
+
+bool Activity::allowsSailfishPageBackGesture(Point) const
+{
+    return true;
 }
 
 View* Activity::getView(std::string id)

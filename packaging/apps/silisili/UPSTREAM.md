@@ -18,7 +18,7 @@
 - Complete silisili Sailfish source patch (application, Borealis, and GLFW):
   `patches/silisili-sailfish-mobile.patch`
   SHA-256
-  `2f50d87181f42331955e1f332754ad9e8047662c31d1c29c219f2736dbd943e5`.
+  `92c0e665a77176ed5c386f4a9f2ec5020535fac92d124cc020bba8c6bcc84974`.
 - Mobile interaction reference: https://github.com/0xjax/bilibili-mobile
   commit `1e868592c31463b90d4db4d3e6e9bccd3e4ccb32`. It is a userscript and no
   source code is included; only its complete search/menu/history/activity
@@ -54,7 +54,10 @@ grid, controller Y shortcut and hint, and its settings toggle are disabled on
 the phone build. A persistent header exposes search, messages, and settings
 from Home, Activity, and Me without covering the channel row. Those three
 primary pages use a fixed bottom touch tab bar; nested screens continue to use
-the native activity stack and Back behavior. Every shared text and numeric
+the native activity stack and Back behavior. A left-to-right pull may begin
+across the page, matching Sailfish page-stack navigation. The player accepts it
+only below the video surface, and live/fullscreen media keep their dedicated
+gestures. Every shared text and numeric
 input page activates the system keyboard after becoming visible, retries once
 after compositor focus settles, and exposes fixed touch Back and OK controls.
 Search results place the editable query in a separate row above their category
@@ -73,6 +76,11 @@ Back, keyboard text entry, and accessibility activation remain available.
 The compact touch OSD also bypasses Borealis custom gamepad navigation routes,
 because its hidden volume and danmaku-setting controls are intentionally not
 focusable.
+
+Phone dialogs reserve a 16-unit safe margin and are capped at 608x1248 inside
+the 640x1280 portrait content area. Standard and grid dropdowns use the current
+content width, 64-unit rows, and a height cap of 73 percent, so opened controls
+remain on-screen.
 
 The phone video detail follows Bilibili's mobile information order: a full-width
 16:9 player is first in portrait, followed by title, metadata, author, actions,

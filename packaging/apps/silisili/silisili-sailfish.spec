@@ -3,7 +3,7 @@
 
 Name:           silisili-sailfish
 Version:        1.0.0
-Release:        2
+Release:        3
 Summary:        silisili Bilibili client for Sailfish OS
 License:        GPL-3.0-or-later and GPL-2.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC
 Group:          Applications/Multimedia
@@ -63,6 +63,12 @@ find %{buildroot}/usr/share/silisili %{buildroot}/usr/share/licenses/%{name} \
 /usr/share/silisili
 
 %changelog
+* Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-3
+- Add Sailfish-style whole-page swipe-right Back navigation.
+- Keep media seek gestures isolated from page-stack navigation.
+- Constrain dialogs and dropdowns to the 640x1280 phone canvas.
+- Retain enlarged phone-sized player controls and Sailfish OS 5.0 ABI gates.
+
 * Tue Jul 28 2026 silisili contributors <noreply@localhost> - 1.0.0-2
 - Rebuild the application and private runtime against Sailfish OS 5.0.0.62.
 - Support Sailfish OS 5.0 and 5.1 from one AArch64 package.

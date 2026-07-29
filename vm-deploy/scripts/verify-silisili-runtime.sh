@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE=silisili-sailfish
-EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-2}"
+EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-3}"
 APP_USER=defaultuser
 APP_UID="$(id -u "$APP_USER")"
 APP_RUNTIME_DIR="/run/user/$APP_UID"

@@ -20,6 +20,8 @@
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/label.hpp>
 
+#include <algorithm>
+
 using namespace brls::literals;
 
 // TODO: different open animation?
@@ -139,6 +141,7 @@ const std::string dialogXML = R"xml(
 Dialog::Dialog(Box* contentView)
 {
     this->inflateFromXMLString(dialogXML);
+    this->applySailfishPhoneGeometry();
     container->addView(contentView);
 
     appletFrame->registerAction(
@@ -167,6 +170,7 @@ Dialog::Dialog(std::string text)
     box->setPadding(style["brls/dialog/paddingTopBottom"], style["brls/dialog/paddingLeftRight"], style["brls/dialog/paddingTopBottom"], style["brls/dialog/paddingLeftRight"]);
 
     this->inflateFromXMLString(dialogXML);
+    this->applySailfishPhoneGeometry();
     container->addView(box);
 
     appletFrame->registerAction(
@@ -176,6 +180,20 @@ Dialog::Dialog(std::string text)
             return cancelable;
         },
         false, false, SOUND_BACK);
+}
+
+void Dialog::applySailfishPhoneGeometry()
+{
+#ifdef SILISILI_SAILFISH_MOBILE
+    constexpr float margin = 16.0f;
+    const float width = std::max(1.0f, Application::contentWidth - margin * 2.0f);
+    const float height = std::max(1.0f, Application::contentHeight - margin * 2.0f);
+    appletFrame->setWidth(width);
+    appletFrame->setMaxWidth(width);
+    appletFrame->setMaxHeight(height);
+    Logger::info("Sailfish dialog bounds: {:.0f}x{:.0f} within {:.0f}x{:.0f}",
+                 width, height, Application::contentWidth, Application::contentHeight);
+#endif
 }
 
 void Dialog::addButton(std::string label, VoidEvent::Callback cb)

@@ -34,7 +34,7 @@ private runtime with the 5.0 SDK. It produces private OpenSSL 3.0.16, curl
 0.37.0 libraries. All C++ code uses Sailfish GCC 10 libstdc++.
 
 `vm-deploy/scripts/build-silisili-sailfish-rpm.sh` then rebuilds the complete
-application with the same SDK and assembles `silisili-sailfish-1.0.0-2`.
+application with the same SDK and assembles `silisili-sailfish-1.0.0-3`.
 Before packaging, it checks AArch64 identity, reviewed `DT_NEEDED` entries,
 private RPATHs, and these Sailfish 5.0 ceilings:
 

@@ -31,8 +31,8 @@
 和 5.1：
 
 ```text
-silisili-sailfish-1.0.0-2.aarch64.rpm
-SHA-256: 8ec6612503596e026a5205618d564c592473a076ba30eee7a476ec1da1d4bee8
+silisili-sailfish-1.0.0-3.aarch64.rpm
+SHA-256: 532a16db5bc1e92fcc20e11ed562e954743a9f1a3c5f3a5d22b9f8c5d2447d9e
 ```
 
 新包会替换旧的 `wiliwili-sailfish` 包，但保留旧配置目录作为迁移来源。应用运行路径为 `/usr/bin/silisili`，桌面 ID 为 `cn.silisili.app`。
@@ -41,8 +41,9 @@ SHA-256: 8ec6612503596e026a5205618d564c592473a076ba30eee7a476ec1da1d4bee8
 的 Sailfish OS `5.1.0.11` 上做实机验证。5.0 当前完成 SDK、依赖和 ABI
 兼容校验，不标注为 5.0 真机测试。
 
-`1.0.0-2` 同时修复了 Sailfish 手机端重复切换桌面全屏后窗口缩小的
-问题，并放大播放器 OSD 控件与触控区域。
+`1.0.0-3` 继续包含重复切换全屏后的窗口恢复修复和手机播放器大触控
+区域，并增加 Sailfish 原生整页右滑返回、媒体手势冲突隔离，以及不会
+越出屏幕的手机对话框和下拉框尺寸约束。
 
 ## 构建
 

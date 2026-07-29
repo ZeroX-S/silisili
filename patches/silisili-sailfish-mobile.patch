@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 19feec32519a51c2db9446cc93cdfee480f8e5cf..dc40e31fe7fc6b803ef1675f3f5308faed0beeef 100644
+index 19feec3..dc40e31 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -4,7 +4,7 @@ set(BOREALIS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/library/borealis)
@@ -137,7 +137,7 @@ index 19feec32519a51c2db9446cc93cdfee480f8e5cf..dc40e31fe7fc6b803ef1675f3f5308fa
 +target_link_libraries(${PROJECT_NAME} PRIVATE silisiliLibExtra borealis lunasvg pystring pdr mongoose z ${APP_PLATFORM_LIB})
  target_link_options(${PROJECT_NAME} PRIVATE ${APP_PLATFORM_LINK_OPTION})
 diff --git a/README.md b/README.md
-index 39abcb3113408ba6d006828a29443b821809fb90..fe2949099cfc707f9cfc1ccaef346fe2291768d8 100644
+index 39abcb3..fe29490 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,401 +1,55 @@
@@ -577,7 +577,7 @@ index 39abcb3113408ba6d006828a29443b821809fb90..fe2949099cfc707f9cfc1ccaef346fe2
 -- Thanks to Crowdin for supporting [open-source projects](https://crowdin.com/page/open-source-project-setup-request).
 +完整基线提交、依赖版本、补丁和许可证来源见 `packaging/sailfish/UPSTREAM.md`。本项目不包含账号、Cookie、Token、服务凭据、DRM 绕过或专有解码器。
 diff --git a/cmake/FindMPV.cmake b/cmake/FindMPV.cmake
-index ce1e2926b571e40664b72e9cbb7fe9d28143f0f7..1f40dd70b31f4c365102fb78493945ff488efc6c 100644
+index ce1e292..1f40dd7 100644
 --- a/cmake/FindMPV.cmake
 +++ b/cmake/FindMPV.cmake
 @@ -26,15 +26,15 @@ if (PKG_CONFIG_FOUND)
@@ -607,7 +607,7 @@ index ce1e2926b571e40664b72e9cbb7fe9d28143f0f7..1f40dd70b31f4c365102fb78493945ff
 \ No newline at end of file
 +)
 diff --git a/library/CMakeLists.txt b/library/CMakeLists.txt
-index 8967d4a61c048397d2fca63b69a6fbefba8c586a..44f75b4619f830757cda8d165299fc870fb90ad5 100644
+index 8967d4a..44f75b4 100644
 --- a/library/CMakeLists.txt
 +++ b/library/CMakeLists.txt
 @@ -112,6 +112,12 @@ endif ()
@@ -635,7 +635,7 @@ diff --git a/resources/i18n/en-US/wiliwili.json b/resources/i18n/en-US/silisili.
 similarity index 94%
 rename from resources/i18n/en-US/wiliwili.json
 rename to resources/i18n/en-US/silisili.json
-index 8bf54b3db51a458d4ae534192ff406e24a6a1a83..e5538c001c0d38438f0053707ade786db1d13c8b 100644
+index 8bf54b3..e5538c0 100644
 --- a/resources/i18n/en-US/wiliwili.json
 +++ b/resources/i18n/en-US/silisili.json
 @@ -1,7 +1,12 @@
@@ -699,7 +699,7 @@ diff --git a/resources/i18n/it/wiliwili.json b/resources/i18n/it/silisili.json
 similarity index 97%
 rename from resources/i18n/it/wiliwili.json
 rename to resources/i18n/it/silisili.json
-index 20d47925325cf3f2e38bb01bb2e2c9c30e135e32..6ddcee079b5198eea5535bc0bc8fa5812ef3442b 100644
+index 20d4792..6ddcee0 100644
 --- a/resources/i18n/it/wiliwili.json
 +++ b/resources/i18n/it/silisili.json
 @@ -1,7 +1,12 @@
@@ -749,7 +749,7 @@ diff --git a/resources/i18n/ja-RYU/wiliwili.json b/resources/i18n/ja-RYU/silisil
 similarity index 97%
 rename from resources/i18n/ja-RYU/wiliwili.json
 rename to resources/i18n/ja-RYU/silisili.json
-index 22429e6995d370d8d62fdd74eacfd8e968e5fc1b..c4a47a6293fb869618d209ce254813ee4d6e3c65 100644
+index 22429e6..c4a47a6 100644
 --- a/resources/i18n/ja-RYU/wiliwili.json
 +++ b/resources/i18n/ja-RYU/silisili.json
 @@ -1,7 +1,12 @@
@@ -799,7 +799,7 @@ diff --git a/resources/i18n/ja/wiliwili.json b/resources/i18n/ja/silisili.json
 similarity index 97%
 rename from resources/i18n/ja/wiliwili.json
 rename to resources/i18n/ja/silisili.json
-index ccd374a1d9c9ce2e7128b34b82f8ac5f30bc5996..8e43ee31ef14c67f05d1f1c018ee8c5a3c67eb00 100644
+index ccd374a..8e43ee3 100644
 --- a/resources/i18n/ja/wiliwili.json
 +++ b/resources/i18n/ja/silisili.json
 @@ -1,7 +1,12 @@
@@ -849,7 +849,7 @@ diff --git a/resources/i18n/ko/wiliwili.json b/resources/i18n/ko/silisili.json
 similarity index 97%
 rename from resources/i18n/ko/wiliwili.json
 rename to resources/i18n/ko/silisili.json
-index 93bcbd156d56bbf7120f1f4887328f38238b0e09..e4cd1172d804a8f7d8b79474600999a9aeb93cfe 100644
+index 93bcbd1..e4cd117 100644
 --- a/resources/i18n/ko/wiliwili.json
 +++ b/resources/i18n/ko/silisili.json
 @@ -1,7 +1,12 @@
@@ -896,7 +896,7 @@ index 93bcbd156d56bbf7120f1f4887328f38238b0e09..e4cd1172d804a8f7d8b79474600999a9
 \ No newline at end of file
 +}
 diff --git a/resources/i18n/zh-Hans/hints.json b/resources/i18n/zh-Hans/hints.json
-index f021d6b1feaf7a25633179870d288006e21b28dc..ff8cb146344bbbb42b0d123e0de2d0a7e90b8b49 100644
+index f021d6b..ff8cb14 100644
 --- a/resources/i18n/zh-Hans/hints.json
 +++ b/resources/i18n/zh-Hans/hints.json
 @@ -14,6 +14,6 @@
@@ -912,7 +912,7 @@ diff --git a/resources/i18n/zh-Hans/wiliwili.json b/resources/i18n/zh-Hans/silis
 similarity index 94%
 rename from resources/i18n/zh-Hans/wiliwili.json
 rename to resources/i18n/zh-Hans/silisili.json
-index cb2147cac532e6a066cd599f48ce0acd7b84ca0f..158c026287d427b4b7db90132fd6b2ddfc746b99 100644
+index cb2147c..158c026 100644
 --- a/resources/i18n/zh-Hans/wiliwili.json
 +++ b/resources/i18n/zh-Hans/silisili.json
 @@ -1,7 +1,12 @@
@@ -972,7 +972,7 @@ index cb2147cac532e6a066cd599f48ce0acd7b84ca0f..158c026287d427b4b7db90132fd6b2dd
 \ No newline at end of file
 +}
 diff --git a/resources/i18n/zh-Hant/hints.json b/resources/i18n/zh-Hant/hints.json
-index 1584c76a2895421a35dff42741412c942af0de6a..4391b5d0eec9867a40aa01899d2f46ff27c315cd 100644
+index 1584c76..4391b5d 100644
 --- a/resources/i18n/zh-Hant/hints.json
 +++ b/resources/i18n/zh-Hant/hints.json
 @@ -14,6 +14,6 @@
@@ -988,7 +988,7 @@ diff --git a/resources/i18n/zh-Hant/wiliwili.json b/resources/i18n/zh-Hant/silis
 similarity index 94%
 rename from resources/i18n/zh-Hant/wiliwili.json
 rename to resources/i18n/zh-Hant/silisili.json
-index 85caa51791fc231cd1e207bfa2b1604056d75a1e..adea970a29f4a105a378e0d2e7952266ce0f445f 100644
+index 85caa51..adea970 100644
 --- a/resources/i18n/zh-Hant/wiliwili.json
 +++ b/resources/i18n/zh-Hant/silisili.json
 @@ -1,7 +1,12 @@
@@ -1961,7 +1961,7 @@ rename from resources/pictures/hint_wiliwili.png
 rename to resources/pictures/hint_silisili.png
 diff --git a/resources/svg/bpx-svg-sprite-back.svg b/resources/svg/bpx-svg-sprite-back.svg
 new file mode 100644
-index 0000000000000000000000000000000000000000..da0b8d4d57e10dc3151d01a51a0b11f5be1e8565
+index 0000000..da0b8d4
 --- /dev/null
 +++ b/resources/svg/bpx-svg-sprite-back.svg
 @@ -0,0 +1,3 @@
@@ -1977,7 +1977,7 @@ similarity index 100%
 rename from resources/svg/cn.xfangfang.wiliwili.svg
 rename to resources/svg/cn.silisili.app.svg
 diff --git a/resources/xml/activity/hint_activity.xml b/resources/xml/activity/hint_activity.xml
-index 012781769fba6f03f7a80a520fdf12605eff10d2..25dd382e1a8e79531e06eb198e6bb2b015a541b0 100644
+index 0127817..25dd382 100644
 --- a/resources/xml/activity/hint_activity.xml
 +++ b/resources/xml/activity/hint_activity.xml
 @@ -20,6 +20,6 @@
@@ -1989,7 +1989,7 @@ index 012781769fba6f03f7a80a520fdf12605eff10d2..25dd382e1a8e79531e06eb198e6bb2b0
      </brls:Box>
  </brls:AppletFrame>
 diff --git a/resources/xml/activity/live_player_activity.xml b/resources/xml/activity/live_player_activity.xml
-index 93825ba6833559bac97bad5d8d4407a782d4e488..96b14f1e762dcd7769ce0ba7458a85e7b644d539 100644
+index 93825ba..96b14f1 100644
 --- a/resources/xml/activity/live_player_activity.xml
 +++ b/resources/xml/activity/live_player_activity.xml
 @@ -13,7 +13,7 @@
@@ -2011,7 +2011,7 @@ index 93825ba6833559bac97bad5d8d4407a782d4e488..96b14f1e762dcd7769ce0ba7458a85e7
  
              <!-- 直播标题 -->
 diff --git a/resources/xml/activity/main.xml b/resources/xml/activity/main.xml
-index befcefaf744844a8302103c6c36822193965648d..6f157a916f16ed2dd1c505f1b4fdd3abcc3c39d5 100644
+index befcefa..6f157a9 100644
 --- a/resources/xml/activity/main.xml
 +++ b/resources/xml/activity/main.xml
 @@ -1,74 +1,106 @@
@@ -2196,7 +2196,7 @@ index befcefaf744844a8302103c6c36822193965648d..6f157a916f16ed2dd1c505f1b4fdd3ab
 +    </brls:Box>
 +</brls:AppletFrame>
 diff --git a/resources/xml/activity/pgc_index_activity.xml b/resources/xml/activity/pgc_index_activity.xml
-index 02e22690ed757bf957fb5af148d85103024672bc..2bc1384fb1b392a57537cc3ef95c90763c44652d 100644
+index 02e2269..2bc1384 100644
 --- a/resources/xml/activity/pgc_index_activity.xml
 +++ b/resources/xml/activity/pgc_index_activity.xml
 @@ -31,7 +31,7 @@
@@ -2209,7 +2209,7 @@ index 02e22690ed757bf957fb5af148d85103024672bc..2bc1384fb1b392a57537cc3ef95c9076
                  id="pgc/recyclingGrid"/>
  
 diff --git a/resources/xml/activity/player_activity.xml b/resources/xml/activity/player_activity.xml
-index 17cd9e993d7b7f4be5faec0dd01dbfcd395b95cd..fcf4cb90de3f64e441500090f680c3f5f7eb2d91 100644
+index 17cd9e9..fcf4cb9 100644
 --- a/resources/xml/activity/player_activity.xml
 +++ b/resources/xml/activity/player_activity.xml
 @@ -2,339 +2,237 @@
@@ -2715,7 +2715,7 @@ index 17cd9e993d7b7f4be5faec0dd01dbfcd395b95cd..fcf4cb90de3f64e441500090f680c3f5
 \ No newline at end of file
 +</brls:AppletFrame>
 diff --git a/resources/xml/activity/search_activity.xml b/resources/xml/activity/search_activity.xml
-index 4e4cbc8c1e8d3a9138e51dede925c61ecadede96..b60ec403d291a0fd20daee2b1f5196b3c8cce340 100644
+index 4e4cbc8..b60ec40 100644
 --- a/resources/xml/activity/search_activity.xml
 +++ b/resources/xml/activity/search_activity.xml
 @@ -5,43 +5,38 @@
@@ -2784,7 +2784,7 @@ index 4e4cbc8c1e8d3a9138e51dede925c61ecadede96..b60ec403d291a0fd20daee2b1f5196b3
      </brls:Box>
  </brls:AppletFrame>
 diff --git a/resources/xml/activity/search_activity_tv.xml b/resources/xml/activity/search_activity_tv.xml
-index 66806d55812f004a648dbb9fa86065391b6f8a1e..a59d98e0aff840149cac314a177dd371fc4b8ad7 100644
+index 66806d5..a59d98e 100644
 --- a/resources/xml/activity/search_activity_tv.xml
 +++ b/resources/xml/activity/search_activity_tv.xml
 @@ -38,7 +38,7 @@
@@ -2833,7 +2833,7 @@ index 66806d55812f004a648dbb9fa86065391b6f8a1e..a59d98e0aff840149cac314a177dd371
                      id="tv/search/history"
                      marginTop="16"
 diff --git a/resources/xml/activity/setting_activity.xml b/resources/xml/activity/setting_activity.xml
-index c7c464e3d35fc1beba7d1bf789021408327507db..2ea542adfea1d92fb91a7f5e1b575938374fcccd 100644
+index c7c464e..2ea542a 100644
 --- a/resources/xml/activity/setting_activity.xml
 +++ b/resources/xml/activity/setting_activity.xml
 @@ -14,7 +14,7 @@
@@ -3056,7 +3056,7 @@ index c7c464e3d35fc1beba7d1bf789021408327507db..2ea542adfea1d92fb91a7f5e1b575938
                   icon="@res/svg/setting_github.svg"
                   iconActivate="@res/svg/setting_github_active.svg"
 diff --git a/resources/xml/fragment/dynamic_detail.xml b/resources/xml/fragment/dynamic_detail.xml
-index 96491ce7210984b2fc8a10c0c1fa889fc4620949..42a4473415f02ba744f56ea5f0ada935ba730d69 100644
+index 96491ce..42a4473 100644
 --- a/resources/xml/fragment/dynamic_detail.xml
 +++ b/resources/xml/fragment/dynamic_detail.xml
 @@ -26,5 +26,5 @@
@@ -3068,7 +3068,7 @@ index 96491ce7210984b2fc8a10c0c1fa889fc4620949..42a4473415f02ba744f56ea5f0ada935
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/dynamic_tab.xml b/resources/xml/fragment/dynamic_tab.xml
-index 9743371e31e510a1597be90ce6f17524eae41cba..a9e5e2820a1df505656d139ebe0c098f788f9246 100644
+index 9743371..a9e5e28 100644
 --- a/resources/xml/fragment/dynamic_tab.xml
 +++ b/resources/xml/fragment/dynamic_tab.xml
 @@ -1,55 +1,54 @@
@@ -3156,7 +3156,7 @@ index 9743371e31e510a1597be90ce6f17524eae41cba..a9e5e2820a1df505656d139ebe0c098f
 \ No newline at end of file
 +</brls:Box>
 diff --git a/resources/xml/fragment/home_hots.xml b/resources/xml/fragment/home_hots.xml
-index 91ad5591df6f96f9217841b962e7f0fe34c07e18..5d822a322b6d184919c6b3f8bc3b34f0e56db624 100644
+index 91ad559..5d822a3 100644
 --- a/resources/xml/fragment/home_hots.xml
 +++ b/resources/xml/fragment/home_hots.xml
 @@ -13,22 +13,22 @@
@@ -3187,7 +3187,7 @@ index 91ad5591df6f96f9217841b962e7f0fe34c07e18..5d822a322b6d184919c6b3f8bc3b34f0
               fontSize="18">
              <HomeHotsHistory/>
 diff --git a/resources/xml/fragment/home_hots_all.xml b/resources/xml/fragment/home_hots_all.xml
-index 522e599344e297e75b0f829006b6ef6ffe134e39..d55853c62ee235576f9ddd5f26c60d599531de3e 100644
+index 522e599..d55853c 100644
 --- a/resources/xml/fragment/home_hots_all.xml
 +++ b/resources/xml/fragment/home_hots_all.xml
 @@ -9,7 +9,7 @@
@@ -3201,7 +3201,7 @@ index 522e599344e297e75b0f829006b6ef6ffe134e39..d55853c62ee235576f9ddd5f26c60d59
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/home_hots_history.xml b/resources/xml/fragment/home_hots_history.xml
-index 74674108956575955591af0842002e9edbd58015..b65de3864021703f0aeb57c6b99bc4f7a4dce6fc 100644
+index 7467410..b65de38 100644
 --- a/resources/xml/fragment/home_hots_history.xml
 +++ b/resources/xml/fragment/home_hots_history.xml
 @@ -21,7 +21,7 @@
@@ -3214,7 +3214,7 @@ index 74674108956575955591af0842002e9edbd58015..b65de3864021703f0aeb57c6b99bc4f7
              wireframe="false"
              id="home/hots/history/recyclingGrid"/>
 diff --git a/resources/xml/fragment/home_hots_rank.xml b/resources/xml/fragment/home_hots_rank.xml
-index 2fff0750a33433d984c5441c596649f7f80d3e8e..20b32e518fcae0545f155a7fd446e79a2160e3e1 100644
+index 2fff075..20b32e5 100644
 --- a/resources/xml/fragment/home_hots_rank.xml
 +++ b/resources/xml/fragment/home_hots_rank.xml
 @@ -55,7 +55,7 @@
@@ -3227,7 +3227,7 @@ index 2fff0750a33433d984c5441c596649f7f80d3e8e..20b32e518fcae0545f155a7fd446e79a
              wireframe="false"
              id="home/hots/rank/recyclingGrid"/>
 diff --git a/resources/xml/fragment/home_hots_weekly.xml b/resources/xml/fragment/home_hots_weekly.xml
-index 861da4bd3c8bf6872fa0bb2d5aa7c137e86da62d..94084aa1fee9e9b9f6c7f2e464ac17070063cac6 100644
+index 861da4b..94084aa 100644
 --- a/resources/xml/fragment/home_hots_weekly.xml
 +++ b/resources/xml/fragment/home_hots_weekly.xml
 @@ -55,7 +55,7 @@
@@ -3240,7 +3240,7 @@ index 861da4bd3c8bf6872fa0bb2d5aa7c137e86da62d..94084aa1fee9e9b9f6c7f2e464ac1707
              wireframe="false"
              id="home/hots/weekly/recyclingGrid"/>
 diff --git a/resources/xml/fragment/home_live.xml b/resources/xml/fragment/home_live.xml
-index eb661b9098e2da6d872ab76b6ba1d33bc9ea935b..0e159409360973c1fddf4fc237ce6aeefefa3ff0 100644
+index eb661b9..0e15940 100644
 --- a/resources/xml/fragment/home_live.xml
 +++ b/resources/xml/fragment/home_live.xml
 @@ -42,7 +42,7 @@
@@ -3253,7 +3253,7 @@ index eb661b9098e2da6d872ab76b6ba1d33bc9ea935b..0e159409360973c1fddf4fc237ce6aee
              wireframe="false"
              id="home/live/recyclingGrid"/>
 diff --git a/resources/xml/fragment/home_live_area.xml b/resources/xml/fragment/home_live_area.xml
-index a62c62cda18a5e94e777346f6d937dc61801e8c1..849487b5b68effa7720e88fbd97490bc49b14260 100644
+index a62c62c..849487b 100644
 --- a/resources/xml/fragment/home_live_area.xml
 +++ b/resources/xml/fragment/home_live_area.xml
 @@ -1,5 +1,5 @@
@@ -3273,7 +3273,7 @@ index a62c62cda18a5e94e777346f6d937dc61801e8c1..849487b5b68effa7720e88fbd97490bc
                              fontSize="@style/brls/dropdown/header_title_font_size"/>
  
 diff --git a/resources/xml/fragment/home_recommends.xml b/resources/xml/fragment/home_recommends.xml
-index a59b19a3ee800603889104cdb649ed7442aba314..575876e8b0b5804995d68507bc4b5e0c59194c43 100644
+index a59b19a..575876e 100644
 --- a/resources/xml/fragment/home_recommends.xml
 +++ b/resources/xml/fragment/home_recommends.xml
 @@ -10,7 +10,9 @@
@@ -3289,7 +3289,7 @@ index a59b19a3ee800603889104cdb649ed7442aba314..575876e8b0b5804995d68507bc4b5e0c
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/home_tab.xml b/resources/xml/fragment/home_tab.xml
-index 1723c1ba53e9933a45499731eee141f37a654215..37d25c81f4ba24e87f4923bf355b9c98bd34e83e 100644
+index 1723c1b..37d25c8 100644
 --- a/resources/xml/fragment/home_tab.xml
 +++ b/resources/xml/fragment/home_tab.xml
 @@ -1,69 +1,24 @@
@@ -3372,7 +3372,7 @@ index 1723c1ba53e9933a45499731eee141f37a654215..37d25c81f4ba24e87f4923bf355b9c98
 \ No newline at end of file
 +</brls:Box>
 diff --git a/resources/xml/fragment/inbox_chat.xml b/resources/xml/fragment/inbox_chat.xml
-index bbb235537ebae7d009f6bf532f270fbdf668f9fc..f58d1f4799773544c5d166f84f13825363bb8ad8 100644
+index bbb2355..f58d1f4 100644
 --- a/resources/xml/fragment/inbox_chat.xml
 +++ b/resources/xml/fragment/inbox_chat.xml
 @@ -50,7 +50,7 @@
@@ -3385,7 +3385,7 @@ index bbb235537ebae7d009f6bf532f270fbdf668f9fc..f58d1f4799773544c5d166f84f138253
                              height="35"
                              positionType="absolute"
 diff --git a/resources/xml/fragment/inbox_view.xml b/resources/xml/fragment/inbox_view.xml
-index 191d9741bab1d7ac8657532abd45abe86098031b..3adfe5de1f56a6894e260f8ae4b643dd0eae02bf 100644
+index 191d974..3adfe5d 100644
 --- a/resources/xml/fragment/inbox_view.xml
 +++ b/resources/xml/fragment/inbox_view.xml
 @@ -26,7 +26,7 @@
@@ -3419,7 +3419,7 @@ index 191d9741bab1d7ac8657532abd45abe86098031b..3adfe5de1f56a6894e260f8ae4b643dd
                                          <InboxFeed mode="like" />
                                  </Tab>
 diff --git a/resources/xml/fragment/mine_bangumi.xml b/resources/xml/fragment/mine_bangumi.xml
-index b749bb4c33634cfd4a131bdc3f777bfd0dba46f3..82ef86b8f2d19f13a01189d4656d0a2fd2468303 100644
+index b749bb4..82ef86b 100644
 --- a/resources/xml/fragment/mine_bangumi.xml
 +++ b/resources/xml/fragment/mine_bangumi.xml
 @@ -8,7 +8,7 @@
@@ -3432,7 +3432,7 @@ index b749bb4c33634cfd4a131bdc3f777bfd0dba46f3..82ef86b8f2d19f13a01189d4656d0a2f
              wireframe="false"
              id="mine/bangumi/recyclingGrid"/>
 diff --git a/resources/xml/fragment/mine_bangumi_anime.xml b/resources/xml/fragment/mine_bangumi_anime.xml
-index 18e4a0956e581e4d415057cad8c8f2d02a2ba6ae..ef03f1ef513d8169c40a906e1bc8b265f7c2e0ec 100644
+index 18e4a09..ef03f1e 100644
 --- a/resources/xml/fragment/mine_bangumi_anime.xml
 +++ b/resources/xml/fragment/mine_bangumi_anime.xml
 @@ -17,7 +17,7 @@
@@ -3445,7 +3445,7 @@ index 18e4a0956e581e4d415057cad8c8f2d02a2ba6ae..ef03f1ef513d8169c40a906e1bc8b265
              <MineBangumi
                      id="mine/series"
 diff --git a/resources/xml/fragment/mine_bangumi_series.xml b/resources/xml/fragment/mine_bangumi_series.xml
-index b41e02d58f67cc5dad8f7efa475f4d1da2b1f4f6..eb899b263b9f5da5628956245dd1dfa04a1c62a1 100644
+index b41e02d..eb899b2 100644
 --- a/resources/xml/fragment/mine_bangumi_series.xml
 +++ b/resources/xml/fragment/mine_bangumi_series.xml
 @@ -17,7 +17,7 @@
@@ -3458,7 +3458,7 @@ index b41e02d58f67cc5dad8f7efa475f4d1da2b1f4f6..eb899b263b9f5da5628956245dd1dfa0
              <MineBangumi
                      id="mine/series"
 diff --git a/resources/xml/fragment/mine_collection.xml b/resources/xml/fragment/mine_collection.xml
-index 6fa1fbd98a732fb658c14fe6536217ab29c074f6..5b19101e8dbcb8e61ac40ad0e8e1f8eae16a922f 100644
+index 6fa1fbd..5b19101 100644
 --- a/resources/xml/fragment/mine_collection.xml
 +++ b/resources/xml/fragment/mine_collection.xml
 @@ -9,7 +9,7 @@
@@ -3472,7 +3472,7 @@ index 6fa1fbd98a732fb658c14fe6536217ab29c074f6..5b19101e8dbcb8e61ac40ad0e8e1f8ea
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/mine_collection_video_list.xml b/resources/xml/fragment/mine_collection_video_list.xml
-index 465ef33a63b0344c6a6265a820995e7c223f6847..f8cb0c46670a131f01d1ec2be097b610e5f31d5d 100644
+index 465ef33..f8cb0c4 100644
 --- a/resources/xml/fragment/mine_collection_video_list.xml
 +++ b/resources/xml/fragment/mine_collection_video_list.xml
 @@ -57,7 +57,7 @@
@@ -3485,7 +3485,7 @@ index 465ef33a63b0344c6a6265a820995e7c223f6847..f8cb0c46670a131f01d1ec2be097b610
                      id="collection/recyclingGrid"/>
  
 diff --git a/resources/xml/fragment/mine_history.xml b/resources/xml/fragment/mine_history.xml
-index b4627084b95c0d5b77b8d579ed48435f4afa3318..2eed23d3e2d7cf231991baa54b62c5e312e5006a 100644
+index b462708..2eed23d 100644
 --- a/resources/xml/fragment/mine_history.xml
 +++ b/resources/xml/fragment/mine_history.xml
 @@ -9,7 +9,9 @@
@@ -3501,7 +3501,7 @@ index b4627084b95c0d5b77b8d579ed48435f4afa3318..2eed23d3e2d7cf231991baa54b62c5e3
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/mine_later.xml b/resources/xml/fragment/mine_later.xml
-index ce85fd783fc1b610edaceeea3fa802d05d074dcd..04663051d1744f57e1634a26b36d2862e45ed51f 100644
+index ce85fd7..0466305 100644
 --- a/resources/xml/fragment/mine_later.xml
 +++ b/resources/xml/fragment/mine_later.xml
 @@ -9,7 +9,9 @@
@@ -3517,7 +3517,7 @@ index ce85fd783fc1b610edaceeea3fa802d05d074dcd..04663051d1744f57e1634a26b36d2862
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/mine_qr_login.xml b/resources/xml/fragment/mine_qr_login.xml
-index 80dec23613c61ea4904ff43e2ae7a0713d18464c..f4bf4ecf9ef2da18daf5191013c90761d37a78c8 100644
+index 80dec23..f4bf4ec 100644
 --- a/resources/xml/fragment/mine_qr_login.xml
 +++ b/resources/xml/fragment/mine_qr_login.xml
 @@ -7,7 +7,7 @@
@@ -3546,7 +3546,7 @@ index 80dec23613c61ea4904ff43e2ae7a0713d18464c..f4bf4ecf9ef2da18daf5191013c90761
      <brls:Image
              positionType="absolute"
 diff --git a/resources/xml/fragment/mine_tab.xml b/resources/xml/fragment/mine_tab.xml
-index 790f974f82220450ebdfb780d4a58d234bf36f4c..76c590a8b37ea2ff8529866057ae4af1d4dda045 100644
+index 790f974..76c590a 100644
 --- a/resources/xml/fragment/mine_tab.xml
 +++ b/resources/xml/fragment/mine_tab.xml
 @@ -1,138 +1,77 @@
@@ -3814,7 +3814,7 @@ index 790f974f82220450ebdfb780d4a58d234bf36f4c..76c590a8b37ea2ff8529866057ae4af1
 \ No newline at end of file
 +</brls:Box>
 diff --git a/resources/xml/fragment/player_coin.xml b/resources/xml/fragment/player_coin.xml
-index 5b516c35b45daa86e52476a1316e235a70b70e6c..2bbbd1c0dc0098e102ec0e7cbc670847635adaf8 100644
+index 5b516c3..2bbbd1c 100644
 --- a/resources/xml/fragment/player_coin.xml
 +++ b/resources/xml/fragment/player_coin.xml
 @@ -14,12 +14,12 @@
@@ -3842,7 +3842,7 @@ index 5b516c35b45daa86e52476a1316e235a70b70e6c..2bbbd1c0dc0098e102ec0e7cbc670847
                  marginLeft="8"
                  height="16"
 diff --git a/resources/xml/fragment/player_coin_psv.xml b/resources/xml/fragment/player_coin_psv.xml
-index 286f7489fd9407bad8c975c42b0bf58931e365ca..fa65f6a3aeee119c6aa8f099fa2b6b8117261cd3 100644
+index 286f748..fa65f6a 100644
 --- a/resources/xml/fragment/player_coin_psv.xml
 +++ b/resources/xml/fragment/player_coin_psv.xml
 @@ -14,12 +14,12 @@
@@ -3870,7 +3870,7 @@ index 286f7489fd9407bad8c975c42b0bf58931e365ca..fa65f6a3aeee119c6aa8f099fa2b6b81
                  marginLeft="8"
                  height="16"
 diff --git a/resources/xml/fragment/player_collection.xml b/resources/xml/fragment/player_collection.xml
-index e3a743a1b1ea157fb710d3c3fdcf86e8f53814f5..cd7c455c0ff7810384a2cd518f4fe836f9aa52fe 100644
+index e3a743a..cd7c455 100644
 --- a/resources/xml/fragment/player_collection.xml
 +++ b/resources/xml/fragment/player_collection.xml
 @@ -14,7 +14,7 @@
@@ -3883,7 +3883,7 @@ index e3a743a1b1ea157fb710d3c3fdcf86e8f53814f5..cd7c455c0ff7810384a2cd518f4fe836
      <brls:Box
              justifyContent="spaceEvenly"
 diff --git a/resources/xml/fragment/player_comment_action.xml b/resources/xml/fragment/player_comment_action.xml
-index 5e0edc1c8174219cf2d206c0e5f897a121960b49..e75f062ebae3df3bc82150f69b4e19c60cf2af65 100644
+index 5e0edc1..e75f062 100644
 --- a/resources/xml/fragment/player_comment_action.xml
 +++ b/resources/xml/fragment/player_comment_action.xml
 @@ -87,7 +87,7 @@
@@ -3896,7 +3896,7 @@ index 5e0edc1c8174219cf2d206c0e5f897a121960b49..e75f062ebae3df3bc82150f69b4e19c6
                  positionTop="20"
                  positionLeft="20"/>
 diff --git a/resources/xml/fragment/player_comment_action_dynamic.xml b/resources/xml/fragment/player_comment_action_dynamic.xml
-index 79638ac39acc3c737567b61c25caa4ef2943c8ec..caca56e4c81f7c3c2c03789a8cc83116b9ab12f2 100644
+index 79638ac..caca56e 100644
 --- a/resources/xml/fragment/player_comment_action_dynamic.xml
 +++ b/resources/xml/fragment/player_comment_action_dynamic.xml
 @@ -81,7 +81,7 @@
@@ -3909,7 +3909,7 @@ index 79638ac39acc3c737567b61c25caa4ef2943c8ec..caca56e4c81f7c3c2c03789a8cc83116
                  positionTop="20"
                  positionLeft="20"/>
 diff --git a/resources/xml/fragment/player_comment_action_dynamic_sm.xml b/resources/xml/fragment/player_comment_action_dynamic_sm.xml
-index 5557e7a453e4b8349f51921b6d9645336312c857..eb703cca8877b109d9cd3ef8cadef55083b812a7 100644
+index 5557e7a..eb703cc 100644
 --- a/resources/xml/fragment/player_comment_action_dynamic_sm.xml
 +++ b/resources/xml/fragment/player_comment_action_dynamic_sm.xml
 @@ -90,7 +90,7 @@
@@ -3922,7 +3922,7 @@ index 5557e7a453e4b8349f51921b6d9645336312c857..eb703cca8877b109d9cd3ef8cadef550
                  positionTop="20"
                  positionLeft="20"/>
 diff --git a/resources/xml/fragment/player_danmaku_setting.xml b/resources/xml/fragment/player_danmaku_setting.xml
-index ca44fd45c30c5203c9a326113ea240b4c2e4e109..5217ae108f72e3bec251a704ceb328132f769a99 100644
+index ca44fd4..5217ae1 100644
 --- a/resources/xml/fragment/player_danmaku_setting.xml
 +++ b/resources/xml/fragment/player_danmaku_setting.xml
 @@ -20,7 +20,7 @@
@@ -3962,7 +3962,7 @@ index ca44fd45c30c5203c9a326113ea240b4c2e4e109..5217ae108f72e3bec251a704ceb32813
                  <brls:Box
                          width="100%"
 diff --git a/resources/xml/fragment/player_dlna_search.xml b/resources/xml/fragment/player_dlna_search.xml
-index e0f58ac15d8f1df6822d8fcf4f3b21ec8f5c23a8..a0772e3fd062e5e3df43c343c7d6723070d92991 100644
+index e0f58ac..a0772e3 100644
 --- a/resources/xml/fragment/player_dlna_search.xml
 +++ b/resources/xml/fragment/player_dlna_search.xml
 @@ -20,7 +20,7 @@
@@ -3984,7 +3984,7 @@ index e0f58ac15d8f1df6822d8fcf4f3b21ec8f5c23a8..a0772e3fd062e5e3df43c343c7d67230
                  <brls:Box
                          id="setting/dlna/device/box"
 diff --git a/resources/xml/fragment/player_setting.xml b/resources/xml/fragment/player_setting.xml
-index 5bd26b0e846820892c2f4959adae026a60a2d61b..a42a2330dd2050462130b832d72ffd15565588e1 100644
+index 5bd26b0..a42a233 100644
 --- a/resources/xml/fragment/player_setting.xml
 +++ b/resources/xml/fragment/player_setting.xml
 @@ -20,7 +20,7 @@
@@ -4042,7 +4042,7 @@ index 5bd26b0e846820892c2f4959adae026a60a2d61b..a42a2330dd2050462130b832d72ffd15
                  </brls:Box>
              </brls:Box>
 diff --git a/resources/xml/fragment/player_single_comment.xml b/resources/xml/fragment/player_single_comment.xml
-index 282cae001fb13cdc3033b70b9da46db3aeadb539..97e60207e286e10b09374cf97f5ed5852be1e57e 100644
+index 282cae0..97e6020 100644
 --- a/resources/xml/fragment/player_single_comment.xml
 +++ b/resources/xml/fragment/player_single_comment.xml
 @@ -28,7 +28,7 @@
@@ -4055,7 +4055,7 @@ index 282cae001fb13cdc3033b70b9da46db3aeadb539..97e60207e286e10b09374cf97f5ed585
                  positionTop="20"
                  positionLeft="20"/>
 diff --git a/resources/xml/fragment/player_single_comment_dynamic.xml b/resources/xml/fragment/player_single_comment_dynamic.xml
-index 745ac2f938229cb72abe686499edd7575e20c508..55de11e1922ecc7ef4dfd422266617bc852c94b2 100644
+index 745ac2f..55de11e 100644
 --- a/resources/xml/fragment/player_single_comment_dynamic.xml
 +++ b/resources/xml/fragment/player_single_comment_dynamic.xml
 @@ -24,7 +24,7 @@
@@ -4068,7 +4068,7 @@ index 745ac2f938229cb72abe686499edd7575e20c508..55de11e1922ecc7ef4dfd422266617bc
                  positionTop="20"
                  positionLeft="20"/>
 diff --git a/resources/xml/fragment/search_bangumi.xml b/resources/xml/fragment/search_bangumi.xml
-index 13cfe428a39145e7de743395be7cb943b64e4dbd..1b877fa2c0df2d60b68e9717b6dcd71118f14cec 100644
+index 13cfe42..1b877fa 100644
 --- a/resources/xml/fragment/search_bangumi.xml
 +++ b/resources/xml/fragment/search_bangumi.xml
 @@ -10,7 +10,7 @@
@@ -4082,7 +4082,7 @@ index 13cfe428a39145e7de743395be7cb943b64e4dbd..1b877fa2c0df2d60b68e9717b6dcd711
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/search_cinema.xml b/resources/xml/fragment/search_cinema.xml
-index a695c7306d7d1776e4b297fe9565b5972e2648a9..b8883cb9f0a0690f06d03eed67f8ad676161963a 100644
+index a695c73..b8883cb 100644
 --- a/resources/xml/fragment/search_cinema.xml
 +++ b/resources/xml/fragment/search_cinema.xml
 @@ -10,7 +10,7 @@
@@ -4096,7 +4096,7 @@ index a695c7306d7d1776e4b297fe9565b5972e2648a9..b8883cb9f0a0690f06d03eed67f8ad67
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/search_history.xml b/resources/xml/fragment/search_history.xml
-index 0d109b2144889e50a3d21dbc2df9e84edc8c694e..bee05aaf70411bba1f351d37359262be4d7842b2 100644
+index 0d109b2..bee05aa 100644
 --- a/resources/xml/fragment/search_history.xml
 +++ b/resources/xml/fragment/search_history.xml
 @@ -8,6 +8,6 @@
@@ -4109,7 +4109,7 @@ index 0d109b2144889e50a3d21dbc2df9e84edc8c694e..bee05aaf70411bba1f351d37359262be
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/search_hots.xml b/resources/xml/fragment/search_hots.xml
-index 9e09a9c4bdb130174ba21ed43b0541f99f4746e1..0a70acf9dca7e910d54b9e061adac5991669b4b1 100644
+index 9e09a9c..0a70acf 100644
 --- a/resources/xml/fragment/search_hots.xml
 +++ b/resources/xml/fragment/search_hots.xml
 @@ -8,6 +8,6 @@
@@ -4122,7 +4122,7 @@ index 9e09a9c4bdb130174ba21ed43b0541f99f4746e1..0a70acf9dca7e910d54b9e061adac599
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/search_order.xml b/resources/xml/fragment/search_order.xml
-index d06e16c336df1a4ee73c62bdc68eb8b65949a704..a01d7e36dc3afb4dcd12acd158504478583b1a5b 100644
+index d06e16c..a01d7e3 100644
 --- a/resources/xml/fragment/search_order.xml
 +++ b/resources/xml/fragment/search_order.xml
 @@ -15,31 +15,31 @@
@@ -4163,7 +4163,7 @@ index d06e16c336df1a4ee73c62bdc68eb8b65949a704..a01d7e36dc3afb4dcd12acd158504478
              fontSize="16">
              <SearchVideo order="stow" />
 diff --git a/resources/xml/fragment/search_tab.xml b/resources/xml/fragment/search_tab.xml
-index eaf2d0094a490abb964f82344f32c487b9615d2e..258dff900add46fc13f217c143095cfc2b5a2e37 100644
+index eaf2d00..258dff9 100644
 --- a/resources/xml/fragment/search_tab.xml
 +++ b/resources/xml/fragment/search_tab.xml
 @@ -13,27 +13,27 @@
@@ -4200,7 +4200,7 @@ index eaf2d0094a490abb964f82344f32c487b9615d2e..258dff900add46fc13f217c143095cfc
              <SearchCinema id="search/tab/cinema"/>
          </Tab>
 diff --git a/resources/xml/fragment/search_video.xml b/resources/xml/fragment/search_video.xml
-index bb84116b8b8a12ccaef87613c3ad182232147db1..cd84216caa496ba5b68aebfec5f9a80765154217 100644
+index bb84116..cd84216 100644
 --- a/resources/xml/fragment/search_video.xml
 +++ b/resources/xml/fragment/search_video.xml
 @@ -10,7 +10,9 @@
@@ -4216,7 +4216,7 @@ index bb84116b8b8a12ccaef87613c3ad182232147db1..cd84216caa496ba5b68aebfec5f9a807
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/setting_network.xml b/resources/xml/fragment/setting_network.xml
-index 934cf042fcbd47c637abfca4eb07a99c24daa393..d9459e7497af3919095b5bdcd76e25c9d55e1855 100644
+index 934cf04..d9459e7 100644
 --- a/resources/xml/fragment/setting_network.xml
 +++ b/resources/xml/fragment/setting_network.xml
 @@ -5,31 +5,31 @@
@@ -4313,7 +4313,7 @@ index 934cf042fcbd47c637abfca4eb07a99c24daa393..d9459e7497af3919095b5bdcd76e25c9
                  id="setting/net/dns"
                  horizontalAlign="right"
 diff --git a/resources/xml/fragment/settings_about.xml b/resources/xml/fragment/settings_about.xml
-index fe8b2bfa0dbb9d40ac829ad1845a0e6ff47ca3a2..85224140b936e58c504e93f205909388897ae31c 100644
+index fe8b2bf..8522414 100644
 --- a/resources/xml/fragment/settings_about.xml
 +++ b/resources/xml/fragment/settings_about.xml
 @@ -1,7 +1,7 @@
@@ -4429,7 +4429,7 @@ index fe8b2bfa0dbb9d40ac829ad1845a0e6ff47ca3a2..85224140b936e58c504e93f205909388
 -
  </brls:Box>
 diff --git a/resources/xml/fragment/settings_hot_keys.xml b/resources/xml/fragment/settings_hot_keys.xml
-index d752e2841f6d46cc0eebb1df1966fcd15f03a246..7028dfad9849925ab4f560ce8eacd919bca522e6 100644
+index d752e28..7028dfa 100644
 --- a/resources/xml/fragment/settings_hot_keys.xml
 +++ b/resources/xml/fragment/settings_hot_keys.xml
 @@ -2,18 +2,18 @@
@@ -4457,7 +4457,7 @@ index d752e2841f6d46cc0eebb1df1966fcd15f03a246..7028dfad9849925ab4f560ce8eacd919
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/settings_tutorial_error.xml b/resources/xml/fragment/settings_tutorial_error.xml
-index 98324071ec838493e2194d0e8c2b07519916c88a..58b5a969248eb996a0a95d404d020a71e6f8a8c9 100644
+index 9832407..58b5a96 100644
 --- a/resources/xml/fragment/settings_tutorial_error.xml
 +++ b/resources/xml/fragment/settings_tutorial_error.xml
 @@ -2,18 +2,18 @@
@@ -4485,7 +4485,7 @@ index 98324071ec838493e2194d0e8c2b07519916c88a..58b5a969248eb996a0a95d404d020a71
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/settings_tutorial_font.xml b/resources/xml/fragment/settings_tutorial_font.xml
-index 58ce7309c205ad7d449170364c10a3482abf37fb..6ac5c1f09e626ce5d29cfd17b0950d530041c8aa 100644
+index 58ce730..6ac5c1f 100644
 --- a/resources/xml/fragment/settings_tutorial_font.xml
 +++ b/resources/xml/fragment/settings_tutorial_font.xml
 @@ -2,17 +2,17 @@
@@ -4512,7 +4512,7 @@ index 58ce7309c205ad7d449170364c10a3482abf37fb..6ac5c1f09e626ce5d29cfd17b0950d53
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/fragment/share_dialog.xml b/resources/xml/fragment/share_dialog.xml
-index c009368f6b098ffb2930662c6d9a400699a4389e..48e80edf907b78f6d5711359c3de847707a94f64 100644
+index c009368..48e80ed 100644
 --- a/resources/xml/fragment/share_dialog.xml
 +++ b/resources/xml/fragment/share_dialog.xml
 @@ -22,7 +22,7 @@
@@ -4525,7 +4525,7 @@ index c009368f6b098ffb2930662c6d9a400699a4389e..48e80edf907b78f6d5711359c3de8477
  
      <brls:Box
 diff --git a/resources/xml/views/grid_dropdown.xml b/resources/xml/views/grid_dropdown.xml
-index 80ce9ef49817fd607fae7644b404d1bd05615ede..f612529d24650eab4275ef33fc074a51edd08768 100644
+index 80ce9ef..f612529 100644
 --- a/resources/xml/views/grid_dropdown.xml
 +++ b/resources/xml/views/grid_dropdown.xml
 @@ -1,5 +1,5 @@
@@ -4536,7 +4536,7 @@ index 80ce9ef49817fd607fae7644b404d1bd05615ede..f612529d24650eab4275ef33fc074a51
          axis="column">
  
 diff --git a/resources/xml/views/user_info_dynamic_all.xml b/resources/xml/views/user_info_dynamic_all.xml
-index 52cd8dcce03482058b61056fd9c5225c064ac407..88f99038741a561e030659a20d54e740445b8694 100644
+index 52cd8dc..88f9903 100644
 --- a/resources/xml/views/user_info_dynamic_all.xml
 +++ b/resources/xml/views/user_info_dynamic_all.xml
 @@ -35,6 +35,6 @@
@@ -4549,7 +4549,7 @@ index 52cd8dcce03482058b61056fd9c5225c064ac407..88f99038741a561e030659a20d54e740
  </brls:Box>
 \ No newline at end of file
 diff --git a/resources/xml/views/video_card_dynamic.xml b/resources/xml/views/video_card_dynamic.xml
-index 488a8b901d7757241777ea983819f9748ab15757..95483667ff4009cfbfb1f9ebf0baf5edfb102a3a 100644
+index 488a8b9..9548366 100644
 --- a/resources/xml/views/video_card_dynamic.xml
 +++ b/resources/xml/views/video_card_dynamic.xml
 @@ -21,7 +21,7 @@
@@ -4580,7 +4580,7 @@ index 488a8b901d7757241777ea983819f9748ab15757..95483667ff4009cfbfb1f9ebf0baf5ed
                  fontSize="16"/>
      </brls:Box>
 diff --git a/resources/xml/views/video_comment.xml b/resources/xml/views/video_comment.xml
-index c74593e7c0f3b6803ef1923dba18710809fc6c71..a1c4f67225adf4876f389f97e1cb645f5b97d69d 100644
+index c74593e..a1c4f67 100644
 --- a/resources/xml/views/video_comment.xml
 +++ b/resources/xml/views/video_comment.xml
 @@ -13,7 +13,7 @@
@@ -4593,7 +4593,7 @@ index c74593e7c0f3b6803ef1923dba18710809fc6c71..a1c4f67225adf4876f389f97e1cb645f
              width="30"
              height="30"/>
 diff --git a/resources/xml/views/video_view.xml b/resources/xml/views/video_view.xml
-index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..a409a35c4f5034977e06ab1d92fc2d06a33a81da 100644
+index b017ae2..a409a35 100644
 --- a/resources/xml/views/video_view.xml
 +++ b/resources/xml/views/video_view.xml
 @@ -4,92 +4,96 @@
@@ -5186,7 +5186,7 @@ index b017ae25314dec49d4f2ecb7a57a575e8c8423fa..a409a35c4f5034977e06ab1d92fc2d06
 \ No newline at end of file
 +</brls:Box>
 diff --git a/scripts/build_mac.sh b/scripts/build_mac.sh
-index 3bd14809931d8da3a5acd41a550a42f2404e7bbb..d5633f2bf1ce3428d8a1a42f9dcbeb591efdbf3c 100755
+index 3bd1480..d5633f2 100755
 --- a/scripts/build_mac.sh
 +++ b/scripts/build_mac.sh
 @@ -4,17 +4,17 @@ set -e
@@ -5229,7 +5229,7 @@ index 3bd14809931d8da3a5acd41a550a42f2404e7bbb..d5633f2bf1ce3428d8a1a42f9dcbeb59
    codesign --sign - --force "${APP_PATH}"/Contents/MacOS/lib/*
  fi
 diff --git a/scripts/build_switch.sh b/scripts/build_switch.sh
-index bccc3642f1a5193ac6036a4a306a7054baab3a01..6bb1d218d2e90a9d00d0defc239879d1780945b9 100755
+index bccc364..6bb1d21 100755
 --- a/scripts/build_switch.sh
 +++ b/scripts/build_switch.sh
 @@ -3,7 +3,7 @@ set -e
@@ -5250,7 +5250,7 @@ index bccc3642f1a5193ac6036a4a306a7054baab3a01..6bb1d218d2e90a9d00d0defc239879d1
 +make -C ${BUILD_DIR} silisili.nro -j$(nproc)
 \ No newline at end of file
 diff --git a/scripts/build_switch_deko3d.sh b/scripts/build_switch_deko3d.sh
-index 222511bd265c9d66958f04e718e0f0af2255edf7..547367ba195fbf9fd74c0e209c70fd041af6e6a1 100755
+index 222511b..547367b 100755
 --- a/scripts/build_switch_deko3d.sh
 +++ b/scripts/build_switch_deko3d.sh
 @@ -3,7 +3,7 @@ set -e
@@ -5271,7 +5271,7 @@ index 222511bd265c9d66958f04e718e0f0af2255edf7..547367ba195fbf9fd74c0e209c70fd04
 +make -C ${BUILD_DIR} silisili.nro -j$(nproc)
 \ No newline at end of file
 diff --git a/scripts/deb/switchroot-bionic/build.sh b/scripts/deb/switchroot-bionic/build.sh
-index 674eb55085145ad1f5803568a5f0abb2cb27ad2f..dae49aafef959603224b80c613337ca35c086dac 100644
+index 674eb55..dae49aa 100644
 --- a/scripts/deb/switchroot-bionic/build.sh
 +++ b/scripts/deb/switchroot-bionic/build.sh
 @@ -2,7 +2,7 @@
@@ -5304,7 +5304,7 @@ index 674eb55085145ad1f5803568a5f0abb2cb27ad2f..dae49aafef959603224b80c613337ca3
 -dpkg --build /tmp/deb wiliwili-Linux-aarch64-switchroot-ubuntu.deb
 +dpkg --build /tmp/deb silisili-Linux-aarch64-switchroot-ubuntu.deb
 diff --git a/scripts/deb/switchroot-bionic/control b/scripts/deb/switchroot-bionic/control
-index 5854e6f97ed830d9ca15131eb6c84ba87b1e06c7..427a8ea4e8123bd9dbcc32a46bd4e54978d3f4c5 100644
+index 5854e6f..427a8ea 100644
 --- a/scripts/deb/switchroot-bionic/control
 +++ b/scripts/deb/switchroot-bionic/control
 @@ -4,7 +4,7 @@ Maintainer: xfangfang <xfangfang@126.com>
@@ -5317,7 +5317,7 @@ index 5854e6f97ed830d9ca15131eb6c84ba87b1e06c7..427a8ea4e8123bd9dbcc32a46bd4e549
  Depends: libass9,
           libdbus-1-3,
 diff --git a/scripts/generate-assets.lua b/scripts/generate-assets.lua
-index 19de56fce99b0748ed1cb69b6a6fe6e6f87e1c43..f607e3de8ce7ac49913a0e7cdf4c46e263ba4dea 100644
+index 19de56f..f607e3d 100644
 --- a/scripts/generate-assets.lua
 +++ b/scripts/generate-assets.lua
 @@ -16,15 +16,15 @@ function main(...)
@@ -5342,7 +5342,7 @@ index 19de56fce99b0748ed1cb69b6a6fe6e6f87e1c43..f607e3de8ce7ac49913a0e7cdf4c46e2
          if #resize > 2 then
              os.vexecv("magick", {"convert", "-background", "none", "-gravity", "center", "-extent", resize[3], out, "build/tmp.png"})
 diff --git a/scripts/i18n.sh b/scripts/i18n.sh
-index 75a25d8690c2f658c47d7753832214a5d2426095..17ad2c1f43a03b5b8b04b52f8277e164e76e76bf 100755
+index 75a25d8..17ad2c1 100755
 --- a/scripts/i18n.sh
 +++ b/scripts/i18n.sh
 @@ -1,9 +1,9 @@
@@ -5385,7 +5385,7 @@ diff --git a/scripts/linux/cn.xfangfang.wiliwili.appdata.xml b/scripts/linux/cn.
 similarity index 57%
 rename from scripts/linux/cn.xfangfang.wiliwili.appdata.xml
 rename to scripts/linux/cn.silisili.app.appdata.xml
-index ee9671a44acdb487996eed5f357a57b2a03660b8..9322fb1458ddfca4eb9482436d7b3da34e18dc3d 100644
+index ee9671a..9322fb1 100644
 --- a/scripts/linux/cn.xfangfang.wiliwili.appdata.xml
 +++ b/scripts/linux/cn.silisili.app.appdata.xml
 @@ -1,21 +1,21 @@
@@ -5455,7 +5455,7 @@ index ee9671a44acdb487996eed5f357a57b2a03660b8..9322fb1458ddfca4eb9482436d7b3da3
  </component>
 diff --git a/scripts/linux/cn.silisili.app.desktop b/scripts/linux/cn.silisili.app.desktop
 new file mode 100644
-index 0000000000000000000000000000000000000000..439bc5d1321216281d47609b2ec76971554eb116
+index 0000000..439bc5d
 --- /dev/null
 +++ b/scripts/linux/cn.silisili.app.desktop
 @@ -0,0 +1,8 @@
@@ -5469,7 +5469,7 @@ index 0000000000000000000000000000000000000000..439bc5d1321216281d47609b2ec76971
 +Categories=AudioVideo;Audio;Video;
 diff --git a/scripts/linux/cn.xfangfang.wiliwili.desktop b/scripts/linux/cn.xfangfang.wiliwili.desktop
 deleted file mode 100644
-index facfabd2d8374353b5b618b2647b279b8ad00f19..0000000000000000000000000000000000000000
+index facfabd..0000000
 --- a/scripts/linux/cn.xfangfang.wiliwili.desktop
 +++ /dev/null
 @@ -1,8 +0,0 @@
@@ -5482,7 +5482,7 @@ index facfabd2d8374353b5b618b2647b279b8ad00f19..00000000000000000000000000000000
 -Type=Application
 -Categories=AudioVideo;Audio;Video;
 diff --git a/scripts/linux/gen_icons.sh b/scripts/linux/gen_icons.sh
-index 8ccfbb6a933c1898c06ff7c24f383d1a5e6e794f..14cedfad217f0f05e4cb1674d4bccc5d287677c9 100755
+index 8ccfbb6..14cedfa 100755
 --- a/scripts/linux/gen_icons.sh
 +++ b/scripts/linux/gen_icons.sh
 @@ -8,6 +8,6 @@ icon_dirs=(16 24 32 48 64 128 256)
@@ -5522,7 +5522,7 @@ similarity index 100%
 rename from scripts/linux/icons/64x64/cn.xfangfang.wiliwili.png
 rename to scripts/linux/icons/64x64/cn.silisili.app.png
 diff --git a/scripts/mac/Info.plist b/scripts/mac/Info.plist
-index 351141ff088cd94ca204b01b20de3879dfedc7c8..c38ef0291b6022b56d13b375882b1cac59df9217 100644
+index 351141f..c38ef02 100644
 --- a/scripts/mac/Info.plist
 +++ b/scripts/mac/Info.plist
 @@ -20,11 +20,11 @@
@@ -5549,7 +5549,7 @@ index 351141ff088cd94ca204b01b20de3879dfedc7c8..c38ef0291b6022b56d13b375882b1cac
      <string>MainMenu</string>
      <key>NSPrincipalClass</key>
 diff --git a/scripts/mac/readme.txt b/scripts/mac/readme.txt
-index 2393c17341cbaab440dae6a193792794cc5d17cd..817b8fd98c292442550342fa378dc63aa323197f 100644
+index 2393c17..817b8fd 100644
 --- a/scripts/mac/readme.txt
 +++ b/scripts/mac/readme.txt
 @@ -1,8 +1,8 @@
@@ -5566,7 +5566,7 @@ index 2393c17341cbaab440dae6a193792794cc5d17cd..817b8fd98c292442550342fa378dc63a
 -sudo xattr -rd com.apple.quarantine /Applications/wiliwili.app
 +sudo xattr -rd com.apple.quarantine /Applications/silisili.app
 diff --git a/scripts/macos_dylib_include.sh b/scripts/macos_dylib_include.sh
-index 211aacb6799bf3f3f4b573de7b4cb7b2c5d41a17..b0322164a882d493118e71036780e0495c640be0 100644
+index 211aacb..b032216 100644
 --- a/scripts/macos_dylib_include.sh
 +++ b/scripts/macos_dylib_include.sh
 @@ -4,7 +4,7 @@ boost_version="1.85.0"
@@ -5579,7 +5579,7 @@ index 211aacb6799bf3f3f4b573de7b4cb7b2c5d41a17..b0322164a882d493118e71036780e049
  
  rm -rf include
 diff --git a/scripts/switch-forwarder/CMakeLists.txt b/scripts/switch-forwarder/CMakeLists.txt
-index 8339cc0885848b2b7542f1f528268c3a06abf34c..0292d16b2b4e40914b9b32a225aee8623bdc51e0 100644
+index 8339cc0..0292d16 100644
 --- a/scripts/switch-forwarder/CMakeLists.txt
 +++ b/scripts/switch-forwarder/CMakeLists.txt
 @@ -31,7 +31,7 @@ endif ()
@@ -5592,7 +5592,7 @@ index 8339cc0885848b2b7542f1f528268c3a06abf34c..0292d16b2b4e40914b9b32a225aee862
  
  add_custom_target(${PROJECT_NAME}.nsp DEPENDS ${PROJECT_NAME}.pfs0
 diff --git a/scripts/switch-forwarder/Makefile b/scripts/switch-forwarder/Makefile
-index baaee90a2c9cdd806ae9e52d8a3064f764c7c8f1..f35db0e134812901519a53cebbb8b403c1baaeb9 100644
+index baaee90..f35db0e 100644
 --- a/scripts/switch-forwarder/Makefile
 +++ b/scripts/switch-forwarder/Makefile
 @@ -37,12 +37,12 @@ include $(DEVKITPRO)/libnx/switch_rules
@@ -5620,7 +5620,7 @@ index baaee90a2c9cdd806ae9e52d8a3064f764c7c8f1..f35db0e134812901519a53cebbb8b403
  #---------------------------------------------------------------------------------
  # options for code generation
 diff --git a/scripts/switch-forwarder/README.md b/scripts/switch-forwarder/README.md
-index 64cd825bdc56d82f56d3d8b2521f0a0095fa61dc..8bbd298670ffad71c2f04a06f4c585042a629d54 100644
+index 64cd825..8bbd298 100644
 --- a/scripts/switch-forwarder/README.md
 +++ b/scripts/switch-forwarder/README.md
 @@ -3,18 +3,18 @@
@@ -5646,7 +5646,7 @@ index 64cd825bdc56d82f56d3d8b2521f0a0095fa61dc..8bbd298670ffad71c2f04a06f4c58504
  
  # 感谢
 diff --git a/scripts/switch-forwarder/pack.sh b/scripts/switch-forwarder/pack.sh
-index 70659424a7356be8388839b1104637dc5b7ee55c..9a0e8ad668e6a27fabb1cf66c326d1a4c79d794a 100644
+index 7065942..9a0e8ad 100644
 --- a/scripts/switch-forwarder/pack.sh
 +++ b/scripts/switch-forwarder/pack.sh
 @@ -1,12 +1,12 @@
@@ -5672,7 +5672,7 @@ similarity index 100%
 rename from scripts/switch-forwarder/wiliwili.json
 rename to scripts/switch-forwarder/silisili.json
 diff --git a/scripts/switch-forwarder/source/main.c b/scripts/switch-forwarder/source/main.c
-index 4e537608e677ad2ad0b6b06d33c736b72a4893b5..ae923610b20e84a3f3f43b34ce079fd14b29d5be 100644
+index 4e53760..ae92361 100644
 --- a/scripts/switch-forwarder/source/main.c
 +++ b/scripts/switch-forwarder/source/main.c
 @@ -4,8 +4,8 @@
@@ -5687,7 +5687,7 @@ index 4e537608e677ad2ad0b6b06d33c736b72a4893b5..ae923610b20e84a3f3f43b34ce079fd1
  const char g_noticeText[] =
      "nx-hbloader " VERSION
 diff --git a/scripts/update_gamecontrollerdb.sh b/scripts/update_gamecontrollerdb.sh
-index 0d75c34b5ff2aa945540b681c400d1032194c7ad..7cf38cdbb19b93be40922e88ae66da1846746fcf 100755
+index 0d75c34..7cf38cd 100755
 --- a/scripts/update_gamecontrollerdb.sh
 +++ b/scripts/update_gamecontrollerdb.sh
 @@ -1,6 +1,6 @@
@@ -5707,7 +5707,7 @@ diff --git a/wiliwili/app_win32.rc.in b/silisili/app_win32.rc.in
 similarity index 85%
 rename from wiliwili/app_win32.rc.in
 rename to silisili/app_win32.rc.in
-index b65285bf7f498e3f3310cfe573db1c02a5830ab1..dac1152557af2fbcc17c69376a78741f897676f8 100644
+index b65285b..dac1152 100644
 --- a/wiliwili/app_win32.rc.in
 +++ b/silisili/app_win32.rc.in
 @@ -25,10 +25,10 @@ BEGIN
@@ -5727,7 +5727,7 @@ diff --git a/wiliwili/include/activity/README.MD b/silisili/include/activity/REA
 similarity index 96%
 rename from wiliwili/include/activity/README.MD
 rename to silisili/include/activity/README.MD
-index 7b0e405ecda3fc275a956b86ba90436a69c3900c..6564e7f8421f5e06c99d161292215714ee383583 100644
+index 7b0e405..6564e7f 100644
 --- a/wiliwili/include/activity/README.MD
 +++ b/silisili/include/activity/README.MD
 @@ -1,4 +1,4 @@
@@ -5753,13 +5753,22 @@ similarity index 100%
 rename from wiliwili/include/activity/hint_activity.hpp
 rename to silisili/include/activity/hint_activity.hpp
 diff --git a/wiliwili/include/activity/live_player_activity.hpp b/silisili/include/activity/live_player_activity.hpp
-similarity index 99%
+similarity index 97%
 rename from wiliwili/include/activity/live_player_activity.hpp
 rename to silisili/include/activity/live_player_activity.hpp
-index 9461869f6eccd7a7400acb33d2dcb822cb59a66e..be760e1a7c1502b5f5c5f4ebae9d218b45a1d2ba 100644
+index 9461869..c093ca6 100644
 --- a/wiliwili/include/activity/live_player_activity.hpp
 +++ b/silisili/include/activity/live_player_activity.hpp
-@@ -99,6 +99,8 @@ public:
+@@ -43,6 +43,8 @@ public:
+ 
+     void onContentAvailable() override;
+ 
++    bool allowsSailfishPageBackGesture(brls::Point) const override { return false; }
++
+     void onLiveData(const bilibili::LiveRoomPlayInfo& result) override;
+ 
+     void onError(const std::string& error) override;
+@@ -99,6 +101,8 @@ public:
      ~LiveActivity() override;
  
  private:
@@ -5768,7 +5777,7 @@ index 9461869f6eccd7a7400acb33d2dcb822cb59a66e..be760e1a7c1502b5f5c5f4ebae9d218b
      // 关注/取关主播
      void follow_anchor(bool follow);
  
-@@ -147,4 +149,5 @@ private:
+@@ -147,4 +151,5 @@ private:
          std::atomic<bool> isActive{true};
      };
      std::shared_ptr<ThreadSafeState> threadState{std::make_shared<ThreadSafeState>()};
@@ -5778,7 +5787,7 @@ diff --git a/wiliwili/include/activity/main_activity.hpp b/silisili/include/acti
 similarity index 92%
 rename from wiliwili/include/activity/main_activity.hpp
 rename to silisili/include/activity/main_activity.hpp
-index 234c8ceb056e50ec3af79fa050f52c46f7fef50f..ba65d823b354152c4c30ac18c26491dd90b04263 100644
+index 234c8ce..ba65d82 100644
 --- a/wiliwili/include/activity/main_activity.hpp
 +++ b/silisili/include/activity/main_activity.hpp
 @@ -17,6 +17,7 @@
@@ -5806,22 +5815,24 @@ similarity index 100%
 rename from wiliwili/include/activity/pgc_index_activity.hpp
 rename to silisili/include/activity/pgc_index_activity.hpp
 diff --git a/wiliwili/include/activity/player_activity.hpp b/silisili/include/activity/player_activity.hpp
-similarity index 93%
+similarity index 92%
 rename from wiliwili/include/activity/player_activity.hpp
 rename to silisili/include/activity/player_activity.hpp
-index edef53330cd616a4e4da8015707c73e1fa118507..c75a158e5c1fe2e59e293bd59113e308bb219e55 100644
+index edef533..9bc627e 100644
 --- a/wiliwili/include/activity/player_activity.hpp
 +++ b/silisili/include/activity/player_activity.hpp
-@@ -93,6 +93,8 @@ public:
+@@ -93,6 +93,10 @@ public:
  
      ~BasePlayerActivity() override;
  
 +    void setEmbeddedFullscreen(bool fullscreen);
 +
++    bool allowsSailfishPageBackGesture(brls::Point startPosition) const override;
++
      // 分集播放结束后，自动播放推荐视频
      // 视频播放策略
      // 0: 分集播放结束后，自动播放推荐视频
-@@ -135,8 +137,19 @@ protected:
+@@ -135,8 +139,19 @@ protected:
      ChangeIndexEvent changeIndexEvent;
  
  private:
@@ -5841,7 +5852,7 @@ index edef53330cd616a4e4da8015707c73e1fa118507..c75a158e5c1fe2e59e293bd59113e308
  
      // 重新选择当前清晰度的播放链接播放
      void updateVideoLink();
-@@ -215,4 +228,4 @@ private:
+@@ -215,4 +230,4 @@ private:
  
      BRLS_BIND(brls::Box, boxFavorites, "video/favorites/box");
      BRLS_BIND(brls::Label, videoFavoritesLabel, "video/favorites");
@@ -5864,7 +5875,7 @@ diff --git a/wiliwili/include/api/README.MD b/silisili/include/api/README.MD
 similarity index 65%
 rename from wiliwili/include/api/README.MD
 rename to silisili/include/api/README.MD
-index 89bf59b64a234b58a88f72f28eabe9f7fad14ba2..3f726777d9cb9d3fec89418b6ed76d3c023126ed 100644
+index 89bf59b..3f72677 100644
 --- a/wiliwili/include/api/README.MD
 +++ b/silisili/include/api/README.MD
 @@ -1,3 +1,3 @@
@@ -5977,7 +5988,7 @@ diff --git a/wiliwili/include/api/bilibili/util/http.hpp b/silisili/include/api/
 similarity index 90%
 rename from wiliwili/include/api/bilibili/util/http.hpp
 rename to silisili/include/api/bilibili/util/http.hpp
-index 8b08a52694b85ce32acbdb34899f45d52dfc1a0b..9c2a324d91dbcf4882a654ce8cde03cc033a1dd8 100644
+index 8b08a52..9c2a324 100644
 --- a/wiliwili/include/api/bilibili/util/http.hpp
 +++ b/silisili/include/api/bilibili/util/http.hpp
 @@ -66,7 +66,7 @@ class HTTP {
@@ -6076,7 +6087,7 @@ diff --git a/wiliwili/include/api/bilibili/util/wbi.hpp b/silisili/include/api/b
 similarity index 95%
 rename from wiliwili/include/api/bilibili/util/wbi.hpp
 rename to silisili/include/api/bilibili/util/wbi.hpp
-index 79c9eb789f52233897ce2ed927f2719fe8db70c6..992f82b967bcf2e983b93b0c9b2ccd6e27e83c51 100644
+index 79c9eb7..992f82b 100644
 --- a/wiliwili/include/api/bilibili/util/wbi.hpp
 +++ b/silisili/include/api/bilibili/util/wbi.hpp
 @@ -1,5 +1,5 @@
@@ -6110,7 +6121,7 @@ diff --git a/wiliwili/include/fragment/README.MD b/silisili/include/fragment/REA
 similarity index 95%
 rename from wiliwili/include/fragment/README.MD
 rename to silisili/include/fragment/README.MD
-index e48e7c3e2742ddc2c49accc1584fd8e474c8e3b2..6f7f1735a90bd35e330fa6cc86c04e9fd6a39af5 100644
+index e48e7c3..6f7f173 100644
 --- a/wiliwili/include/fragment/README.MD
 +++ b/silisili/include/fragment/README.MD
 @@ -1,4 +1,4 @@
@@ -6163,7 +6174,7 @@ diff --git a/wiliwili/include/fragment/home_tab.hpp b/silisili/include/fragment/
 similarity index 81%
 rename from wiliwili/include/fragment/home_tab.hpp
 rename to silisili/include/fragment/home_tab.hpp
-index 98020e48b64a5d6a3ceec3caeffa5fc1821966cf..50b9fb820e47fcfc2e02f517ad9f7563a35994d9 100644
+index 98020e4..50b9fb8 100644
 --- a/wiliwili/include/fragment/home_tab.hpp
 +++ b/silisili/include/fragment/home_tab.hpp
 @@ -6,7 +6,6 @@
@@ -6226,7 +6237,7 @@ diff --git a/wiliwili/include/fragment/mine_tab.hpp b/silisili/include/fragment/
 similarity index 97%
 rename from wiliwili/include/fragment/mine_tab.hpp
 rename to silisili/include/fragment/mine_tab.hpp
-index 4d283a52d940f5dfbf7de27500fbd321ee8c88fb..f4d5c59e7032d18cfe2a1c955354a37b107448dc 100644
+index 4d283a5..f4d5c59 100644
 --- a/wiliwili/include/fragment/mine_tab.hpp
 +++ b/silisili/include/fragment/mine_tab.hpp
 @@ -47,7 +47,7 @@ private:
@@ -6305,7 +6316,7 @@ diff --git a/wiliwili/include/fragment/search_tab.hpp b/silisili/include/fragmen
 similarity index 96%
 rename from wiliwili/include/fragment/search_tab.hpp
 rename to silisili/include/fragment/search_tab.hpp
-index fcf20badec1f07d2effc6eb3531a6be79e4fcf16..dcf4a2c9caf19fc03e0c4694930f0fe6b743983c 100644
+index fcf20ba..dcf4a2c 100644
 --- a/wiliwili/include/fragment/search_tab.hpp
 +++ b/silisili/include/fragment/search_tab.hpp
 @@ -69,7 +69,7 @@ public:
@@ -6363,7 +6374,7 @@ diff --git a/wiliwili/include/presenter/README.MD b/silisili/include/presenter/R
 similarity index 98%
 rename from wiliwili/include/presenter/README.MD
 rename to silisili/include/presenter/README.MD
-index 738e658ede1f5b4424bc9c4a408678f8b04e488b..c3962cbea816c3a3601edcd726993639ce103098 100644
+index 738e658..c3962cb 100644
 --- a/wiliwili/include/presenter/README.MD
 +++ b/silisili/include/presenter/README.MD
 @@ -1,4 +1,4 @@
@@ -6468,7 +6479,7 @@ diff --git a/wiliwili/include/utils/ban_list.hpp b/silisili/include/utils/ban_li
 similarity index 95%
 rename from wiliwili/include/utils/ban_list.hpp
 rename to silisili/include/utils/ban_list.hpp
-index 6cbc22037829e1f902e217a26324e624893b0282..c5c969bebf08357df62166da411d3f5c8b103fc5 100644
+index 6cbc220..c5c969b 100644
 --- a/wiliwili/include/utils/ban_list.hpp
 +++ b/silisili/include/utils/ban_list.hpp
 @@ -14,7 +14,7 @@
@@ -6527,7 +6538,7 @@ diff --git a/wiliwili/include/utils/config_helper.hpp b/silisili/include/utils/c
 similarity index 98%
 rename from wiliwili/include/utils/config_helper.hpp
 rename to silisili/include/utils/config_helper.hpp
-index 41745e6fc4422422d6760215e31e9a5b42471e46..87938cd926c8fe2103abe9378b26e29b8adb2e72 100644
+index 41745e6..87938cd 100644
 --- a/wiliwili/include/utils/config_helper.hpp
 +++ b/silisili/include/utils/config_helper.hpp
 @@ -129,7 +129,8 @@ enum class SettingItem {
@@ -6544,7 +6555,7 @@ diff --git a/wiliwili/include/utils/crash_helper.hpp b/silisili/include/utils/cr
 similarity index 65%
 rename from wiliwili/include/utils/crash_helper.hpp
 rename to silisili/include/utils/crash_helper.hpp
-index 27fe0ff40b753ba8dcc51105e46331a21f28be53..098028a851bde2e891c59db93d78cfed5908bb0d 100644
+index 27fe0ff..098028a 100644
 --- a/wiliwili/include/utils/crash_helper.hpp
 +++ b/silisili/include/utils/crash_helper.hpp
 @@ -1,6 +1,6 @@
@@ -6567,7 +6578,7 @@ diff --git a/wiliwili/include/utils/event_helper.hpp b/silisili/include/utils/ev
 similarity index 95%
 rename from wiliwili/include/utils/event_helper.hpp
 rename to silisili/include/utils/event_helper.hpp
-index 571769520748d55b08ea219369582c5267e5a267..9faf59da1751c1768bddc6fb8d0da4f7a6c89391 100644
+index 5717695..9faf59d 100644
 --- a/wiliwili/include/utils/event_helper.hpp
 +++ b/silisili/include/utils/event_helper.hpp
 @@ -37,6 +37,9 @@ typedef enum MpvEventEnum {
@@ -6584,7 +6595,7 @@ diff --git a/wiliwili/include/utils/gesture_helper.hpp b/silisili/include/utils/
 similarity index 74%
 rename from wiliwili/include/utils/gesture_helper.hpp
 rename to silisili/include/utils/gesture_helper.hpp
-index 40928bb9b0c24270737489fdf28b4f5e3f6dce25..a03603598369ce5df461b6932a1206f09a014df4 100644
+index 40928bb..a036035 100644
 --- a/wiliwili/include/utils/gesture_helper.hpp
 +++ b/silisili/include/utils/gesture_helper.hpp
 @@ -4,6 +4,8 @@
@@ -6653,7 +6664,7 @@ diff --git a/wiliwili/include/utils/number_helper.hpp b/silisili/include/utils/n
 similarity index 97%
 rename from wiliwili/include/utils/number_helper.hpp
 rename to silisili/include/utils/number_helper.hpp
-index 87d840762ea1d17f3ac93cffef78490df358cc93..ed1ea1b1018a44e0e06b82885d3353f4bae6916a 100644
+index 87d8407..ed1ea1b 100644
 --- a/wiliwili/include/utils/number_helper.hpp
 +++ b/silisili/include/utils/number_helper.hpp
 @@ -16,7 +16,7 @@
@@ -6685,7 +6696,7 @@ diff --git a/wiliwili/include/utils/shortcut_helper.hpp b/silisili/include/utils
 similarity index 71%
 rename from wiliwili/include/utils/shortcut_helper.hpp
 rename to silisili/include/utils/shortcut_helper.hpp
-index 86f7efe4d9428bbe6420b68bede78b59b4705a10..2e4ad7662440dafa9a25926e9e9aae095c40dd54 100644
+index 86f7efe..2e4ad76 100644
 --- a/wiliwili/include/utils/shortcut_helper.hpp
 +++ b/silisili/include/utils/shortcut_helper.hpp
 @@ -7,7 +7,7 @@
@@ -6781,7 +6792,7 @@ diff --git a/wiliwili/include/utils/string_helper.hpp b/silisili/include/utils/s
 similarity index 94%
 rename from wiliwili/include/utils/string_helper.hpp
 rename to silisili/include/utils/string_helper.hpp
-index 961f4a4f4f44de30c39ac7d528d208a22d148963..90c6ce7fdabd8090f2c39db6d159ce748d1dded2 100644
+index 961f4a4..90c6ce7 100644
 --- a/wiliwili/include/utils/string_helper.hpp
 +++ b/silisili/include/utils/string_helper.hpp
 @@ -8,7 +8,7 @@
@@ -6817,7 +6828,7 @@ diff --git a/wiliwili/include/view/auto_tab_frame.hpp b/silisili/include/view/au
 similarity index 98%
 rename from wiliwili/include/view/auto_tab_frame.hpp
 rename to silisili/include/view/auto_tab_frame.hpp
-index 52b908d95dc31ea4891a50046114e5f4d879c60c..19154e8854c99204ce8a786531847a971b97f40a 100644
+index 52b908d..19154e8 100644
 --- a/wiliwili/include/view/auto_tab_frame.hpp
 +++ b/silisili/include/view/auto_tab_frame.hpp
 @@ -31,9 +31,9 @@ class Rectangle;
@@ -6892,7 +6903,7 @@ diff --git a/wiliwili/include/view/mpv_core.hpp b/silisili/include/view/mpv_core
 similarity index 98%
 rename from wiliwili/include/view/mpv_core.hpp
 rename to silisili/include/view/mpv_core.hpp
-index 331659690b7e19ce3124e7c5d166261bd66d4cee..ed6d20904f0edff02bde13883f95e1b6f7352a34 100644
+index 3316596..ed6d209 100644
 --- a/wiliwili/include/view/mpv_core.hpp
 +++ b/silisili/include/view/mpv_core.hpp
 @@ -264,12 +264,17 @@ public:
@@ -6931,7 +6942,7 @@ diff --git a/wiliwili/include/view/recycling_grid.hpp b/silisili/include/view/re
 similarity index 98%
 rename from wiliwili/include/view/recycling_grid.hpp
 rename to silisili/include/view/recycling_grid.hpp
-index 24de3649ea46cf6b8bf608a16e6889d07f94345d..f479811fb0ace06a78d555d03dabead0a30d837b 100644
+index 24de364..f479811 100644
 --- a/wiliwili/include/view/recycling_grid.hpp
 +++ b/silisili/include/view/recycling_grid.hpp
 @@ -193,6 +193,9 @@ public:
@@ -6999,7 +7010,7 @@ diff --git a/wiliwili/include/view/video_view.hpp b/silisili/include/view/video_
 similarity index 96%
 rename from wiliwili/include/view/video_view.hpp
 rename to silisili/include/view/video_view.hpp
-index 286b9014a62b5c2e06a752e1996ec69eca603eba..c3fb9c3f7845bd72181057d97a3b2d8fb5dc4153 100644
+index 286b901..c3fb9c3 100644
 --- a/wiliwili/include/view/video_view.hpp
 +++ b/silisili/include/view/video_view.hpp
 @@ -166,6 +166,9 @@ public:
@@ -7068,7 +7079,7 @@ diff --git a/wiliwili/source/activity/dlna_activity.cpp b/silisili/source/activi
 similarity index 97%
 rename from wiliwili/source/activity/dlna_activity.cpp
 rename to silisili/source/activity/dlna_activity.cpp
-index 55829e32818f04b17571661a205005b02c4c619e..65c58eaf27a38b92c6ba8be5b1e54991ddb063c8 100644
+index 55829e3..65c58ea 100644
 --- a/wiliwili/source/activity/dlna_activity.cpp
 +++ b/silisili/source/activity/dlna_activity.cpp
 @@ -35,15 +35,15 @@ DLNAActivity::DLNAActivity() {
@@ -7149,7 +7160,7 @@ diff --git a/wiliwili/source/activity/hint_activity.cpp b/silisili/source/activi
 similarity index 75%
 rename from wiliwili/source/activity/hint_activity.cpp
 rename to silisili/source/activity/hint_activity.cpp
-index a8dee2f3903f65e0cb4901e43c266be127b1bad5..7a227fec457a50f4b35d98d0ed1b7fa3d2a2f883 100644
+index a8dee2f..7a227fe 100644
 --- a/wiliwili/source/activity/hint_activity.cpp
 +++ b/silisili/source/activity/hint_activity.cpp
 @@ -30,14 +30,14 @@ const std::string galleryItemInstallNSPXML = R"xml(
@@ -7223,7 +7234,7 @@ diff --git a/wiliwili/source/activity/live_player_activity.cpp b/silisili/source
 similarity index 97%
 rename from wiliwili/source/activity/live_player_activity.cpp
 rename to silisili/source/activity/live_player_activity.cpp
-index 8e9caf2e89a308ca94d4b6d7106e176cab44a056..9d24b474a81768763a967b32b9e45fe92cbfb98f 100644
+index 8e9caf2..9d24b47 100644
 --- a/wiliwili/source/activity/live_player_activity.cpp
 +++ b/silisili/source/activity/live_player_activity.cpp
 @@ -100,7 +100,7 @@ void LiveActivity::setCommonData() {
@@ -7326,7 +7337,7 @@ diff --git a/wiliwili/source/activity/main_activity.cpp b/silisili/source/activi
 similarity index 53%
 rename from wiliwili/source/activity/main_activity.cpp
 rename to silisili/source/activity/main_activity.cpp
-index 2e4042a72226779c8c02b0e4afda31a9255402e9..8b25c871f38bde500d7b4d455a882e522e48ba50 100644
+index 2e4042a..8b25c87 100644
 --- a/wiliwili/source/activity/main_activity.cpp
 +++ b/silisili/source/activity/main_activity.cpp
 @@ -1,109 +1,79 @@
@@ -7523,7 +7534,7 @@ diff --git a/wiliwili/source/activity/pgc_index_activity.cpp b/silisili/source/a
 similarity index 99%
 rename from wiliwili/source/activity/pgc_index_activity.cpp
 rename to silisili/source/activity/pgc_index_activity.cpp
-index 642512428c2516a1d80a792782f46ff2b86b34f3..6600c0ad00bbbe8c94f48dc323b303444fe99ad1 100644
+index 6425124..6600c0a 100644
 --- a/wiliwili/source/activity/pgc_index_activity.cpp
 +++ b/silisili/source/activity/pgc_index_activity.cpp
 @@ -382,7 +382,7 @@ void PGCIndexActivity::onContentAvailable() {
@@ -7539,7 +7550,7 @@ diff --git a/wiliwili/source/activity/player_activity.cpp b/silisili/source/acti
 similarity index 88%
 rename from wiliwili/source/activity/player_activity.cpp
 rename to silisili/source/activity/player_activity.cpp
-index aec81116c76d0103caeadeed4702e1976693bb31..53b516d530506246c65da84ab0332b02ed0bb545 100644
+index aec8111..53b516d 100644
 --- a/wiliwili/source/activity/player_activity.cpp
 +++ b/silisili/source/activity/player_activity.cpp
 @@ -37,8 +37,8 @@ public:
@@ -7772,10 +7783,10 @@ index aec81116c76d0103caeadeed4702e1976693bb31..53b516d530506246c65da84ab0332b02
          grid->setDataSource(new DataSourceRelatedVideoList(result, changeVideoEvent));
          return container;
 diff --git a/wiliwili/source/activity/player_base_activity.cpp b/silisili/source/activity/player_base_activity.cpp
-similarity index 81%
+similarity index 80%
 rename from wiliwili/source/activity/player_base_activity.cpp
 rename to silisili/source/activity/player_base_activity.cpp
-index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c89acc2588 100644
+index 74cd9c3..cc1b85e 100644
 --- a/wiliwili/source/activity/player_base_activity.cpp
 +++ b/silisili/source/activity/player_base_activity.cpp
 @@ -2,8 +2,10 @@
@@ -7814,9 +7825,22 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
              return;
          }
  
-@@ -200,6 +202,27 @@ private:
+@@ -199,7 +201,40 @@ private:
+ 
  void BasePlayerActivity::onContentAvailable() { this->setCommonData(); }
  
++bool BasePlayerActivity::allowsSailfishPageBackGesture(brls::Point startPosition) const {
++#ifdef SILISILI_SAILFISH_MOBILE
++    // The video surface owns horizontal seek gestures. Sailfish recommends
++    // starting the page gesture on the header/content when a page has other
++    // touch functionality, so only the detail area below the 16:9 player may
++    // start page-stack Back. Fullscreen keeps its dedicated Back action.
++    return !embeddedFullscreen && startPosition.y >= 380.0f;
++#else
++    return brls::Activity::allowsSailfishPageBackGesture(startPosition);
++#endif
++}
++
  void BasePlayerActivity::setCommonData() {
 +#ifdef SILISILI_SAILFISH_MOBILE
 +    this->updateSailfishOrientation();
@@ -7842,7 +7866,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
      // 视频评论
      recyclingGrid->registerCell("Cell", []() { return VideoComment::create(); });
  
-@@ -209,7 +232,7 @@ void BasePlayerActivity::setCommonData() {
+@@ -209,7 +244,7 @@ void BasePlayerActivity::setCommonData() {
  
      recyclingGrid->setDefaultCellFocus(1);
  
@@ -7851,7 +7875,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
                                    [this](brls::View* view) -> bool {
                                        this->setCommentMode();
                                        return true;
-@@ -267,7 +290,7 @@ void BasePlayerActivity::setCommonData() {
+@@ -267,7 +302,7 @@ void BasePlayerActivity::setCommonData() {
      video->registerCommonActions(this);
  
      // 调整清晰度
@@ -7860,7 +7884,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
                           [this](brls::View* view) -> bool {
                               this->setVideoQuality();
                               return true;
-@@ -361,6 +384,11 @@ void BasePlayerActivity::setCommonData() {
+@@ -361,6 +396,11 @@ void BasePlayerActivity::setCommonData() {
                      }
                  }
                  break;
@@ -7872,7 +7896,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
              case MpvEventEnum::RESTART:
                  this->updateVideoLink();
                  break;
-@@ -402,7 +430,7 @@ void BasePlayerActivity::showCollectionDialog(uint64_t id, int videoType) {
+@@ -402,7 +442,7 @@ void BasePlayerActivity::showCollectionDialog(uint64_t id, int videoType) {
      if (!DialogHelper::checkLogin()) return;
      auto playerCollection = new PlayerCollection(id, videoType);
      auto dialog           = new brls::Dialog(playerCollection);
@@ -7881,7 +7905,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
          this->addResource(id, videoType, playerCollection->isFavorite(), playerCollection->getAddCollectionList(),
                            playerCollection->getDeleteCollectionList());
      });
-@@ -422,13 +450,13 @@ void BasePlayerActivity::showCoinDialog(uint64_t aid) {
+@@ -422,13 +462,13 @@ void BasePlayerActivity::showCoinDialog(uint64_t aid) {
      if (!DialogHelper::checkLogin()) return;
  
      if (std::to_string(videoDetailResult.owner.mid) == ProgramConfig::instance().getUserID()) {
@@ -7897,7 +7921,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
          return;
      }
  
-@@ -464,7 +492,7 @@ void BasePlayerActivity::setVideoQuality() {
+@@ -464,7 +504,7 @@ void BasePlayerActivity::setVideoQuality() {
      if (this->videoUrlResult.accept_description.empty()) return;
  
      auto* dropdown = new BaseDropdown(
@@ -7906,7 +7930,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
          [this](int selected) {
              int code                           = this->videoUrlResult.accept_quality[selected];
  #ifdef __PSV__
-@@ -477,7 +505,7 @@ void BasePlayerActivity::setVideoQuality() {
+@@ -477,7 +517,7 @@ void BasePlayerActivity::setVideoQuality() {
  
              // 如果未登录选择了大于等于480P清晰度的视频
              if (ProgramConfig::instance().getCSRF().empty() && defaultQuality >= 32) {
@@ -7915,7 +7939,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
                  return;
              }
  
-@@ -588,7 +616,7 @@ void BasePlayerActivity::onVideoPlayUrl(const bilibili::VideoUrlResult& result)
+@@ -588,7 +628,7 @@ void BasePlayerActivity::onVideoPlayUrl(const bilibili::VideoUrlResult& result)
          int64_t position = 0;
          APP_E->fire(VideoView::LAST_TIME, (void*)&(position));
          if (start > 0) {
@@ -7924,7 +7948,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
              APP_E->fire(VideoView::HINT, (void*)hint.c_str());
          }
      }
-@@ -745,15 +773,33 @@ void BasePlayerActivity::onCommentInfo(const bilibili::VideoCommentResultWrapper
+@@ -745,15 +785,33 @@ void BasePlayerActivity::onCommentInfo(const bilibili::VideoCommentResultWrapper
          this->recyclingGrid->estimatedRowHeight = 600;
          this->recyclingGrid->setDataSource(new DataSourceCommentList(
              comments, this->getAid(), this->getVideoCommentMode(), [this]() { this->setCommentMode(); }));
@@ -7960,7 +7984,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
          }
      } else {
          brls::Logger::error("onCommentInfo ds: {} index: {} end: {}", (bool)datasource, result.requestIndex,
-@@ -766,7 +812,7 @@ void BasePlayerActivity::onRequestCommentError(const std::string& error) {
+@@ -766,7 +824,7 @@ void BasePlayerActivity::onRequestCommentError(const std::string& error) {
  }
  
  void BasePlayerActivity::onVideoOnlineCount(const bilibili::VideoOnlineTotal& result) {
@@ -7969,7 +7993,7 @@ index 74cd9c3da4fe1b15fc38799c54aa80d51519ce11..efced70b885837bbc27720003f24e7c8
      this->videoPeopleLabel->setText(count);
      APP_E->fire(VideoView::SET_ONLINE_NUM, (void*)count.c_str());
  }
-@@ -832,14 +878,122 @@ void BasePlayerActivity::willDisappear(bool resetState) {
+@@ -832,14 +890,122 @@ void BasePlayerActivity::willDisappear(bool resetState) {
  
  void BasePlayerActivity::willAppear(bool resetState) {
      activityShown = true;
@@ -8098,7 +8122,7 @@ diff --git a/wiliwili/source/activity/player_season_activity.cpp b/silisili/sour
 similarity index 91%
 rename from wiliwili/source/activity/player_season_activity.cpp
 rename to silisili/source/activity/player_season_activity.cpp
-index 42f7cce54e77ea26396010d2073300f28458e989..307a9c0c2652a663f486076c844f2da3b4c297a8 100644
+index 42f7cce..307a9c0 100644
 --- a/wiliwili/source/activity/player_season_activity.cpp
 +++ b/silisili/source/activity/player_season_activity.cpp
 @@ -95,7 +95,7 @@ void PlayerSeasonActivity::onIndexChangeToNext() {
@@ -8247,7 +8271,7 @@ diff --git a/wiliwili/source/activity/search_activity.cpp b/silisili/source/acti
 similarity index 87%
 rename from wiliwili/source/activity/search_activity.cpp
 rename to silisili/source/activity/search_activity.cpp
-index bcf9438fff39137d7525a2cb93a092c0dc340322..3dd583f2d9185df91e32f7b61cd50813636f9e78 100644
+index bcf9438..3dd583f 100644
 --- a/wiliwili/source/activity/search_activity.cpp
 +++ b/silisili/source/activity/search_activity.cpp
 @@ -27,14 +27,17 @@ void SearchActivity::onContentAvailable() {
@@ -8277,7 +8301,7 @@ diff --git a/wiliwili/source/activity/search_activity_tv.cpp b/silisili/source/a
 similarity index 96%
 rename from wiliwili/source/activity/search_activity_tv.cpp
 rename to silisili/source/activity/search_activity_tv.cpp
-index bd6dddb56a92e4f0f8d8a764b192fb99d065e22d..ef5ff8a3e8b0a49156f9396a816c727a2b845950 100644
+index bd6dddb..ef5ff8a 100644
 --- a/wiliwili/source/activity/search_activity_tv.cpp
 +++ b/silisili/source/activity/search_activity_tv.cpp
 @@ -113,7 +113,7 @@ void TVSearchActivity::requestSearchSuggest() {
@@ -8325,7 +8349,7 @@ diff --git a/wiliwili/source/activity/setting_activity.cpp b/silisili/source/act
 similarity index 86%
 rename from wiliwili/source/activity/setting_activity.cpp
 rename to silisili/source/activity/setting_activity.cpp
-index 171381b9225dbb8228b0f86544acace06b77eba7..ad75cace24874fa577c38bee95c25f0a6fe9841c 100644
+index 171381b..ad75cac 100644
 --- a/wiliwili/source/activity/setting_activity.cpp
 +++ b/silisili/source/activity/setting_activity.cpp
 @@ -191,16 +191,16 @@ void SettingActivity::onContentAvailable() {
@@ -8740,7 +8764,7 @@ diff --git a/wiliwili/source/api/analytics.cpp b/silisili/source/api/analytics.c
 similarity index 96%
 rename from wiliwili/source/api/analytics.cpp
 rename to silisili/source/api/analytics.cpp
-index 06261f9b3951ad396744019110e960ce0583201b..f2050f9798c9ac11120c58c5eb948a7507321956 100644
+index 06261f9..f2050f9 100644
 --- a/wiliwili/source/api/analytics.cpp
 +++ b/silisili/source/api/analytics.cpp
 @@ -44,7 +44,7 @@ void Analytics::send() {
@@ -8773,7 +8797,7 @@ diff --git a/wiliwili/source/api/dlna.cpp b/silisili/source/api/dlna.cpp
 similarity index 98%
 rename from wiliwili/source/api/dlna.cpp
 rename to silisili/source/api/dlna.cpp
-index 0977db7c262bea037bece8b4c3f99f80c9d473d9..f6d6ddab854067d8fab60b9ac75260f58c96e559 100644
+index 0977db7..f6d6dda 100644
 --- a/wiliwili/source/api/dlna.cpp
 +++ b/silisili/source/api/dlna.cpp
 @@ -161,8 +161,8 @@ void DlnaRenderer::play(const std::string& url, const std::string& title, const
@@ -8808,7 +8832,7 @@ diff --git a/wiliwili/source/api/mine_api.cpp b/silisili/source/api/mine_api.cpp
 similarity index 99%
 rename from wiliwili/source/api/mine_api.cpp
 rename to silisili/source/api/mine_api.cpp
-index 3200ed3de5cfb782ff11caec6cf3dc0f44140e81..522703dc8b7369c2fe2b7ebabc2c0abffc7f56ba 100644
+index 3200ed3..522703d 100644
 --- a/wiliwili/source/api/mine_api.cpp
 +++ b/silisili/source/api/mine_api.cpp
 @@ -201,7 +201,7 @@ void BilibiliClient::send_inbox_msg(const std::string& sender_id,
@@ -8836,7 +8860,7 @@ diff --git a/wiliwili/source/api/util/http.cpp b/silisili/source/api/util/http.c
 similarity index 93%
 rename from wiliwili/source/api/util/http.cpp
 rename to silisili/source/api/util/http.cpp
-index fa3eafe075650662f6ea2273bcfa47ed88ad201f..907ac158de1d7a6efbd017c1dd74fcfcabf16a31 100644
+index fa3eafe..907ac15 100644
 --- a/wiliwili/source/api/util/http.cpp
 +++ b/silisili/source/api/util/http.cpp
 @@ -19,7 +19,7 @@ std::string HTTP::getEncodedCookie(const cpr::Cookies& cookies) {
@@ -8856,7 +8880,7 @@ diff --git a/wiliwili/source/api/util/wbi.cpp b/silisili/source/api/util/wbi.cpp
 similarity index 98%
 rename from wiliwili/source/api/util/wbi.cpp
 rename to silisili/source/api/util/wbi.cpp
-index c98aef3643d2e6b36f45e693218f77d5c6e4a2a4..254672078e901686fc241c509287db1a35289624 100644
+index c98aef3..2546720 100644
 --- a/wiliwili/source/api/util/wbi.cpp
 +++ b/silisili/source/api/util/wbi.cpp
 @@ -1,5 +1,5 @@
@@ -8874,7 +8898,7 @@ diff --git a/wiliwili/source/api/video_detail_api.cpp b/silisili/source/api/vide
 similarity index 97%
 rename from wiliwili/source/api/video_detail_api.cpp
 rename to silisili/source/api/video_detail_api.cpp
-index 3ab1556db36299180f1600c32923de660808c5c1..254625e60fddf70f3e3dc8a9922c4323f0d7a3be 100644
+index 3ab1556..254625e 100644
 --- a/wiliwili/source/api/video_detail_api.cpp
 +++ b/silisili/source/api/video_detail_api.cpp
 @@ -1,4 +1,5 @@
@@ -8929,7 +8953,7 @@ diff --git a/wiliwili/source/fragment/dynamic_tab.cpp b/silisili/source/fragment
 similarity index 97%
 rename from wiliwili/source/fragment/dynamic_tab.cpp
 rename to silisili/source/fragment/dynamic_tab.cpp
-index 13cd2f9f2d478d7720f015b3acf58911a2c52a04..3427503c497c61017338a9aa55729cffa4a7c7a3 100644
+index 13cd2f9..3427503 100644
 --- a/wiliwili/source/fragment/dynamic_tab.cpp
 +++ b/silisili/source/fragment/dynamic_tab.cpp
 @@ -211,6 +211,10 @@ DynamicTab::DynamicTab() {
@@ -8980,7 +9004,7 @@ diff --git a/wiliwili/source/fragment/home_bangumi.cpp b/silisili/source/fragmen
 similarity index 94%
 rename from wiliwili/source/fragment/home_bangumi.cpp
 rename to silisili/source/fragment/home_bangumi.cpp
-index 5d79a33aae152dcf2a45f6bf61b215cda8736d4f..cd8905a791f6f8f6792aa5ed1978770182eed2f6 100644
+index 5d79a33..cd8905a 100644
 --- a/wiliwili/source/fragment/home_bangumi.cpp
 +++ b/silisili/source/fragment/home_bangumi.cpp
 @@ -25,7 +25,7 @@ HomeBangumi::HomeBangumi() {
@@ -9007,7 +9031,7 @@ diff --git a/wiliwili/source/fragment/home_cinema.cpp b/silisili/source/fragment
 similarity index 94%
 rename from wiliwili/source/fragment/home_cinema.cpp
 rename to silisili/source/fragment/home_cinema.cpp
-index 9089c47937a6efc65995e01a79410b1f8d18810c..3549af69547fb0268f10138132feaf26c7b24a31 100644
+index 9089c47..3549af6 100644
 --- a/wiliwili/source/fragment/home_cinema.cpp
 +++ b/silisili/source/fragment/home_cinema.cpp
 @@ -30,7 +30,7 @@ HomeCinema::~HomeCinema() { brls::Logger::debug("Fragment HomeCinemaActivity: de
@@ -9038,7 +9062,7 @@ diff --git a/wiliwili/source/fragment/home_hots_all.cpp b/silisili/source/fragme
 similarity index 98%
 rename from wiliwili/source/fragment/home_hots_all.cpp
 rename to silisili/source/fragment/home_hots_all.cpp
-index 78e3889689e17787d77713f5deec5cbe8227ef00..eba16286b70dbe2cc594c863759502b5b2b05f45 100644
+index 78e3889..eba1628 100644
 --- a/wiliwili/source/fragment/home_hots_all.cpp
 +++ b/silisili/source/fragment/home_hots_all.cpp
 @@ -72,7 +72,7 @@ void HomeHotsAll::onHotsAllVideoList(const bilibili::HotsAllVideoListResult& res
@@ -9054,7 +9078,7 @@ diff --git a/wiliwili/source/fragment/home_hots_history.cpp b/silisili/source/fr
 similarity index 97%
 rename from wiliwili/source/fragment/home_hots_history.cpp
 rename to silisili/source/fragment/home_hots_history.cpp
-index 294358228dc16cf70302b3e1fb0be98ddd5b298c..32187d41276cace8915903f638a62d900cec0990 100644
+index 2943582..32187d4 100644
 --- a/wiliwili/source/fragment/home_hots_history.cpp
 +++ b/silisili/source/fragment/home_hots_history.cpp
 @@ -59,7 +59,7 @@ HomeHotsHistory::HomeHotsHistory() {
@@ -9074,7 +9098,7 @@ diff --git a/wiliwili/source/fragment/home_hots_weekly.cpp b/silisili/source/fra
 similarity index 97%
 rename from wiliwili/source/fragment/home_hots_weekly.cpp
 rename to silisili/source/fragment/home_hots_weekly.cpp
-index 987a724690e372f97a253913980db0edd62acc6d..02d19185428ba073818b91d52a9f49d015852e10 100644
+index 987a724..02d1918 100644
 --- a/wiliwili/source/fragment/home_hots_weekly.cpp
 +++ b/silisili/source/fragment/home_hots_weekly.cpp
 @@ -64,7 +64,7 @@ HomeHotsWeekly::HomeHotsWeekly() {
@@ -9099,7 +9123,7 @@ diff --git a/wiliwili/source/fragment/home_live.cpp b/silisili/source/fragment/h
 similarity index 99%
 rename from wiliwili/source/fragment/home_live.cpp
 rename to silisili/source/fragment/home_live.cpp
-index 12670493b7960560f40c996d03e727cfca3e9208..02253e12876ab23e9dbe6c5701101de905b6ee40 100644
+index 1267049..02253e1 100644
 --- a/wiliwili/source/fragment/home_live.cpp
 +++ b/silisili/source/fragment/home_live.cpp
 @@ -359,7 +359,7 @@ void HomeLive::onCreate() {
@@ -9115,7 +9139,7 @@ diff --git a/wiliwili/source/fragment/home_recommends.cpp b/silisili/source/frag
 similarity index 98%
 rename from wiliwili/source/fragment/home_recommends.cpp
 rename to silisili/source/fragment/home_recommends.cpp
-index 7c7a90653f24cd6c3339143cbc07fe0f069d5165..46d2a6b116168d8b6145e0f1a2ef9a01b175c6f0 100644
+index 7c7a906..46d2a6b 100644
 --- a/wiliwili/source/fragment/home_recommends.cpp
 +++ b/silisili/source/fragment/home_recommends.cpp
 @@ -104,7 +104,7 @@ HomeRecommends::HomeRecommends() {
@@ -9131,7 +9155,7 @@ diff --git a/wiliwili/source/fragment/home_tab.cpp b/silisili/source/fragment/ho
 similarity index 70%
 rename from wiliwili/source/fragment/home_tab.cpp
 rename to silisili/source/fragment/home_tab.cpp
-index d4a0447efd5ad1511cfbc6a32a36ca609efa1b64..4b6acb5e8440ae2313daab82bfe7e69468f9dfb2 100644
+index d4a0447..4b6acb5 100644
 --- a/wiliwili/source/fragment/home_tab.cpp
 +++ b/silisili/source/fragment/home_tab.cpp
 @@ -6,7 +6,6 @@
@@ -9210,7 +9234,7 @@ diff --git a/wiliwili/source/fragment/inbox_chat.cpp b/silisili/source/fragment/
 similarity index 98%
 rename from wiliwili/source/fragment/inbox_chat.cpp
 rename to silisili/source/fragment/inbox_chat.cpp
-index bf81a1d0bcb315c2a527b24909ba052ec805680c..984f306d244e157e2a395f53d3545fa9dba87941 100644
+index bf81a1d..984f306 100644
 --- a/wiliwili/source/fragment/inbox_chat.cpp
 +++ b/silisili/source/fragment/inbox_chat.cpp
 @@ -143,7 +143,7 @@ InboxChat::InboxChat(const bilibili::InboxChatResult& r, std::function<void()> c
@@ -9235,7 +9259,7 @@ diff --git a/wiliwili/source/fragment/inbox_feed.cpp b/silisili/source/fragment/
 similarity index 91%
 rename from wiliwili/source/fragment/inbox_feed.cpp
 rename to silisili/source/fragment/inbox_feed.cpp
-index f74318d69225bf5949a2a5853c01e195114761ad..36f443baaf85eabadcf1d6f1e618013e79d6cfaa 100644
+index f74318d..36f443b 100644
 --- a/wiliwili/source/fragment/inbox_feed.cpp
 +++ b/silisili/source/fragment/inbox_feed.cpp
 @@ -30,35 +30,35 @@ public:
@@ -9288,7 +9312,7 @@ diff --git a/wiliwili/source/fragment/inbox_view.cpp b/silisili/source/fragment/
 similarity index 97%
 rename from wiliwili/source/fragment/inbox_view.cpp
 rename to silisili/source/fragment/inbox_view.cpp
-index 58a16025d8ae84c5cd1b280e7d5a38a1815bb619..ee5f07d61455142cd9702be8a492c8fb763bfbb9 100644
+index 58a1602..ee5f07d 100644
 --- a/wiliwili/source/fragment/inbox_view.cpp
 +++ b/silisili/source/fragment/inbox_view.cpp
 @@ -34,7 +34,7 @@ public:
@@ -9317,7 +9341,7 @@ diff --git a/wiliwili/source/fragment/mine_bangumi.cpp b/silisili/source/fragmen
 similarity index 96%
 rename from wiliwili/source/fragment/mine_bangumi.cpp
 rename to silisili/source/fragment/mine_bangumi.cpp
-index e4520a204bd352db67e057f9f6bcaa06e6676077..786c7d4f1fc70f07d2b6317c9cc0afea30515557 100644
+index e4520a2..786c7d4 100644
 --- a/wiliwili/source/fragment/mine_bangumi.cpp
 +++ b/silisili/source/fragment/mine_bangumi.cpp
 @@ -91,7 +91,7 @@ void MineBangumi::onCreate() {
@@ -9333,7 +9357,7 @@ diff --git a/wiliwili/source/fragment/mine_collection.cpp b/silisili/source/frag
 similarity index 90%
 rename from wiliwili/source/fragment/mine_collection.cpp
 rename to silisili/source/fragment/mine_collection.cpp
-index 9ca60db447e4362f82ed49da241a9dee7e021ba6..d3c6e2af252cb5786382429a911ed664189387ad 100644
+index 9ca60db..d3c6e2a 100644
 --- a/wiliwili/source/fragment/mine_collection.cpp
 +++ b/silisili/source/fragment/mine_collection.cpp
 @@ -32,21 +32,21 @@ public:
@@ -9390,7 +9414,7 @@ diff --git a/wiliwili/source/fragment/mine_collection_video_list.cpp b/silisili/
 similarity index 96%
 rename from wiliwili/source/fragment/mine_collection_video_list.cpp
 rename to silisili/source/fragment/mine_collection_video_list.cpp
-index 7bc2853ab05b8cdc8bd66cdf3eeeaa65888b7b7c..0d57faa383cecb5f7b8fc367af312fb94e723145 100644
+index 7bc2853..0d57faa 100644
 --- a/wiliwili/source/fragment/mine_collection_video_list.cpp
 +++ b/silisili/source/fragment/mine_collection_video_list.cpp
 @@ -85,7 +85,7 @@ MineCollectionVideoList::MineCollectionVideoList() {
@@ -9424,7 +9448,7 @@ diff --git a/wiliwili/source/fragment/mine_history.cpp b/silisili/source/fragmen
 similarity index 94%
 rename from wiliwili/source/fragment/mine_history.cpp
 rename to silisili/source/fragment/mine_history.cpp
-index 8037cf5fef33f928ab9333979984a4dfc0ccf159..17f660cd2293031ddb7e774b670b7a7ce7a40593 100644
+index 8037cf5..17f660c 100644
 --- a/wiliwili/source/fragment/mine_history.cpp
 +++ b/silisili/source/fragment/mine_history.cpp
 @@ -28,7 +28,7 @@ public:
@@ -9473,7 +9497,7 @@ diff --git a/wiliwili/source/fragment/mine_later.cpp b/silisili/source/fragment/
 similarity index 97%
 rename from wiliwili/source/fragment/mine_later.cpp
 rename to silisili/source/fragment/mine_later.cpp
-index 753e62b0ff98dabd45d9da4cfff39f78f5f12c01..5b82f6297f9a2babfa099106f774266dfd9936b9 100644
+index 753e62b..5b82f62 100644
 --- a/wiliwili/source/fragment/mine_later.cpp
 +++ b/silisili/source/fragment/mine_later.cpp
 @@ -58,7 +58,7 @@ MineLater::~MineLater() { brls::Logger::debug("frag mine later deleted"); }
@@ -9489,7 +9513,7 @@ diff --git a/wiliwili/source/fragment/mine_qr_login.cpp b/silisili/source/fragme
 similarity index 92%
 rename from wiliwili/source/fragment/mine_qr_login.cpp
 rename to silisili/source/fragment/mine_qr_login.cpp
-index c9becd1a56d9f44561cbdae416758419e341e993..9a41914f812c96383e1ff90d5a7739ebf5452afe 100644
+index c9becd1..9a41914 100644
 --- a/wiliwili/source/fragment/mine_qr_login.cpp
 +++ b/silisili/source/fragment/mine_qr_login.cpp
 @@ -30,7 +30,7 @@ void MineQrLogin::onError() {
@@ -9536,7 +9560,7 @@ diff --git a/wiliwili/source/fragment/mine_tab.cpp b/silisili/source/fragment/mi
 similarity index 92%
 rename from wiliwili/source/fragment/mine_tab.cpp
 rename to silisili/source/fragment/mine_tab.cpp
-index f52727472f16e89e32dac7ddfefaf1c660f2e5e0..c2eafa5fb2362bba717de21c23812c3d6a9f8943 100644
+index f527274..c2eafa5 100644
 --- a/wiliwili/source/fragment/mine_tab.cpp
 +++ b/silisili/source/fragment/mine_tab.cpp
 @@ -30,7 +30,7 @@ MineTab::MineTab() {
@@ -9599,7 +9623,7 @@ diff --git a/wiliwili/source/fragment/player_coin.cpp b/silisili/source/fragment
 similarity index 92%
 rename from wiliwili/source/fragment/player_coin.cpp
 rename to silisili/source/fragment/player_coin.cpp
-index def29991d2b2c63c9eaaf5e7c8ff40d85ee1496e..42d81b3ff5036210d92dc7008cbff98e9707da0b 100644
+index def2999..42d81b3 100644
 --- a/wiliwili/source/fragment/player_coin.cpp
 +++ b/silisili/source/fragment/player_coin.cpp
 @@ -91,9 +91,9 @@ void PlayerCoin::updateHintLabel() {
@@ -9631,7 +9655,7 @@ diff --git a/wiliwili/source/fragment/player_collection.cpp b/silisili/source/fr
 similarity index 95%
 rename from wiliwili/source/fragment/player_collection.cpp
 rename to silisili/source/fragment/player_collection.cpp
-index c86234bcac1af0f3823c72b741882784ebb32ad0..60f5225f0952c5371cf152607b1293ebdbb92a7e 100644
+index c86234b..60f5225 100644
 --- a/wiliwili/source/fragment/player_collection.cpp
 +++ b/silisili/source/fragment/player_collection.cpp
 @@ -102,9 +102,9 @@ private:
@@ -9650,7 +9674,7 @@ diff --git a/wiliwili/source/fragment/player_danmaku_setting.cpp b/silisili/sour
 similarity index 81%
 rename from wiliwili/source/fragment/player_danmaku_setting.cpp
 rename to silisili/source/fragment/player_danmaku_setting.cpp
-index 643b717dadbbea072990c269cdde255f20f2d0b9..a28b1194e14947ed2d33c530701157f2d594f5df 100644
+index 643b717..a28b119 100644
 --- a/wiliwili/source/fragment/player_danmaku_setting.cpp
 +++ b/silisili/source/fragment/player_danmaku_setting.cpp
 @@ -38,7 +38,7 @@ PlayerDanmakuSetting::PlayerDanmakuSetting(bool isLiveMode) {
@@ -9828,7 +9852,7 @@ diff --git a/wiliwili/source/fragment/player_dlna_search.cpp b/silisili/source/f
 similarity index 90%
 rename from wiliwili/source/fragment/player_dlna_search.cpp
 rename to silisili/source/fragment/player_dlna_search.cpp
-index de368eb018c518782e9766d4b38f798eab29a9a4..efcd0a8039745976448c695cc9e94aef1800ea6b 100644
+index de368eb..efcd0a8 100644
 --- a/wiliwili/source/fragment/player_dlna_search.cpp
 +++ b/silisili/source/fragment/player_dlna_search.cpp
 @@ -77,12 +77,12 @@ void PlayerDlnaSearch::searchStart() {
@@ -9925,7 +9949,7 @@ diff --git a/wiliwili/source/fragment/player_setting.cpp b/silisili/source/fragm
 similarity index 87%
 rename from wiliwili/source/fragment/player_setting.cpp
 rename to silisili/source/fragment/player_setting.cpp
-index 37a284a1f02e7508154eb469d863626581e3e1cc..95a3dd5e008ca2fc5d282af704ed77b4fa7b5354 100644
+index 37a284a..95a3dd5 100644
 --- a/wiliwili/source/fragment/player_setting.cpp
 +++ b/silisili/source/fragment/player_setting.cpp
 @@ -60,7 +60,7 @@ brls::View* PlayerSetting::getDefaultFocus() { return this->settings->getDefault
@@ -10212,7 +10236,7 @@ diff --git a/wiliwili/source/fragment/player_single_comment.cpp b/silisili/sourc
 similarity index 98%
 rename from wiliwili/source/fragment/player_single_comment.cpp
 rename to silisili/source/fragment/player_single_comment.cpp
-index db1d8800997f4903cf6ac47ff42111a3f6ed543a..833160190d07acd7ebb5720d260dd59c10bc161c 100644
+index db1d880..8331601 100644
 --- a/wiliwili/source/fragment/player_single_comment.cpp
 +++ b/silisili/source/fragment/player_single_comment.cpp
 @@ -44,7 +44,7 @@ public:
@@ -10263,7 +10287,7 @@ diff --git a/wiliwili/source/fragment/search_history.cpp b/silisili/source/fragm
 similarity index 95%
 rename from wiliwili/source/fragment/search_history.cpp
 rename to silisili/source/fragment/search_history.cpp
-index 1f3b19b3d589fcb4861d1d16dc7617557c0ec19b..a7ea419302b7a87cc6a07ecd95df2cc82fdfe0c9 100644
+index 1f3b19b..a7ea419 100644
 --- a/wiliwili/source/fragment/search_history.cpp
 +++ b/silisili/source/fragment/search_history.cpp
 @@ -35,7 +35,7 @@ public:
@@ -10296,7 +10320,7 @@ diff --git a/wiliwili/source/fragment/search_order.cpp b/silisili/source/fragmen
 similarity index 96%
 rename from wiliwili/source/fragment/search_order.cpp
 rename to silisili/source/fragment/search_order.cpp
-index 84150c9898204726b619e2e5440dbd327be73b2d..3a2cba117c90aa4db2e7ca6bf85d04ff0ce81223 100644
+index 84150c9..3a2cba1 100644
 --- a/wiliwili/source/fragment/search_order.cpp
 +++ b/silisili/source/fragment/search_order.cpp
 @@ -28,7 +28,7 @@ SearchOrder::~SearchOrder() {
@@ -10320,7 +10344,7 @@ diff --git a/wiliwili/source/fragment/season_evaluate.cpp b/silisili/source/frag
 similarity index 87%
 rename from wiliwili/source/fragment/season_evaluate.cpp
 rename to silisili/source/fragment/season_evaluate.cpp
-index 4ababa4ddf61058d5ab917a141753894ce114869..d39045775cfd2792870ea2bf3932d574806c3067 100644
+index 4ababa4..d390457 100644
 --- a/wiliwili/source/fragment/season_evaluate.cpp
 +++ b/silisili/source/fragment/season_evaluate.cpp
 @@ -18,7 +18,7 @@ SeasonEvaluate::SeasonEvaluate() {
@@ -10363,7 +10387,7 @@ diff --git a/wiliwili/source/fragment/setting_network.cpp b/silisili/source/frag
 similarity index 93%
 rename from wiliwili/source/fragment/setting_network.cpp
 rename to silisili/source/fragment/setting_network.cpp
-index 416a153c7f8cb729a020cf2d67e12946d4bc57c9..18e95ee97f3f5ce995d9d5f951af1499dcecd8a5 100644
+index 416a153..18e95ee 100644
 --- a/wiliwili/source/fragment/setting_network.cpp
 +++ b/silisili/source/fragment/setting_network.cpp
 @@ -32,7 +32,7 @@ SettingNetwork::SettingNetwork() {
@@ -10397,7 +10421,7 @@ diff --git a/wiliwili/source/fragment/share_dialog.cpp b/silisili/source/fragmen
 similarity index 98%
 rename from wiliwili/source/fragment/share_dialog.cpp
 rename to silisili/source/fragment/share_dialog.cpp
-index 195dfb52cde31ccc1ffd9ec19d65c7a2cbac8cd3..a679210da4cbedf8241f2cc7d2ce42ff3187b4f0 100644
+index 195dfb5..a679210 100644
 --- a/wiliwili/source/fragment/share_dialog.cpp
 +++ b/silisili/source/fragment/share_dialog.cpp
 @@ -90,5 +90,5 @@ void ShareDialog::open(const std::string& link, const std::string& title, const
@@ -10420,7 +10444,7 @@ diff --git a/wiliwili/source/main.cpp b/silisili/source/main.cpp
 similarity index 94%
 rename from wiliwili/source/main.cpp
 rename to silisili/source/main.cpp
-index 06f6e54e8a5a8f2d7951b481167f783a58fdabf2..ce49f772355368b2fe5b6f6b7e28a3cb1323691d 100644
+index 06f6e54..ce49f77 100644
 --- a/wiliwili/source/main.cpp
 +++ b/silisili/source/main.cpp
 @@ -20,6 +20,11 @@
@@ -10457,7 +10481,7 @@ diff --git a/wiliwili/source/presenter/comment_related.cpp b/silisili/source/pre
 similarity index 90%
 rename from wiliwili/source/presenter/comment_related.cpp
 rename to silisili/source/presenter/comment_related.cpp
-index d7f2a0898c0e539d3a666951daa0fc4adb722cb8..5b4dd085367fdc6c088d3fbe96e06f8014a89ad0 100644
+index d7f2a08..5b4dd08 100644
 --- a/wiliwili/source/presenter/comment_related.cpp
 +++ b/silisili/source/presenter/comment_related.cpp
 @@ -98,6 +98,10 @@ void CommentRequest::requestVideoComment(const std::string& oid, int next, int m
@@ -10495,7 +10519,7 @@ diff --git a/wiliwili/source/presenter/dynamic_tab.cpp b/silisili/source/present
 similarity index 94%
 rename from wiliwili/source/presenter/dynamic_tab.cpp
 rename to silisili/source/presenter/dynamic_tab.cpp
-index 5b076595518b252ab916d7a67d99e8b26f08606e..ebd38142bfc861cb9b3d7bb6ea40df8d00536a6f 100644
+index 5b07659..ebd3814 100644
 --- a/wiliwili/source/presenter/dynamic_tab.cpp
 +++ b/silisili/source/presenter/dynamic_tab.cpp
 @@ -21,7 +21,7 @@ void DynamicTabRequest::requestData() {
@@ -10511,7 +10535,7 @@ diff --git a/wiliwili/source/presenter/dynamic_video.cpp b/silisili/source/prese
 similarity index 97%
 rename from wiliwili/source/presenter/dynamic_video.cpp
 rename to silisili/source/presenter/dynamic_video.cpp
-index d9a4287c872c038ecabd078608e94469f943e9f9..0d7a54e45169eaf40a95c55e284dab96effe3dad 100644
+index d9a4287..0d7a54e 100644
 --- a/wiliwili/source/presenter/dynamic_video.cpp
 +++ b/silisili/source/presenter/dynamic_video.cpp
 @@ -49,7 +49,7 @@ void DynamicVideoRequest::requestVideoData(unsigned int page, const std::string
@@ -10548,7 +10572,7 @@ diff --git a/wiliwili/source/presenter/home_hots_weekly.cpp b/silisili/source/pr
 similarity index 96%
 rename from wiliwili/source/presenter/home_hots_weekly.cpp
 rename to silisili/source/presenter/home_hots_weekly.cpp
-index f3d2910e5b47cf20397ef679b735de29366b79d2..0bae3b588ba69b0bedd18329dc2c74e7f9960ebb 100644
+index f3d2910..0bae3b5 100644
 --- a/wiliwili/source/presenter/home_hots_weekly.cpp
 +++ b/silisili/source/presenter/home_hots_weekly.cpp
 @@ -40,7 +40,7 @@ void HomeHotsWeeklyRequest::requestHotsWeeklyVideoListByIndex(size_t index) {
@@ -10572,7 +10596,7 @@ diff --git a/wiliwili/source/presenter/home_recommends.cpp b/silisili/source/pre
 similarity index 93%
 rename from wiliwili/source/presenter/home_recommends.cpp
 rename to silisili/source/presenter/home_recommends.cpp
-index 417d99138ae6501141f90b5b85a0988870a86f11..d9ecf903ca93c908bc12cc75f3406dfffeb9d0de 100644
+index 417d991..d9ecf90 100644
 --- a/wiliwili/source/presenter/home_recommends.cpp
 +++ b/silisili/source/presenter/home_recommends.cpp
 @@ -24,7 +24,7 @@ void Home::requestData(bool refresh, FeedType type) {
@@ -10597,7 +10621,7 @@ diff --git a/wiliwili/source/presenter/inbox_chat.cpp b/silisili/source/presente
 similarity index 97%
 rename from wiliwili/source/presenter/inbox_chat.cpp
 rename to silisili/source/presenter/inbox_chat.cpp
-index 00e117f9c5c8cea1ef8e61fcf99ffe4e9cd4b5e5..607f828dfa4afd9c60ca15319a1c88eab63442c5 100644
+index 00e117f..607f828 100644
 --- a/wiliwili/source/presenter/inbox_chat.cpp
 +++ b/silisili/source/presenter/inbox_chat.cpp
 @@ -24,7 +24,7 @@ void InboxChatRequest::requestData(bool refresh) {
@@ -10625,7 +10649,7 @@ diff --git a/wiliwili/source/presenter/mine_bangumi.cpp b/silisili/source/presen
 similarity index 97%
 rename from wiliwili/source/presenter/mine_bangumi.cpp
 rename to silisili/source/presenter/mine_bangumi.cpp
-index 1236b951193ec8a320979328928ac12eaf4b9134..d17afed037b808fb1be6fd66aaf861cc1782d120 100644
+index 1236b95..d17afed 100644
 --- a/wiliwili/source/presenter/mine_bangumi.cpp
 +++ b/silisili/source/presenter/mine_bangumi.cpp
 @@ -34,7 +34,7 @@ void MineBangumiRequest::requestData(bool refresh) {
@@ -10641,7 +10665,7 @@ diff --git a/wiliwili/source/presenter/mine_collection.cpp b/silisili/source/pre
 similarity index 96%
 rename from wiliwili/source/presenter/mine_collection.cpp
 rename to silisili/source/presenter/mine_collection.cpp
-index ab2a998c58f8a18b9bac1ca938f3bbcc857fc315..1ceb4e2a5a50f92f7e957e7f799215e20d810a76 100644
+index ab2a998..1ceb4e2 100644
 --- a/wiliwili/source/presenter/mine_collection.cpp
 +++ b/silisili/source/presenter/mine_collection.cpp
 @@ -26,7 +26,7 @@ void MineCollectionRequest::requestData(bool refresh) {
@@ -10657,7 +10681,7 @@ diff --git a/wiliwili/source/presenter/mine_history.cpp b/silisili/source/presen
 similarity index 94%
 rename from wiliwili/source/presenter/mine_history.cpp
 rename to silisili/source/presenter/mine_history.cpp
-index 9a522534ea74129c554cbc2d1d150b3e0ce54815..16c9aa9af0fad6a273affc59e5ec593272861dad 100644
+index 9a52253..16c9aa9 100644
 --- a/wiliwili/source/presenter/mine_history.cpp
 +++ b/silisili/source/presenter/mine_history.cpp
 @@ -22,7 +22,7 @@ void MineHistoryRequest::requestData(bool refresh) {
@@ -10673,7 +10697,7 @@ diff --git a/wiliwili/source/presenter/mine_later.cpp b/silisili/source/presente
 similarity index 92%
 rename from wiliwili/source/presenter/mine_later.cpp
 rename to silisili/source/presenter/mine_later.cpp
-index 52f8743552ef41eb34c598100269066aea129b92..527dff6603b12b8ae47d0ef03886c5ac125c5795 100644
+index 52f8743..527dff6 100644
 --- a/wiliwili/source/presenter/mine_later.cpp
 +++ b/silisili/source/presenter/mine_later.cpp
 @@ -18,7 +18,7 @@ void MineLaterRequest::requestData(bool refresh) { this->requestWatchLaterList()
@@ -10693,7 +10717,7 @@ diff --git a/wiliwili/source/presenter/video_detail.cpp b/silisili/source/presen
 similarity index 99%
 rename from wiliwili/source/presenter/video_detail.cpp
 rename to silisili/source/presenter/video_detail.cpp
-index d1aac5f1b5aaed2f332e792e3ce94095b8eea0d9..7a383b0bc2d0b9c4862575645f4d5a1c58d65c5a 100644
+index d1aac5f..7a383b0 100644
 --- a/wiliwili/source/presenter/video_detail.cpp
 +++ b/silisili/source/presenter/video_detail.cpp
 @@ -555,7 +555,7 @@ void VideoDetail::requestVideoPageDetail(const std::string& bvid, uint64_t cid,
@@ -10709,7 +10733,7 @@ diff --git a/wiliwili/source/resource.manifest b/silisili/source/resource.manife
 similarity index 96%
 rename from wiliwili/source/resource.manifest
 rename to silisili/source/resource.manifest
-index be1c709062fcb3dc6d52a39eb386d3c53cadb7fc..fc23ed2ce7c6ab0610b1760243458d22f263dc87 100644
+index be1c709..fc23ed2 100644
 --- a/wiliwili/source/resource.manifest
 +++ b/silisili/source/resource.manifest
 @@ -9,9 +9,9 @@
@@ -10732,7 +10756,7 @@ diff --git a/wiliwili/source/utils/config_helper.cpp b/silisili/source/utils/con
 similarity index 89%
 rename from wiliwili/source/utils/config_helper.cpp
 rename to silisili/source/utils/config_helper.cpp
-index 3ff65de52656da156d888b35405545268a1c3717..e025624132cd5bfc0858d8ff956625f5d93ca660 100644
+index 3ff65de..e025624 100644
 --- a/wiliwili/source/utils/config_helper.cpp
 +++ b/silisili/source/utils/config_helper.cpp
 @@ -80,42 +80,74 @@ unsigned int sceLibcHeapSize             = 24 * 1024 * 1024;
@@ -11208,7 +11232,7 @@ diff --git a/wiliwili/source/utils/crash_helper.cpp b/silisili/source/utils/cras
 similarity index 98%
 rename from wiliwili/source/utils/crash_helper.cpp
 rename to silisili/source/utils/crash_helper.cpp
-index 17278c5622c968713c1fb74f0b1559736087a3a8..4784ef1b63e92de431947ea4fe91ef48290d03da 100644
+index 17278c5..4784ef1 100644
 --- a/wiliwili/source/utils/crash_helper.cpp
 +++ b/silisili/source/utils/crash_helper.cpp
 @@ -114,10 +114,10 @@ LONG WINAPI createMiniDump(_EXCEPTION_POINTERS* pep) {
@@ -11228,7 +11252,7 @@ diff --git a/wiliwili/source/utils/dialog_helper.cpp b/silisili/source/utils/dia
 similarity index 90%
 rename from wiliwili/source/utils/dialog_helper.cpp
 rename to silisili/source/utils/dialog_helper.cpp
-index bac6ee97a77aadde1c20c0d6e4628b0ee24b51a7..14a150b0b3ace83696b72c6a6eead4ea290e83fa 100644
+index bac6ee9..14a150b 100644
 --- a/wiliwili/source/utils/dialog_helper.cpp
 +++ b/silisili/source/utils/dialog_helper.cpp
 @@ -24,7 +24,7 @@ void DialogHelper::showCancelableDialog(const std::string& msg, std::function<vo
@@ -11268,7 +11292,7 @@ rename from wiliwili/source/utils/event_helper.cpp
 rename to silisili/source/utils/event_helper.cpp
 diff --git a/silisili/source/utils/gesture_helper.cpp b/silisili/source/utils/gesture_helper.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..70ce8eea329260f19565e0d38c0005ec7a4ff4d0
+index 0000000..70ce8ee
 --- /dev/null
 +++ b/silisili/source/utils/gesture_helper.cpp
 @@ -0,0 +1,480 @@
@@ -11757,7 +11781,7 @@ diff --git a/wiliwili/source/utils/image_helper.cpp b/silisili/source/utils/imag
 similarity index 99%
 rename from wiliwili/source/utils/image_helper.cpp
 rename to silisili/source/utils/image_helper.cpp
-index e1e7b4f85b7bd933019651014ae458232926636b..465c658d60c5b58a33c813fdcccb3b0bdd21400a 100644
+index e1e7b4f..465c658 100644
 --- a/wiliwili/source/utils/image_helper.cpp
 +++ b/silisili/source/utils/image_helper.cpp
 @@ -355,5 +355,5 @@ std::string ImageHelper::parseGifImageUrl(const std::string& url, const std::str
@@ -11772,7 +11796,7 @@ diff --git a/wiliwili/source/utils/number_helper.cpp b/silisili/source/utils/num
 similarity index 82%
 rename from wiliwili/source/utils/number_helper.cpp
 rename to silisili/source/utils/number_helper.cpp
-index 7bbcd31299eca71cff51dbe9e453901c7a758614..470a2c23a7b4e8ac92424281f30f507698a11736 100644
+index 7bbcd31..470a2c2 100644
 --- a/wiliwili/source/utils/number_helper.cpp
 +++ b/silisili/source/utils/number_helper.cpp
 @@ -75,53 +75,53 @@ std::string getRandom(int length, int rangeStart, int rangeEnd) {
@@ -11893,10 +11917,10 @@ index 7bbcd31299eca71cff51dbe9e453901c7a758614..470a2c23a7b4e8ac92424281f30f5076
  }
 \ No newline at end of file
 diff --git a/wiliwili/source/utils/register_helper.cpp b/silisili/source/utils/register_helper.cpp
-similarity index 72%
+similarity index 69%
 rename from wiliwili/source/utils/register_helper.cpp
 rename to silisili/source/utils/register_helper.cpp
-index db97d64a8f62f5771108287114ac1e768f89234d..3d6a9b0d2222895c9114b8adc2bcb93518bd717c 100644
+index db97d64..407f9f4 100644
 --- a/wiliwili/source/utils/register_helper.cpp
 +++ b/silisili/source/utils/register_helper.cpp
 @@ -154,7 +154,7 @@ void Register::initCustomTheme() {
@@ -11908,12 +11932,25 @@ index db97d64a8f62f5771108287114ac1e768f89234d..3d6a9b0d2222895c9114b8adc2bcb935
          biliColor = nvgRGB(r, g, b);
          // Store as "#RRGGBB" for use by SVG loading and username color substitution
          char buf[8];
-@@ -201,58 +201,76 @@ void Register::initCustomTheme() {
+@@ -201,58 +201,89 @@ void Register::initCustomTheme() {
  void Register::initCustomStyle() {
      // Add custom values to the style
      brls::getStyle().addMetric("brls/animations/highlight", 200);
 -    brls::getStyle().addMetric("wiliwili/window/width", brls::Application::ORIGINAL_WINDOW_WIDTH);
++#ifdef SILISILI_SAILFISH_MOBILE
++    brls::getStyle().addMetric("silisili/window/width", brls::Application::contentWidth);
++    brls::getStyle().addMetric("brls/dropdown/listPadding", 16.0f);
++    brls::getStyle().addMetric("brls/dropdown/listPaddingSides", 20.0f);
++    brls::getStyle().addMetric("brls/dropdown/listItemHeight", 64.0f);
++    brls::getStyle().addMetric("brls/dropdown/listItemTextSize", 20.0f);
++    brls::getStyle().addMetric("brls/dropdown/header_height", 64.0f);
++    brls::getStyle().addMetric("brls/dropdown/header_title_font_size", 22.0f);
++    brls::getStyle().addMetric("brls/dialog/paddingTopBottom", 36.0f);
++    brls::getStyle().addMetric("brls/dialog/paddingLeftRight", 32.0f);
++    brls::getStyle().addMetric("brls/dialog/fontSize", 22.0f);
++#else
 +    brls::getStyle().addMetric("silisili/window/width", brls::Application::ORIGINAL_WINDOW_WIDTH);
++#endif
  
 -    if (brls::Application::ORIGINAL_WINDOW_HEIGHT == 544) {
 -        brls::getStyle().addMetric("wiliwili/grid/span/5", 4);
@@ -12039,7 +12076,7 @@ diff --git a/wiliwili/source/utils/string_helper.cpp b/silisili/source/utils/str
 similarity index 98%
 rename from wiliwili/source/utils/string_helper.cpp
 rename to silisili/source/utils/string_helper.cpp
-index c2d6509b50076402fa8e096988aa08911f0e9447..ef6370b7f5c8dce26a4c86e6bb6f2464a5e45141 100644
+index c2d6509..ef6370b 100644
 --- a/wiliwili/source/utils/string_helper.cpp
 +++ b/silisili/source/utils/string_helper.cpp
 @@ -12,7 +12,7 @@
@@ -12061,7 +12098,7 @@ diff --git a/wiliwili/source/utils/version_helper.cpp b/silisili/source/utils/ve
 similarity index 97%
 rename from wiliwili/source/utils/version_helper.cpp
 rename to silisili/source/utils/version_helper.cpp
-index df1ad613c98eb0c3dae7200ec941d1189582a9c2..56720526c7c477d207aff48baee0e06148f824d3 100644
+index df1ad61..5672052 100644
 --- a/wiliwili/source/utils/version_helper.cpp
 +++ b/silisili/source/utils/version_helper.cpp
 @@ -93,6 +93,10 @@ void APPVersion::checkUpdate(int delay, bool showUpToDateDialog) {
@@ -12103,7 +12140,7 @@ diff --git a/wiliwili/source/view/auto_tab_frame.cpp b/silisili/source/view/auto
 similarity index 91%
 rename from wiliwili/source/view/auto_tab_frame.cpp
 rename to silisili/source/view/auto_tab_frame.cpp
-index b8ab4d4de288efc79427bec281713b4701ac7332..a8807990d8ca00dd5e6feaf8fb85fb2f69edfbdb 100644
+index b8ab4d4..a880799 100644
 --- a/wiliwili/source/view/auto_tab_frame.cpp
 +++ b/silisili/source/view/auto_tab_frame.cpp
 @@ -55,6 +55,7 @@ AutoTabFrame::AutoTabFrame() {
@@ -12337,7 +12374,7 @@ diff --git a/wiliwili/source/view/danmaku_core.cpp b/silisili/source/view/danmak
 similarity index 99%
 rename from wiliwili/source/view/danmaku_core.cpp
 rename to silisili/source/view/danmaku_core.cpp
-index 87b739d2e58c475e01349c9222385382dc690ebc..3f74851f7537a86aefbde8a1a154b4617a70a8b1 100644
+index 87b739d..3f74851 100644
 --- a/wiliwili/source/view/danmaku_core.cpp
 +++ b/silisili/source/view/danmaku_core.cpp
 @@ -162,7 +162,7 @@ DanmakuItem::DanmakuItem(std::string content, const char *attributes) : msg(std:
@@ -12371,7 +12408,7 @@ diff --git a/wiliwili/source/view/dynamic_article.cpp b/silisili/source/view/dyn
 similarity index 98%
 rename from wiliwili/source/view/dynamic_article.cpp
 rename to silisili/source/view/dynamic_article.cpp
-index 80c2c9ad03388830e8f933e68a7cfe7abded2203..d4a3177c987efd91729a7e518fb4e0b59d5769ba 100644
+index 80c2c9a..d4a3177 100644
 --- a/wiliwili/source/view/dynamic_article.cpp
 +++ b/silisili/source/view/dynamic_article.cpp
 @@ -245,11 +245,11 @@ public:
@@ -12454,9 +12491,32 @@ similarity index 100%
 rename from wiliwili/source/view/gallery_view.cpp
 rename to silisili/source/view/gallery_view.cpp
 diff --git a/wiliwili/source/view/grid_dropdown.cpp b/silisili/source/view/grid_dropdown.cpp
-similarity index 100%
+similarity index 97%
 rename from wiliwili/source/view/grid_dropdown.cpp
 rename to silisili/source/view/grid_dropdown.cpp
+index 754b926..fd4b7ca 100644
+--- a/wiliwili/source/view/grid_dropdown.cpp
++++ b/silisili/source/view/grid_dropdown.cpp
+@@ -104,7 +104,12 @@ BaseDropdown::BaseDropdown(const std::string& title, ValueSelectedEvent::Callbac
+     });
+     this->cancel->addGestureRecognizer(new brls::TapGestureRecognizer(this->cancel));
+ 
++#ifdef SILISILI_SAILFISH_MOBILE
++    this->setWidth(brls::Application::contentWidth);
++    this->setMaxWidth(brls::Application::contentWidth);
++#else
+     this->setWidth(brls::Application::ORIGINAL_WINDOW_WIDTH);
++#endif
+ }
+ 
+ RecyclingGrid* BaseDropdown::getRecyclingList() { return recycler; }
+@@ -169,4 +174,4 @@ BaseDropdown* BaseDropdown::text(const std::string& title, const std::vector<std
+     dropdown->setDataSource(new TextDataSourceDropdown(values, dropdown));
+     brls::Application::pushActivity(new brls::Activity(dropdown));
+     return dropdown;
+-}
+\ No newline at end of file
++}
 diff --git a/wiliwili/source/view/hint_label.cpp b/silisili/source/view/hint_label.cpp
 similarity index 100%
 rename from wiliwili/source/view/hint_label.cpp
@@ -12469,7 +12529,7 @@ diff --git a/wiliwili/source/view/inbox_msg_card.cpp b/silisili/source/view/inbo
 similarity index 97%
 rename from wiliwili/source/view/inbox_msg_card.cpp
 rename to silisili/source/view/inbox_msg_card.cpp
-index 1427fbb5a34f5fb4413d3d82823405b41231ddb8..757e7c5cb2b82a0643c90cd696244524730031d5 100644
+index 1427fbb..757e7c5 100644
 --- a/wiliwili/source/view/inbox_msg_card.cpp
 +++ b/silisili/source/view/inbox_msg_card.cpp
 @@ -23,7 +23,7 @@ void InboxMsgCard::setCard(const bilibili::InboxMessageResult& r, const IEMap& m
@@ -12502,7 +12562,7 @@ diff --git a/wiliwili/source/view/mpv_core.cpp b/silisili/source/view/mpv_core.c
 similarity index 92%
 rename from wiliwili/source/view/mpv_core.cpp
 rename to silisili/source/view/mpv_core.cpp
-index 64c96d665c81543616da72c0b5bf7f85292a54dd..4a8ddd3db9884006678c38e9427810c43f8a68a4 100644
+index 64c96d6..4a8ddd3 100644
 --- a/wiliwili/source/view/mpv_core.cpp
 +++ b/silisili/source/view/mpv_core.cpp
 @@ -5,6 +5,7 @@
@@ -12709,7 +12769,7 @@ diff --git a/wiliwili/source/view/recycling_grid.cpp b/silisili/source/view/recy
 similarity index 94%
 rename from wiliwili/source/view/recycling_grid.cpp
 rename to silisili/source/view/recycling_grid.cpp
-index bfc75f6b4aeeb806d907aae97bbf27bbd7e5c250..064beaa56e7ef56406c863022acfa2ccf2680488 100644
+index bfc75f6..064beaa 100644
 --- a/wiliwili/source/view/recycling_grid.cpp
 +++ b/silisili/source/view/recycling_grid.cpp
 @@ -2,6 +2,7 @@
@@ -12828,7 +12888,7 @@ diff --git a/wiliwili/source/view/video_card.cpp b/silisili/source/view/video_ca
 similarity index 96%
 rename from wiliwili/source/view/video_card.cpp
 rename to silisili/source/view/video_card.cpp
-index 7e005944e3fab47b3bb8ef5b71ba0f7e77ceec74..be5f5d827be011c5e5a71e66e844a55cfeaf201d 100644
+index 7e00594..be5f5d8 100644
 --- a/wiliwili/source/view/video_card.cpp
 +++ b/silisili/source/view/video_card.cpp
 @@ -89,7 +89,7 @@ void RecyclingGridItemVideoCard::setCard(const std::string& pic, const std::stri
@@ -12899,7 +12959,7 @@ diff --git a/wiliwili/source/view/video_comment.cpp b/silisili/source/view/video
 similarity index 98%
 rename from wiliwili/source/view/video_comment.cpp
 rename to silisili/source/view/video_comment.cpp
-index db9cef95564283bc8d08535d8e7dcabc2579090b..8ec8301132ea56b58c5d1e13bd2661704d78924c 100644
+index db9cef9..8ec8301 100644
 --- a/wiliwili/source/view/video_comment.cpp
 +++ b/silisili/source/view/video_comment.cpp
 @@ -114,7 +114,7 @@ void VideoComment::setMaxRows(size_t value) { this->commentContent->setMaxRows(v
@@ -12951,7 +13011,7 @@ diff --git a/wiliwili/source/view/video_view.cpp b/silisili/source/view/video_vi
 similarity index 91%
 rename from wiliwili/source/view/video_view.cpp
 rename to silisili/source/view/video_view.cpp
-index 66cb5c2d636c98441b1250d569270b512f9ceef9..acf5c4f1e60ceecf905327e47ddfdb625f3cca04 100644
+index 66cb5c2..acf5c4f 100644
 --- a/wiliwili/source/view/video_view.cpp
 +++ b/silisili/source/view/video_view.cpp
 @@ -2,13 +2,16 @@
@@ -13451,7 +13511,7 @@ index 66cb5c2d636c98441b1250d569270b512f9ceef9..acf5c4f1e60ceecf905327e47ddfdb62
 -
 diff --git a/wiliwili/source/utils/gesture_helper.cpp b/wiliwili/source/utils/gesture_helper.cpp
 deleted file mode 100644
-index 30da769b927695390dab46901d57431beb8275ae..0000000000000000000000000000000000000000
+index 30da769..0000000
 --- a/wiliwili/source/utils/gesture_helper.cpp
 +++ /dev/null
 @@ -1,199 +0,0 @@
@@ -13655,8 +13715,27 @@ index 30da769b927695390dab46901d57431beb8275ae..00000000000000000000000000000000
 -    };
 -}
 \ No newline at end of file
+diff --git a/library/borealis/library/include/borealis/core/activity.hpp b/library/borealis/library/include/borealis/core/activity.hpp
+index 754fece..2a2b579 100644
+--- a/library/borealis/library/include/borealis/core/activity.hpp
++++ b/library/borealis/library/include/borealis/core/activity.hpp
+@@ -74,6 +74,14 @@ class Activity
+ 
+     View* getContentView();
+ 
++    /**
++     * Allows Sailfish phone builds to use the native-style page-stack gesture:
++     * drag the current page from left to right to invoke its existing Back
++     * action. Activities with horizontal media gestures can reject starts in
++     * those regions.
++     */
++    virtual bool allowsSailfishPageBackGesture(Point startPosition) const;
++
+     /**
+      * Returns the view with the corresponding id, or nullptr
+      * if it hasn't been found in the activity.
 diff --git a/library/borealis/library/include/borealis/core/application.hpp b/library/borealis/library/include/borealis/core/application.hpp
-index cfff62bf9edebb44efc387c49405fe6adea880c8..7ef8e45e6b91de8406bee89ac38cb58d636ccf13 100644
+index cfff62b..7ef8e45 100644
 --- a/library/borealis/library/include/borealis/core/application.hpp
 +++ b/library/borealis/library/include/borealis/core/application.hpp
 @@ -383,7 +383,11 @@ class Application
@@ -13672,7 +13751,7 @@ index cfff62bf9edebb44efc387c49405fe6adea880c8..7ef8e45e6b91de8406bee89ac38cb58d
      inline static std::vector<BrlsKeyState> oldWatchedKeys;
      inline static std::unordered_map<int, int> watchedKeysMap;
 diff --git a/library/borealis/library/include/borealis/core/input.hpp b/library/borealis/library/include/borealis/core/input.hpp
-index 14580244f441a3ec9d3c0dbc88201cb4a1fe025c..63ed14c9af3bcf880eaf306fb45f8c1ee20bb0fd 100644
+index 1458024..63ed14c 100644
 --- a/library/borealis/library/include/borealis/core/input.hpp
 +++ b/library/borealis/library/include/borealis/core/input.hpp
 @@ -268,6 +268,7 @@ struct RawTouchState
@@ -13692,7 +13771,7 @@ index 14580244f441a3ec9d3c0dbc88201cb4a1fe025c..63ed14c9af3bcf880eaf306fb45f8c1e
      View* view = nullptr;
  };
 diff --git a/library/borealis/library/include/borealis/core/touch/pan_gesture.hpp b/library/borealis/library/include/borealis/core/touch/pan_gesture.hpp
-index 7715b2d52444b9e3e283dc5b36d8eb42391acd93..bd7695e7d5b9060e9530dbaed4702a88f8eb3d39 100644
+index 7715b2d..bd7695e 100644
 --- a/library/borealis/library/include/borealis/core/touch/pan_gesture.hpp
 +++ b/library/borealis/library/include/borealis/core/touch/pan_gesture.hpp
 @@ -80,7 +80,7 @@ class PanGestureRecognizer : public GestureRecognizer
@@ -13705,7 +13784,7 @@ index 7715b2d52444b9e3e283dc5b36d8eb42391acd93..bd7695e7d5b9060e9530dbaed4702a88
      Point position;
      Point startPosition;
 diff --git a/library/borealis/library/include/borealis/core/touch/tap_gesture.hpp b/library/borealis/library/include/borealis/core/touch/tap_gesture.hpp
-index c6ee8e08dac196a5371805b147936c443010feda..6859c971cb69a29934e6122fc1305e0b6b5f226e 100644
+index c6ee8e0..6859c97 100644
 --- a/library/borealis/library/include/borealis/core/touch/tap_gesture.hpp
 +++ b/library/borealis/library/include/borealis/core/touch/tap_gesture.hpp
 @@ -77,6 +77,7 @@ class TapGestureRecognizer : public GestureRecognizer
@@ -13717,7 +13796,7 @@ index c6ee8e08dac196a5371805b147936c443010feda..6859c971cb69a29934e6122fc1305e0b
      Point position{};
      GestureState lastState{};
 diff --git a/library/borealis/library/include/borealis/core/video.hpp b/library/borealis/library/include/borealis/core/video.hpp
-index c02cde7790aa7cecd63a87cc71a198883b81de55..efc0bfc12d7a34cec4397bd6bc48360dfb37ae01 100644
+index c02cde7..efc0bfc 100644
 --- a/library/borealis/library/include/borealis/core/video.hpp
 +++ b/library/borealis/library/include/borealis/core/video.hpp
 @@ -20,6 +20,13 @@
@@ -13752,7 +13831,7 @@ index c02cde7790aa7cecd63a87cc71a198883b81de55..efc0bfc12d7a34cec4397bd6bc48360d
  
      // The position and size of the window in the last non-full-screen mode
 diff --git a/library/borealis/library/include/borealis/platforms/glfw/glfw_ime.hpp b/library/borealis/library/include/borealis/platforms/glfw/glfw_ime.hpp
-index 2c7ab8b150271f56e4595ffdf19e9ca1e044e113..fcc19301c97a1e5c0acffece07e29c2085e972d1 100644
+index 2c7ab8b..fcc1930 100644
 --- a/library/borealis/library/include/borealis/platforms/glfw/glfw_ime.hpp
 +++ b/library/borealis/library/include/borealis/platforms/glfw/glfw_ime.hpp
 @@ -17,6 +17,7 @@ limitations under the License.
@@ -13805,7 +13884,7 @@ index 2c7ab8b150271f56e4595ffdf19e9ca1e044e113..fcc19301c97a1e5c0acffece07e29c20
 \ No newline at end of file
 +};
 diff --git a/library/borealis/library/include/borealis/platforms/glfw/glfw_input.hpp b/library/borealis/library/include/borealis/platforms/glfw/glfw_input.hpp
-index 7c70270c896b4eca1761f964e1d518561030accd..e746702d831d8feeadabf7069e5d863a82241b25 100644
+index 7c70270..e746702 100644
 --- a/library/borealis/library/include/borealis/platforms/glfw/glfw_input.hpp
 +++ b/library/borealis/library/include/borealis/platforms/glfw/glfw_input.hpp
 @@ -18,13 +18,15 @@
@@ -13851,7 +13930,7 @@ index 7c70270c896b4eca1761f964e1d518561030accd..e746702d831d8feeadabf7069e5d863a
  
  };
 diff --git a/library/borealis/library/include/borealis/platforms/glfw/glfw_platform.hpp b/library/borealis/library/include/borealis/platforms/glfw/glfw_platform.hpp
-index b4a14f12fd76f51cfa668d69ca17a2d1b43836fd..e85e25ccc8f037b5c261d8eaa8afcf8c41324499 100644
+index b4a14f1..e85e25c 100644
 --- a/library/borealis/library/include/borealis/platforms/glfw/glfw_platform.hpp
 +++ b/library/borealis/library/include/borealis/platforms/glfw/glfw_platform.hpp
 @@ -39,6 +39,7 @@ class GLFWPlatform : public DesktopPlatform
@@ -13875,7 +13954,7 @@ index b4a14f12fd76f51cfa668d69ca17a2d1b43836fd..e85e25ccc8f037b5c261d8eaa8afcf8c
      GLFWVideoContext* videoContext = nullptr;
      GLFWInputManager* inputManager = nullptr;
 diff --git a/library/borealis/library/include/borealis/platforms/glfw/glfw_video.hpp b/library/borealis/library/include/borealis/platforms/glfw/glfw_video.hpp
-index 04daf8ce862d53625522d0fa5536ab608aa90b41..bb7f1f5dbd4356988085940734fafc9692d1577d 100644
+index 04daf8c..bb7f1f5 100644
 --- a/library/borealis/library/include/borealis/platforms/glfw/glfw_video.hpp
 +++ b/library/borealis/library/include/borealis/platforms/glfw/glfw_video.hpp
 @@ -44,6 +44,7 @@ class GLFWVideoContext : public VideoContext
@@ -13886,8 +13965,20 @@ index 04daf8ce862d53625522d0fa5536ab608aa90b41..bb7f1f5dbd4356988085940734fafc96
      int getCurrentMonitorIndex() override;
  
      GLFWwindow* getGLFWWindow();
+diff --git a/library/borealis/library/include/borealis/views/dialog.hpp b/library/borealis/library/include/borealis/views/dialog.hpp
+index 31e7601..19c138f 100644
+--- a/library/borealis/library/include/borealis/views/dialog.hpp
++++ b/library/borealis/library/include/borealis/views/dialog.hpp
+@@ -50,6 +50,7 @@ class Dialog : public Box
+ 
+     void rebuildButtons();
+     void buttonClick(DialogButton* button);
++    void applySailfishPhoneGeometry();
+ 
+     bool cancelable = true;
+ 
 diff --git a/library/borealis/library/include/borealis/views/edit_text_dialog.hpp b/library/borealis/library/include/borealis/views/edit_text_dialog.hpp
-index 5fb4f4fe23891734943b1e8e38308b840bc2a6a7..f1bc9bc7d54fbc671ea643c8770b20830eaea17e 100644
+index 5fb4f4f..f1bc9bc 100644
 --- a/library/borealis/library/include/borealis/views/edit_text_dialog.hpp
 +++ b/library/borealis/library/include/borealis/views/edit_text_dialog.hpp
 @@ -1,11 +1,15 @@
@@ -13962,7 +14053,7 @@ index 5fb4f4fe23891734943b1e8e38308b840bc2a6a7..f1bc9bc7d54fbc671ea643c8770b2083
 +};
 +}
 diff --git a/library/borealis/library/include/borealis/views/scrolling_frame.hpp b/library/borealis/library/include/borealis/views/scrolling_frame.hpp
-index bb6275a226af4beb48c66a5488c2f1a200a299ce..dad7617a5cb5d4cf0c962a24925bf2a33cd0c5dd 100644
+index bb6275a..dad7617 100644
 --- a/library/borealis/library/include/borealis/views/scrolling_frame.hpp
 +++ b/library/borealis/library/include/borealis/views/scrolling_frame.hpp
 @@ -21,6 +21,8 @@
@@ -13994,8 +14085,172 @@ index bb6275a226af4beb48c66a5488c2f1a200a299ce..dad7617a5cb5d4cf0c962a24925bf2a3
      void naturalScrollingBehaviour();
      void naturalScrollingButtonProcessing(FocusDirection focusDirection, bool* repeat);
      View* findTopMostFocusableView();
+diff --git a/library/borealis/library/lib/core/activity.cpp b/library/borealis/library/lib/core/activity.cpp
+index 00be636..38a3ae2 100644
+--- a/library/borealis/library/lib/core/activity.cpp
++++ b/library/borealis/library/lib/core/activity.cpp
+@@ -16,13 +16,137 @@
+ 
+ #include <borealis/core/activity.hpp>
+ #include <borealis/core/application.hpp>
++#include <borealis/core/gesture.hpp>
+ #include <borealis/core/i18n.hpp>
++#include <borealis/core/thread.hpp>
++
++#include <algorithm>
++#include <cmath>
+ 
+ using namespace brls::literals;
+ 
+ namespace brls
+ {
+ 
++#ifdef SILISILI_SAILFISH_MOBILE
++namespace
++{
++constexpr float SAILFISH_BACK_DIRECTION_LOCK = 1.4f;
++constexpr float SAILFISH_BACK_START_DISTANCE = 10.0f;
++constexpr float SAILFISH_BACK_COMMIT_FRACTION = 0.28f;
++
++class SailfishPageBackGestureRecognizer : public GestureRecognizer
++{
++  public:
++    explicit SailfishPageBackGestureRecognizer(Activity* activity)
++        : activity(activity)
++    {
++    }
++
++    GestureState recognitionLoop(TouchState touch, MouseState, View* view, Sound*) override
++    {
++        if (!enabled || touch.phase == TouchPhase::NONE)
++            return GestureState::FAILED;
++
++        if (touch.phase == TouchPhase::START)
++        {
++            this->fingerId = touch.fingerId;
++            this->startPosition = touch.position;
++            this->state = GestureState::UNSURE;
++            this->dragging = false;
++            view->setTranslationX(0.0f);
++            return this->state;
++        }
++
++        if (touch.fingerId != this->fingerId)
++            return this->fail(view);
++
++        if (this->state == GestureState::INTERRUPTED || this->state == GestureState::FAILED)
++            return this->fail(view);
++
++        const float distanceX = touch.position.x - this->startPosition.x;
++        const float distanceY = touch.position.y - this->startPosition.y;
++
++        if (this->state == GestureState::UNSURE)
++        {
++            if (touch.phase == TouchPhase::END)
++                return this->fail(view);
++
++            if (std::hypot(distanceX, distanceY) < SAILFISH_BACK_START_DISTANCE)
++                return this->state;
++
++            if (distanceX <= 0.0f || distanceX < std::fabs(distanceY) * SAILFISH_BACK_DIRECTION_LOCK ||
++                !this->canStart())
++                return this->fail(view);
++
++            this->dragging = true;
++            this->state = GestureState::START;
++            Logger::info("Sailfish page back swipe: started at {:.0f},{:.0f}",
++                         this->startPosition.x, this->startPosition.y);
++        }
++        else if (touch.phase == TouchPhase::STAY)
++        {
++            this->state = GestureState::STAY;
++        }
++
++        if (!this->dragging)
++            return this->state;
++
++        const float width = std::max(1.0f, view->getWidth());
++        view->setTranslationX(std::clamp(distanceX, 0.0f, width));
++
++        if (touch.phase != TouchPhase::END)
++            return this->state;
++
++        const bool commit = distanceX >= width * SAILFISH_BACK_COMMIT_FRACTION;
++        view->setTranslationX(0.0f);
++        this->dragging = false;
++        this->fingerId = -1;
++        this->state = GestureState::END;
++
++        Logger::info("Sailfish page back swipe: {} distance={:.0f} threshold={:.0f}",
++                     commit ? "committed" : "cancelled", distanceX,
++                     width * SAILFISH_BACK_COMMIT_FRACTION);
++
++        if (commit)
++        {
++            Activity* expectedActivity = this->activity;
++            brls::delay(1, [expectedActivity]() {
++                auto stack = Application::getActivitiesStack();
++                if (stack.size() > 1 && stack.back() == expectedActivity)
++                    Application::onControllerButtonPressed(BUTTON_B, false);
++            });
++        }
++
++        return this->state;
++    }
++
++  private:
++    bool canStart() const
++    {
++        auto stack = Application::getActivitiesStack();
++        return stack.size() > 1 && stack.back() == this->activity &&
++               this->activity->allowsSailfishPageBackGesture(this->startPosition);
++    }
++
++    GestureState fail(View* view)
++    {
++        if (this->dragging)
++            view->setTranslationX(0.0f);
++        this->dragging = false;
++        this->fingerId = -1;
++        this->state = GestureState::FAILED;
++        return this->state;
++    }
++
++    Activity* activity;
++    Point startPosition;
++    int fingerId = -1;
++    bool dragging = false;
++};
++} // namespace
++#endif
++
+ Activity::Activity()
+ {
+ }
+@@ -43,6 +167,9 @@ void Activity::setContentView(View* view)
+ 
+     this->contentView = view;
+     this->contentView->setParentActivity(this);
++#ifdef SILISILI_SAILFISH_MOBILE
++    this->contentView->addGestureRecognizer(new SailfishPageBackGestureRecognizer(this));
++#endif
+     // willAppear is only called when the activity is pushed onto the stack
+ 
+     this->resizeToFitWindow();
+@@ -166,6 +293,11 @@ View* Activity::getContentView()
+     return this->contentView;
+ }
+ 
++bool Activity::allowsSailfishPageBackGesture(Point) const
++{
++    return true;
++}
++
+ View* Activity::getView(std::string id)
+ {
+     if (!this->contentView)
 diff --git a/library/borealis/library/lib/core/application.cpp b/library/borealis/library/lib/core/application.cpp
-index a45103da2747e71b2367e4ad59fab26e3c073849..7113ad8f1e8dc2a87e63beff9ea6cb07fc63fece 100644
+index a45103d..7113ad8 100644
 --- a/library/borealis/library/lib/core/application.cpp
 +++ b/library/borealis/library/lib/core/application.cpp
 @@ -316,7 +316,7 @@ void Application::processInput()
@@ -14061,7 +14316,7 @@ index a45103da2747e71b2367e4ad59fab26e3c073849..7113ad8f1e8dc2a87e63beff9ea6cb07
      for (Activity* activity : Application::activitiesStack)
          activity->onWindowSizeChanged();
 diff --git a/library/borealis/library/lib/core/input.cpp b/library/borealis/library/lib/core/input.cpp
-index b8dc580b49dee0e839b86ca12659d7e61978923e..ad0f5eb01db8d174a166863d934611321adb94e9 100644
+index b8dc580..ad0f5eb 100644
 --- a/library/borealis/library/lib/core/input.cpp
 +++ b/library/borealis/library/lib/core/input.cpp
 @@ -46,6 +46,7 @@ TouchState InputManager::computeTouchState(RawTouchState currentTouch, TouchStat
@@ -14073,7 +14328,7 @@ index b8dc580b49dee0e839b86ca12659d7e61978923e..ad0f5eb01db8d174a166863d93461132
          state.position = lastFrameState.position;
      else
 diff --git a/library/borealis/library/lib/core/touch/pan_gesture.cpp b/library/borealis/library/lib/core/touch/pan_gesture.cpp
-index b460917b4cb162228cc43029633af123618f39c1..1cb2c622972038b32846438edc52b2f42ad878b3 100644
+index b460917..1cb2c62 100644
 --- a/library/borealis/library/lib/core/touch/pan_gesture.cpp
 +++ b/library/borealis/library/lib/core/touch/pan_gesture.cpp
 @@ -52,6 +52,11 @@ GestureState PanGestureRecognizer::recognitionLoop(TouchState touch, MouseState
@@ -14111,7 +14366,7 @@ index b460917b4cb162228cc43029633af123618f39c1..1cb2c622972038b32846438edc52b2f4
          case TouchPhase::NONE:
              this->state = GestureState::FAILED;
 diff --git a/library/borealis/library/lib/core/touch/tap_gesture.cpp b/library/borealis/library/lib/core/touch/tap_gesture.cpp
-index 3158013571892370e800bd6a0abcda2759718d3b..5e8752cf6a2d7c7011d3ae3b86cb81d8523991b0 100644
+index 3158013..5e8752c 100644
 --- a/library/borealis/library/lib/core/touch/tap_gesture.cpp
 +++ b/library/borealis/library/lib/core/touch/tap_gesture.cpp
 @@ -101,6 +101,22 @@ GestureState TapGestureRecognizer::recognitionLoop(TouchState touch, MouseState
@@ -14158,7 +14413,7 @@ index 3158013571892370e800bd6a0abcda2759718d3b..5e8752cf6a2d7c7011d3ae3b86cb81d8
          case TouchPhase::NONE:
              this->state = GestureState::FAILED;
 diff --git a/library/borealis/library/lib/core/view.cpp b/library/borealis/library/lib/core/view.cpp
-index 59ec77bb65887bb1fa59ccd2770e7f41a72396e9..ddbd6777cf12ca019dc222e44bc58560aba0b375 100644
+index 59ec77b..ddbd677 100644
 --- a/library/borealis/library/lib/core/view.cpp
 +++ b/library/borealis/library/lib/core/view.cpp
 @@ -1449,7 +1449,15 @@ void View::overrideTheme(Theme* newTheme)
@@ -14179,7 +14434,7 @@ index 59ec77bb65887bb1fa59ccd2770e7f41a72396e9..ddbd6777cf12ca019dc222e44bc58560
      YGNodeStyleSetAspectRatio(this->ygNode, value);
      this->invalidate();
 diff --git a/library/borealis/library/lib/platforms/glfw/glfw_ime.cpp b/library/borealis/library/lib/platforms/glfw/glfw_ime.cpp
-index eab3dc5d93643b5f961480d4fc16348513896d59..eeb048953af4c4788c3fd06479d5ffabfdba39ee 100644
+index eab3dc5..eeb0489 100644
 --- a/library/borealis/library/lib/platforms/glfw/glfw_ime.cpp
 +++ b/library/borealis/library/lib/platforms/glfw/glfw_ime.cpp
 @@ -30,6 +30,12 @@ limitations under the License.
@@ -14911,7 +15166,7 @@ index eab3dc5d93643b5f961480d4fc16348513896d59..eeb048953af4c4788c3fd06479d5ffab
 \ No newline at end of file
 +};
 diff --git a/library/borealis/library/lib/platforms/glfw/glfw_input.cpp b/library/borealis/library/lib/platforms/glfw/glfw_input.cpp
-index 9b31fcfa3c76a6236cdb5a820c176e7ca47f30e0..0e861fb21262c39e135afb8606184d85ef09915f 100644
+index 9b31fcf..0e861fb 100644
 --- a/library/borealis/library/lib/platforms/glfw/glfw_input.cpp
 +++ b/library/borealis/library/lib/platforms/glfw/glfw_input.cpp
 @@ -27,6 +27,7 @@
@@ -15166,7 +15421,7 @@ index 9b31fcfa3c76a6236cdb5a820c176e7ca47f30e0..0e861fb21262c39e135afb8606184d85
  
  void GLFWInputManager::setPointerLock(bool lock)
 diff --git a/library/borealis/library/lib/platforms/glfw/glfw_platform.cpp b/library/borealis/library/lib/platforms/glfw/glfw_platform.cpp
-index afc26e5297f52ebf8617714f9657707f99de5bac..cc5dec838d344eb4ab1b045a8c37ad0b6a670240 100644
+index afc26e5..cc5dec8 100644
 --- a/library/borealis/library/lib/platforms/glfw/glfw_platform.cpp
 +++ b/library/borealis/library/lib/platforms/glfw/glfw_platform.cpp
 @@ -53,7 +53,9 @@ GLFWPlatform::GLFWPlatform()
@@ -15315,7 +15570,7 @@ index afc26e5297f52ebf8617714f9657707f99de5bac..cc5dec838d344eb4ab1b045a8c37ad0b
      delete this->inputManager;
      delete this->imeManager;
 diff --git a/library/borealis/library/lib/platforms/glfw/glfw_video.cpp b/library/borealis/library/lib/platforms/glfw/glfw_video.cpp
-index c11b2c4d08bca7c7f47c6f556d512bc3b073dd89..fa227efce3ef467f1b5c13959d2700e89cd6ab07 100644
+index c11b2c4..fa227ef 100644
 --- a/library/borealis/library/lib/platforms/glfw/glfw_video.cpp
 +++ b/library/borealis/library/lib/platforms/glfw/glfw_video.cpp
 @@ -589,6 +589,31 @@ void GLFWVideoContext::fullScreen(bool fs)
@@ -15350,8 +15605,73 @@ index c11b2c4d08bca7c7f47c6f556d512bc3b073dd89..fa227efce3ef467f1b5c13959d2700e8
  GLFWwindow* GLFWVideoContext::getGLFWWindow()
  {
      return this->window;
+diff --git a/library/borealis/library/lib/views/dialog.cpp b/library/borealis/library/lib/views/dialog.cpp
+index 33744bf..dca51a3 100644
+--- a/library/borealis/library/lib/views/dialog.cpp
++++ b/library/borealis/library/lib/views/dialog.cpp
+@@ -20,6 +20,8 @@
+ #include <borealis/views/dialog.hpp>
+ #include <borealis/views/label.hpp>
+ 
++#include <algorithm>
++
+ using namespace brls::literals;
+ 
+ // TODO: different open animation?
+@@ -139,6 +141,7 @@ const std::string dialogXML = R"xml(
+ Dialog::Dialog(Box* contentView)
+ {
+     this->inflateFromXMLString(dialogXML);
++    this->applySailfishPhoneGeometry();
+     container->addView(contentView);
+ 
+     appletFrame->registerAction(
+@@ -167,6 +170,7 @@ Dialog::Dialog(std::string text)
+     box->setPadding(style["brls/dialog/paddingTopBottom"], style["brls/dialog/paddingLeftRight"], style["brls/dialog/paddingTopBottom"], style["brls/dialog/paddingLeftRight"]);
+ 
+     this->inflateFromXMLString(dialogXML);
++    this->applySailfishPhoneGeometry();
+     container->addView(box);
+ 
+     appletFrame->registerAction(
+@@ -178,6 +182,20 @@ Dialog::Dialog(std::string text)
+         false, false, SOUND_BACK);
+ }
+ 
++void Dialog::applySailfishPhoneGeometry()
++{
++#ifdef SILISILI_SAILFISH_MOBILE
++    constexpr float margin = 16.0f;
++    const float width = std::max(1.0f, Application::contentWidth - margin * 2.0f);
++    const float height = std::max(1.0f, Application::contentHeight - margin * 2.0f);
++    appletFrame->setWidth(width);
++    appletFrame->setMaxWidth(width);
++    appletFrame->setMaxHeight(height);
++    Logger::info("Sailfish dialog bounds: {:.0f}x{:.0f} within {:.0f}x{:.0f}",
++                 width, height, Application::contentWidth, Application::contentHeight);
++#endif
++}
++
+ void Dialog::addButton(std::string label, VoidEvent::Callback cb)
+ {
+     if (this->buttons.size() >= 3)
+diff --git a/library/borealis/library/lib/views/dropdown.cpp b/library/borealis/library/lib/views/dropdown.cpp
+index 65c6b9a..03b3cc4 100644
+--- a/library/borealis/library/lib/views/dropdown.cpp
++++ b/library/borealis/library/lib/views/dropdown.cpp
+@@ -108,6 +108,10 @@ Dropdown::Dropdown(std::string title, std::vector<std::string> values, ValueSele
+     , selected(selected)
+ {
+     this->inflateFromXMLString(dropdownFrameXML);
++#ifdef SILISILI_SAILFISH_MOBILE
++    this->setWidth(Application::contentWidth);
++    this->setMaxWidth(Application::contentWidth);
++#endif
+     this->title->setText(title);
+ 
+     recycler->estimatedRowHeight = Application::getStyle()["brls/dropdown/listItemHeight"];
 diff --git a/library/borealis/library/lib/views/edit_text_dialog.cpp b/library/borealis/library/lib/views/edit_text_dialog.cpp
-index 62a30943939a40d3d5251f7dbfbef471c6722dc7..137ca674a5a7ff9cbd2a69f29d7e6d6aa3047b7c 100644
+index 62a3094..137ca67 100644
 --- a/library/borealis/library/lib/views/edit_text_dialog.cpp
 +++ b/library/borealis/library/lib/views/edit_text_dialog.cpp
 @@ -3,101 +3,198 @@
@@ -15682,7 +16002,7 @@ index 62a30943939a40d3d5251f7dbfbef471c6722dc7..137ca674a5a7ff9cbd2a69f29d7e6d6a
          Application::pushActivity(new Activity(this));
      }
 diff --git a/library/borealis/library/lib/views/hint.cpp b/library/borealis/library/lib/views/hint.cpp
-index 2a6ae1d9f58c34daf83f5d020c7f34290c747527..7fc0525d2164c9c1325eaae290ab0b8d55e51dc1 100644
+index 2a6ae1d..7fc0525 100644
 --- a/library/borealis/library/lib/views/hint.cpp
 +++ b/library/borealis/library/lib/views/hint.cpp
 @@ -184,6 +184,10 @@ static bool actionsSortFunc(const std::shared_ptr<Action>& a, const std::shared_
@@ -15704,7 +16024,7 @@ index 2a6ae1d9f58c34daf83f5d020c7f34290c747527..7fc0525d2164c9c1325eaae290ab0b8d
 \ No newline at end of file
 +} // namespace brls
 diff --git a/library/borealis/library/lib/views/scrolling_frame.cpp b/library/borealis/library/lib/views/scrolling_frame.cpp
-index 61978bd523cfb692a115dbce8ba473ef22c9661e..65f8ef330432a5455a69da9be21951c44da6fc36 100644
+index 61978bd..65f8ef3 100644
 --- a/library/borealis/library/lib/views/scrolling_frame.cpp
 +++ b/library/borealis/library/lib/views/scrolling_frame.cpp
 @@ -41,7 +41,11 @@ ScrollingFrame::ScrollingFrame()
@@ -15765,7 +16085,7 @@ index 61978bd523cfb692a115dbce8ba473ef22c9661e..65f8ef330432a5455a69da9be21951c4
      if (!this->contentView)
 diff --git a/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml b/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml
 new file mode 100644
-index 0000000000000000000000000000000000000000..d2056eb637502a0da46ee9ad8dfc54755a95cba8
+index 0000000..d2056eb
 --- /dev/null
 +++ b/library/borealis/library/lib/extern/glfw/deps/wayland/surface-extension.xml
 @@ -0,0 +1,70 @@
@@ -15840,7 +16160,7 @@ index 0000000000000000000000000000000000000000..d2056eb637502a0da46ee9ad8dfc5475
 +  </interface>
 +</protocol>
 diff --git a/library/borealis/library/lib/extern/glfw/include/GLFW/glfw3.h b/library/borealis/library/lib/extern/glfw/include/GLFW/glfw3.h
-index a6bb1c466c2954de8a9f86d407f45eb8f8b71f1c..e8b5a0eafa68f655fce1527c400e0346a9defeab 100644
+index a6bb1c4..e8b5a0e 100644
 --- a/library/borealis/library/lib/extern/glfw/include/GLFW/glfw3.h
 +++ b/library/borealis/library/lib/extern/glfw/include/GLFW/glfw3.h
 @@ -350,6 +350,14 @@ extern "C" {
@@ -15879,7 +16199,7 @@ index a6bb1c466c2954de8a9f86d407f45eb8f8b71f1c..e8b5a0eafa68f655fce1527c400e0346
  #endif /* _glfw3_h_ */
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/CMakeLists.txt b/library/borealis/library/lib/extern/glfw/src/CMakeLists.txt
-index 373c4b436758266772f518aae87492597722207b..a0ba97cade419f40e74c0f0952a7a1684d016fdc 100644
+index 373c4b4..a0ba97c 100644
 --- a/library/borealis/library/lib/extern/glfw/src/CMakeLists.txt
 +++ b/library/borealis/library/lib/extern/glfw/src/CMakeLists.txt
 @@ -106,6 +106,7 @@ if (GLFW_BUILD_WAYLAND)
@@ -15896,7 +16216,7 @@ index 373c4b436758266772f518aae87492597722207b..a0ba97cade419f40e74c0f0952a7a168
  endif()
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/egl_context.c b/library/borealis/library/lib/extern/glfw/src/egl_context.c
-index ef65dd3504ad528b18ef1803c03a32e53c57aaf8..272bbfaeca26f2748eb9295d89e035967385a9c8 100644
+index ef65dd3..272bbfa 100644
 --- a/library/borealis/library/lib/extern/glfw/src/egl_context.c
 +++ b/library/borealis/library/lib/extern/glfw/src/egl_context.c
 @@ -32,7 +32,6 @@
@@ -15913,7 +16233,7 @@ index ef65dd3504ad528b18ef1803c03a32e53c57aaf8..272bbfaeca26f2748eb9295d89e03596
  }
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/init.c b/library/borealis/library/lib/extern/glfw/src/init.c
-index fc98206ee93d3d0ad4e6072a6fb2def91c54e3c2..f12d60f56952b20bdbcbb38e8d1fc44b5c3ccc0e 100644
+index fc98206..f12d60f 100644
 --- a/library/borealis/library/lib/extern/glfw/src/init.c
 +++ b/library/borealis/library/lib/extern/glfw/src/init.c
 @@ -443,7 +443,9 @@ GLFWAPI int glfwInit(void)
@@ -15932,7 +16252,7 @@ index fc98206ee93d3d0ad4e6072a6fb2def91c54e3c2..f12d60f56952b20bdbcbb38e8d1fc44b
  }
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/input.c b/library/borealis/library/lib/extern/glfw/src/input.c
-index 9d75de89cfe237f5c40bdd94139000c1c1fed398..8202722a9f752d43b3351fed898cb1625b07cea9 100644
+index 9d75de8..8202722 100644
 --- a/library/borealis/library/lib/extern/glfw/src/input.c
 +++ b/library/borealis/library/lib/extern/glfw/src/input.c
 @@ -535,6 +535,7 @@ void _glfwInputJoystickHat(_GLFWjoystick* js, int hat, char value)
@@ -15952,7 +16272,7 @@ index 9d75de89cfe237f5c40bdd94139000c1c1fed398..8202722a9f752d43b3351fed898cb162
  
  // Returns an available joystick object with arrays and name allocated
 diff --git a/library/borealis/library/lib/extern/glfw/src/platform.h b/library/borealis/library/lib/extern/glfw/src/platform.h
-index 75652dcc5ccbb4452862055099e0d1ca46dceaab..05169d7521565a813a26f26fa4ac94fbaab526ee 100644
+index 75652dc..05169d7 100644
 --- a/library/borealis/library/lib/extern/glfw/src/platform.h
 +++ b/library/borealis/library/lib/extern/glfw/src/platform.h
 @@ -106,7 +106,8 @@
@@ -15966,7 +16286,7 @@ index 75652dcc5ccbb4452862055099e0d1ca46dceaab..05169d7521565a813a26f26fa4ac94fb
  #endif
  
 diff --git a/library/borealis/library/lib/extern/glfw/src/wl_init.c b/library/borealis/library/lib/extern/glfw/src/wl_init.c
-index 6d3359ea3ee894a38b461d9f75073fa67cff8c93..44a50011a62aea5902696c90a47b2c1b71ac7cdf 100644
+index 6d3359e..44a5001 100644
 --- a/library/borealis/library/lib/extern/glfw/src/wl_init.c
 +++ b/library/borealis/library/lib/extern/glfw/src/wl_init.c
 @@ -51,6 +51,9 @@
@@ -16023,7 +16343,7 @@ index 6d3359ea3ee894a38b461d9f75073fa67cff8c93..44a50011a62aea5902696c90a47b2c1b
  #endif // _GLFW_WAYLAND
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/wl_platform.h b/library/borealis/library/lib/extern/glfw/src/wl_platform.h
-index 2c4c713a7e7686c11f432177bbbc699b1ec570d6..51bfdfcc1458be53a79d2d417f65d0a6f6576e48 100644
+index 2c4c713..51bfdfc 100644
 --- a/library/borealis/library/lib/extern/glfw/src/wl_platform.h
 +++ b/library/borealis/library/lib/extern/glfw/src/wl_platform.h
 @@ -367,6 +367,9 @@ typedef struct _GLFWwindowWayland
@@ -16052,7 +16372,7 @@ index 2c4c713a7e7686c11f432177bbbc699b1ec570d6..51bfdfcc1458be53a79d2d417f65d0a6
  void _glfwAddDataDeviceListenerWayland(struct wl_data_device* device);
 -
 diff --git a/library/borealis/library/lib/extern/glfw/src/wl_window.c b/library/borealis/library/lib/extern/glfw/src/wl_window.c
-index c8855e919ed2b48a5a03f23617d01e48ef1d023c..563bfb269127201c1b86386c59498aa8f24b32d2 100644
+index c8855e9..563bfb2 100644
 --- a/library/borealis/library/lib/extern/glfw/src/wl_window.c
 +++ b/library/borealis/library/lib/extern/glfw/src/wl_window.c
 @@ -40,7 +40,15 @@

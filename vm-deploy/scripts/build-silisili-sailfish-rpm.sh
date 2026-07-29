@@ -207,6 +207,10 @@ grep -aFq 'Sailfish Bilibili fullscreen layout:' "$stage/silisili" ||
     fail "fullscreen layout marker is missing"
 grep -aFq 'Sailfish player controls: 56pt primary touch targets; 52pt secondary touch targets' \
     "$stage/silisili" || fail "mobile player control-size marker is missing"
+grep -aFq 'Sailfish page back swipe: started at' "$stage/silisili" ||
+    fail "Sailfish page-stack swipe marker is missing"
+grep -aFq 'Sailfish dialog bounds:' "$stage/silisili" ||
+    fail "Sailfish popup bounds marker is missing"
 grep -aFq 'Sailfish input dialog: system IME with touch Back/OK toolbar' \
     "$stage/silisili" || fail "Sailfish input marker is missing"
 grep -aFq 'Sailfish comments: appended page=' "$stage/silisili" ||

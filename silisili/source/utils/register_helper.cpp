@@ -201,7 +201,20 @@ void Register::initCustomTheme() {
 void Register::initCustomStyle() {
     // Add custom values to the style
     brls::getStyle().addMetric("brls/animations/highlight", 200);
+#ifdef SILISILI_SAILFISH_MOBILE
+    brls::getStyle().addMetric("silisili/window/width", brls::Application::contentWidth);
+    brls::getStyle().addMetric("brls/dropdown/listPadding", 16.0f);
+    brls::getStyle().addMetric("brls/dropdown/listPaddingSides", 20.0f);
+    brls::getStyle().addMetric("brls/dropdown/listItemHeight", 64.0f);
+    brls::getStyle().addMetric("brls/dropdown/listItemTextSize", 20.0f);
+    brls::getStyle().addMetric("brls/dropdown/header_height", 64.0f);
+    brls::getStyle().addMetric("brls/dropdown/header_title_font_size", 22.0f);
+    brls::getStyle().addMetric("brls/dialog/paddingTopBottom", 36.0f);
+    brls::getStyle().addMetric("brls/dialog/paddingLeftRight", 32.0f);
+    brls::getStyle().addMetric("brls/dialog/fontSize", 22.0f);
+#else
     brls::getStyle().addMetric("silisili/window/width", brls::Application::ORIGINAL_WINDOW_WIDTH);
+#endif
 
     if (brls::Application::ORIGINAL_WINDOW_HEIGHT == 360) {
         brls::getStyle().addMetric("silisili/grid/span/5", 4);

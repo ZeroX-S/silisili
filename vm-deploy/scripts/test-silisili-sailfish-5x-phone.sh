@@ -3,7 +3,7 @@ set -euo pipefail
 
 PORT_ROOT="${PORT_ROOT:-/media/psf/bonito-port}"
 TELNET="$PORT_ROOT/vm-deploy/scripts/telnet-cmd.sh"
-PACKAGE="${PACKAGE:-silisili-sailfish-1.0.0-2.aarch64.rpm}"
+PACKAGE="${PACKAGE:-silisili-sailfish-1.0.0-3.aarch64.rpm}"
 PACKAGE_URL="${PACKAGE_URL:-http://192.168.2.20:18082/$PACKAGE}"
 SCREENSHOT_URL="${SCREENSHOT_URL:-http://192.168.2.20:18103}"
 APP_LOG=/tmp/silisili-5x-phone-test.log
@@ -68,6 +68,7 @@ swipe)
     ;;
 player-fullscreen)
     phone \
+        'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
         '/tmp/bonito-direct-touch tap 1030 535' \
@@ -82,6 +83,7 @@ player-fullscreen-capture)
     esac
     case "$name" in *[!A-Za-z0-9._-]*) exit 2 ;; esac
     phone \
+        'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
         '/tmp/bonito-direct-touch tap 1030 535' \
@@ -89,6 +91,32 @@ player-fullscreen-capture)
         '/tmp/bonito-uinput-camera-key screenshot' \
         'sleep 2' \
         "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$name'; echo screenshot=\$shot"
+    ;;
+player-fullscreen-cycle-capture)
+    test "$#" -eq 3
+    enter_name="$2"
+    exit_name="$3"
+    for name in "$enter_name" "$exit_name"; do
+        case "$name" in
+            *.png) ;;
+            *) exit 2 ;;
+        esac
+        case "$name" in *[!A-Za-z0-9._-]*) exit 2 ;; esac
+    done
+    phone \
+        'sleep 5' \
+        '/tmp/bonito-direct-touch tap 540 280' \
+        'sleep 1' \
+        '/tmp/bonito-direct-touch tap 1030 535' \
+        'sleep 3' \
+        '/tmp/bonito-uinput-camera-key screenshot' \
+        'sleep 2' \
+        "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$enter_name'; echo enter_screenshot=\$shot" \
+        '/tmp/bonito-uinput-camera-key back' \
+        'sleep 3' \
+        '/tmp/bonito-uinput-camera-key screenshot' \
+        'sleep 2' \
+        "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$exit_name'; echo exit_screenshot=\$shot"
     ;;
 player-osd-capture)
     test "$#" -eq 2
@@ -101,6 +129,40 @@ player-osd-capture)
     phone \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
+        '/tmp/bonito-uinput-camera-key screenshot' \
+        'sleep 2' \
+        "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$name'; echo screenshot=\$shot"
+    ;;
+player-quality-capture)
+    test "$#" -eq 2
+    name="$2"
+    case "$name" in
+        *.png) ;;
+        *) exit 2 ;;
+    esac
+    case "$name" in *[!A-Za-z0-9._-]*) exit 2 ;; esac
+    phone \
+        'sleep 5' \
+        '/tmp/bonito-direct-touch tap 540 280' \
+        'sleep 1' \
+        '/tmp/bonito-direct-touch tap 840 535' \
+        'sleep 2' \
+        '/tmp/bonito-uinput-camera-key screenshot' \
+        'sleep 2' \
+        "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$name'; echo screenshot=\$shot"
+    ;;
+player-share-capture)
+    test "$#" -eq 2
+    name="$2"
+    case "$name" in
+        *.png) ;;
+        *) exit 2 ;;
+    esac
+    case "$name" in *[!A-Za-z0-9._-]*) exit 2 ;; esac
+    phone \
+        'sleep 5' \
+        '/tmp/bonito-direct-touch tap 850 840' \
+        'sleep 2' \
         '/tmp/bonito-uinput-camera-key screenshot' \
         'sleep 2' \
         "shot=\$(ls -1t /home/defaultuser/Pictures/Screenshots/*.png 2>/dev/null | head -1); test -n \"\$shot\"; curl -fsS -X PUT --data-binary @\"\$shot\" '$SCREENSHOT_URL/$name'; echo screenshot=\$shot"
@@ -158,7 +220,7 @@ release)
         'mcetool --unblank-screen >/dev/null'
     ;;
 *)
-    echo "Usage: $0 {status|install|launch|runtime|tap X Y|swipe X1 Y1 X2 Y2 MS STEPS|player-fullscreen|player-fullscreen-capture NAME.png|player-osd-capture NAME.png|player-settings-capture NAME.png|display-inhibit|back|capture NAME.png|log|release}" >&2
+    echo "Usage: $0 {status|install|launch|runtime|tap X Y|swipe X1 Y1 X2 Y2 MS STEPS|player-fullscreen|player-fullscreen-capture NAME.png|player-fullscreen-cycle-capture ENTER.png EXIT.png|player-osd-capture NAME.png|player-quality-capture NAME.png|player-share-capture NAME.png|player-settings-capture NAME.png|display-inhibit|back|capture NAME.png|log|release}" >&2
     exit 2
     ;;
 esac

@@ -201,6 +201,18 @@ private:
 
 void BasePlayerActivity::onContentAvailable() { this->setCommonData(); }
 
+bool BasePlayerActivity::allowsSailfishPageBackGesture(brls::Point startPosition) const {
+#ifdef SILISILI_SAILFISH_MOBILE
+    // The video surface owns horizontal seek gestures. Sailfish recommends
+    // starting the page gesture on the header/content when a page has other
+    // touch functionality, so only the detail area below the 16:9 player may
+    // start page-stack Back. Fullscreen keeps its dedicated Back action.
+    return !embeddedFullscreen && startPosition.y >= 380.0f;
+#else
+    return brls::Activity::allowsSailfishPageBackGesture(startPosition);
+#endif
+}
+
 void BasePlayerActivity::setCommonData() {
 #ifdef SILISILI_SAILFISH_MOBILE
     this->updateSailfishOrientation();

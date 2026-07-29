@@ -108,6 +108,10 @@ Dropdown::Dropdown(std::string title, std::vector<std::string> values, ValueSele
     , selected(selected)
 {
     this->inflateFromXMLString(dropdownFrameXML);
+#ifdef SILISILI_SAILFISH_MOBILE
+    this->setWidth(Application::contentWidth);
+    this->setMaxWidth(Application::contentWidth);
+#endif
     this->title->setText(title);
 
     recycler->estimatedRowHeight = Application::getStyle()["brls/dropdown/listItemHeight"];

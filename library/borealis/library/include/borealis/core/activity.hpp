@@ -75,6 +75,14 @@ class Activity
     View* getContentView();
 
     /**
+     * Allows Sailfish phone builds to use the native-style page-stack gesture:
+     * drag the current page from left to right to invoke its existing Back
+     * action. Activities with horizontal media gestures can reject starts in
+     * those regions.
+     */
+    virtual bool allowsSailfishPageBackGesture(Point startPosition) const;
+
+    /**
      * Returns the view with the corresponding id, or nullptr
      * if it hasn't been found in the activity.
      */

@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-/root/bonito-deploy}"
 APP_DIR="${APP_DIR:-$PROJECT_ROOT/artifacts/generated-blobs/apps}"
 LISTEN1_RPM="${LISTEN1_RPM:-$APP_DIR/listen1-sailfish-2.33.0-1.bonito1.aarch64.rpm}"
-SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-2}"
+SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-3}"
 SILISILI_RPM="${SILISILI_RPM:-$APP_DIR/silisili-sailfish-${SILISILI_EXPECTED_VERSION}.aarch64.rpm}"
 
 fail() {
@@ -221,6 +221,10 @@ grep -aFq 'Sailfish mobile UI baseline: 640x360; fixed short edge: 640; video gr
     "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish mobile UI profile marker missing"
 grep -aFq 'Sailfish mobile window' \
     "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish short-edge scaling marker missing"
+grep -aFq 'Sailfish page back swipe: started at' \
+    "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish page-stack swipe marker missing"
+grep -aFq 'Sailfish dialog bounds:' \
+    "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish popup bounds marker missing"
 grep -aFq 'Sailfish mobile: saved desktop window state ignored' \
     "$sili_root/usr/lib64/silisili/silisili.real" || fail "saved window-state bypass marker missing"
 grep -aFq 'Sailfish search: system IME; TV alphabet grid disabled' \

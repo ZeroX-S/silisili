@@ -43,6 +43,8 @@ public:
 
     void onContentAvailable() override;
 
+    bool allowsSailfishPageBackGesture(brls::Point) const override { return false; }
+
     void onLiveData(const bilibili::LiveRoomPlayInfo& result) override;
 
     void onError(const std::string& error) override;

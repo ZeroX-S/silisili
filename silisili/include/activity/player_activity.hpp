@@ -95,6 +95,8 @@ public:
 
     void setEmbeddedFullscreen(bool fullscreen);
 
+    bool allowsSailfishPageBackGesture(brls::Point startPosition) const override;
+
     // 分集播放结束后，自动播放推荐视频
     // 视频播放策略
     // 0: 分集播放结束后，自动播放推荐视频

@@ -50,6 +50,7 @@ class Dialog : public Box
 
     void rebuildButtons();
     void buttonClick(DialogButton* button);
+    void applySailfishPhoneGeometry();
 
     bool cancelable = true;
 

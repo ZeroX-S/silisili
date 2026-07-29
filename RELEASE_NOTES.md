@@ -17,7 +17,7 @@ This is the first public release of `silisili`, a Sailfish OS port and modificat
 
 ## Current package fixes
 
-- Package revision `1.0.0-2` is rebuilt from the Sailfish OS 5.0.0.62 SDK
+- Package revision `1.0.0-3` is rebuilt from the Sailfish OS 5.0.0.62 SDK
   and supports both Sailfish OS 5.0 and 5.1 from one AArch64 RPM.
 - Private FFmpeg 5.1 with HTTPS, mpv, libplacebo, libass, curl, and OpenSSL are
   built on the 5.0 ABI; GCC 10 libstdc++ comes from Sailfish OS.
@@ -27,6 +27,11 @@ This is the first public release of `silisili`, a Sailfish OS port and modificat
   repeated toggles from shrinking the compositor surface into the top-left.
 - Player OSD buttons, icons, time labels, and the seek target are enlarged for
   reliable phone touch operation.
+- Nested pages and modal activities support Sailfish-style whole-page
+  left-to-right pull Back. Player video/seek and live/fullscreen gesture areas
+  are isolated from the page gesture.
+- Dialogs keep a 16-unit safe margin, dropdowns use the live phone width, and
+  list rows use 64-unit touch targets so opened controls stay on-screen.
 - Two consecutive landscape enter/exit cycles on the tested phone kept the
   physical application window at 1080x2160 and restored the portrait layout
   without the previous top-left shrink.
@@ -49,12 +54,12 @@ The complete SDK, ABI, runtime-library and phone regression record is in
 ## Download
 
 ```text
-silisili-sailfish-1.0.0-2.aarch64.rpm
-SHA-256: 8ec6612503596e026a5205618d564c592473a076ba30eee7a476ec1da1d4bee8
+silisili-sailfish-1.0.0-3.aarch64.rpm
+SHA-256: 532a16db5bc1e92fcc20e11ed562e954743a9f1a3c5f3a5d22b9f8c5d2447d9e
 ```
 
 Source patch SHA-256:
 
 ```text
-2f50d87181f42331955e1f332754ad9e8047662c31d1c29c219f2736dbd943e5  patches/silisili-sailfish-mobile.patch
+92c0e665a77176ed5c386f4a9f2ec5020535fac92d124cc020bba8c6bcc84974  patches/silisili-sailfish-mobile.patch
 ```

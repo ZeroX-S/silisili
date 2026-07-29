@@ -104,7 +104,12 @@ BaseDropdown::BaseDropdown(const std::string& title, ValueSelectedEvent::Callbac
     });
     this->cancel->addGestureRecognizer(new brls::TapGestureRecognizer(this->cancel));
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    this->setWidth(brls::Application::contentWidth);
+    this->setMaxWidth(brls::Application::contentWidth);
+#else
     this->setWidth(brls::Application::ORIGINAL_WINDOW_WIDTH);
+#endif
 }
 
 RecyclingGrid* BaseDropdown::getRecyclingList() { return recycler; }
