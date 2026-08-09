@@ -12,6 +12,11 @@ SOURCE_ROOT="${SOURCE_ROOT:-$HOME/silisili-5x-work}"
 BUILD_ROOT="${BUILD_ROOT:-$HOME/silisili-5x-build}"
 PREFIX="${PREFIX:-$BUILD_ROOT/prefix}"
 BUILD_JOBS="${BUILD_JOBS:-4}"
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+V4L2_COMPAT_HEADER="${V4L2_COMPAT_HEADER:-$SCRIPT_ROOT/include/sailfish-v4l2-compat.h}"
+FFMPEG_V4L2_PATCH="${FFMPEG_V4L2_PATCH:-$SCRIPT_ROOT/patches/ffmpeg-v4l2-legacy-color-fields.patch}"
+FFMPEG_V4L2_USERPTR_PATCH="${FFMPEG_V4L2_USERPTR_PATCH:-$SCRIPT_ROOT/patches/ffmpeg-v4l2-userptr-output.patch}"
+V4L2_COMPAT_CFLAGS='-DV4L2_BUF_FLAG_LAST=0x00100000 -DV4L2_PIX_FMT_HEVC=0x43564548 -DV4L2_PIX_FMT_VP9=0x30395056'
 
 OPENSSL_SOURCE="${OPENSSL_SOURCE:-$SOURCE_ROOT/openssl}"
 CURL_SOURCE="${CURL_SOURCE:-$SOURCE_ROOT/curl}"
@@ -114,7 +119,7 @@ verify_glibc_ceiling() {
     echo "Sailfish 5.0 GLIBC ceiling passed: ${maximum:-none}"
 }
 
-for tool in git readelf sb2 sed sort; do
+for tool in awk git readelf sb2 sed sha256sum sort; do
     command -v "$tool" >/dev/null || fail "missing SDK tool: $tool"
 done
 test -x "$OPENSSL_CONFIGURE_PERL" ||
@@ -125,6 +130,29 @@ test -x "$MESON" || fail "Meson is not installed in $TOOLING_NAME"
 test -x "$NINJA" || fail "Ninja is not installed in $TOOLING_NAME"
 test -x "$CMAKE" || fail "CMake is not installed in $TOOLING_NAME"
 test -x "$MAKE" || fail "GNU Make is not installed in $TOOLING_NAME"
+test -f "$V4L2_COMPAT_HEADER" || fail "missing Sailfish V4L2 compatibility header"
+test -f "$FFMPEG_V4L2_PATCH" || fail "missing FFmpeg V4L2 compatibility patch"
+test -f "$FFMPEG_V4L2_USERPTR_PATCH" ||
+    fail "missing FFmpeg V4L2 USERPTR compatibility patch"
+
+# Recover cleanly if a previous build was interrupted after applying the
+# temporary source patch. The pinned source must still pass the normal clean
+# tree check before this build is allowed to continue.
+if grep -Fq SILISILI_V4L2_USERPTR_OUTPUT \
+    "$FFMPEG_SOURCE/libavcodec/v4l2_context.h"; then
+    git -C "$FFMPEG_SOURCE" apply --reverse --check --recount \
+        "$FFMPEG_V4L2_USERPTR_PATCH" ||
+        fail "FFmpeg V4L2 USERPTR patch cannot be cleanly reversed"
+    git -C "$FFMPEG_SOURCE" apply --reverse --recount \
+        "$FFMPEG_V4L2_USERPTR_PATCH"
+fi
+if grep -Fq SILISILI_V4L2_LEGACY_COLOR_FIELDS \
+    "$FFMPEG_SOURCE/libavcodec/v4l2_buffers.c"; then
+    git -C "$FFMPEG_SOURCE" apply --reverse --check --recount \
+        "$FFMPEG_V4L2_PATCH" ||
+        fail "FFmpeg V4L2 compatibility patch cannot be cleanly reversed"
+    git -C "$FFMPEG_SOURCE" apply --reverse --recount "$FFMPEG_V4L2_PATCH"
+fi
 
 verify_source "$OPENSSL_SOURCE" "$OPENSSL_COMMIT" OpenSSL
 verify_source "$CURL_SOURCE" "$CURL_COMMIT" curl
@@ -132,6 +160,31 @@ verify_source "$FFMPEG_SOURCE" "$FFMPEG_COMMIT" FFmpeg
 verify_source "$LIBASS_SOURCE" "$LIBASS_COMMIT" libass
 verify_source "$LIBPLACEBO_SOURCE" "$LIBPLACEBO_COMMIT" libplacebo
 verify_source "$MPV_SOURCE" "$MPV_COMMIT" mpv
+
+ffmpeg_patch_applied=0
+ffmpeg_userptr_patch_applied=0
+cleanup_ffmpeg_patch() {
+    if test "$ffmpeg_userptr_patch_applied" -eq 1; then
+        git -C "$FFMPEG_SOURCE" apply --reverse --recount \
+            "$FFMPEG_V4L2_USERPTR_PATCH" ||
+            echo "warning: failed to restore the FFmpeg USERPTR source patch" >&2
+    fi
+    if test "$ffmpeg_patch_applied" -eq 1; then
+        git -C "$FFMPEG_SOURCE" apply --reverse --recount \
+            "$FFMPEG_V4L2_PATCH" ||
+            echo "warning: failed to restore the clean FFmpeg source tree" >&2
+    fi
+}
+trap cleanup_ffmpeg_patch EXIT
+git -C "$FFMPEG_SOURCE" apply --check --recount "$FFMPEG_V4L2_PATCH" ||
+    fail "FFmpeg V4L2 compatibility patch does not match the pinned source"
+git -C "$FFMPEG_SOURCE" apply --recount "$FFMPEG_V4L2_PATCH"
+ffmpeg_patch_applied=1
+git -C "$FFMPEG_SOURCE" apply --check --recount "$FFMPEG_V4L2_USERPTR_PATCH" ||
+    fail "FFmpeg V4L2 USERPTR patch does not match the pinned source"
+git -C "$FFMPEG_SOURCE" apply --recount "$FFMPEG_V4L2_USERPTR_PATCH"
+ffmpeg_userptr_patch_applied=1
+
 test -d "$LIBPLACEBO_SOURCE/3rdparty/fast_float/include" ||
     fail "libplacebo submodules are not initialized"
 grep -Fq 'if (gl->FenceSync && !p->params.external_swapchain)' \
@@ -210,10 +263,34 @@ if test ! -e "$PREFIX/lib/libcurl.so.4" ||
 fi
 
 ffmpeg_build="$BUILD_ROOT/ffmpeg"
-if test ! -e "$ffmpeg_build/Makefile"; then
+ffmpeg_patch_hash="$(sha256sum "$FFMPEG_V4L2_PATCH" "$FFMPEG_V4L2_USERPTR_PATCH" |
+    sha256sum | awk '{print $1}')"
+ffmpeg_build_stamp="$PREFIX/.silisili-ffmpeg-v4l2-$ffmpeg_patch_hash"
+ffmpeg_reconfigured=0
+ffmpeg_requires_configure=0
+if test -e "$ffmpeg_build/config.h" &&
+    { ! grep -Fq '#define CONFIG_V4L2_M2M 1' "$ffmpeg_build/config.h" ||
+      ! grep -Fq '#define CONFIG_012V_DECODER 0' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_AEVAL_FILTER 0' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_SCALE_FILTER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_H264_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_HEVC_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_AAC_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_H264_V4L2M2M_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_HEVC_V4L2M2M_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_VP8_V4L2M2M_DECODER 1' "$ffmpeg_build/config_components.h" ||
+      ! grep -Fq '#define CONFIG_VP9_V4L2M2M_DECODER 1' "$ffmpeg_build/config_components.h"; }; then
+    # Reconfigure in place so format/filter/common objects compiled with the
+    # same ABI and flags remain reusable. Only the decoder selection changes.
+    ffmpeg_requires_configure=1
+fi
+if test ! -e "$ffmpeg_build/Makefile" || test "$ffmpeg_requires_configure" -eq 1; then
     install -d -m0755 "$ffmpeg_build"
     (
         cd "$ffmpeg_build"
+        # Use numeric UAPI constants instead of force-including a C header:
+        # FFmpeg also passes extra C flags to .S feature probes, where a
+        # videodev2 struct declaration would be parsed as assembler.
         PATH="$CROSS_BIN:$PATH" \
             PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
             "$FFMPEG_SOURCE/configure" \
@@ -235,23 +312,118 @@ if test ! -e "$ffmpeg_build/Makefile"; then
             --disable-debug \
             --disable-avdevice \
             --disable-postproc \
+            --disable-decoders \
             --disable-encoders \
+            --disable-filters \
             --disable-muxers \
             --disable-autodetect \
+            --enable-v4l2-m2m \
+            --enable-decoder=h264_v4l2m2m \
+            --enable-decoder=hevc_v4l2m2m \
+            --enable-decoder=vp8_v4l2m2m \
+            --enable-decoder=vp9_v4l2m2m \
+            --enable-decoder=h264 \
+            --enable-decoder=hevc \
+            --enable-decoder=vp8 \
+            --enable-decoder=vp9 \
+            --enable-decoder=av1 \
+            --enable-decoder=mpeg1video \
+            --enable-decoder=mpeg2video \
+            --enable-decoder=mpeg4 \
+            --enable-decoder=h263 \
+            --enable-decoder=theora \
+            --enable-decoder=aac \
+            --enable-decoder=aac_fixed \
+            --enable-decoder=mp3 \
+            --enable-decoder=mp3float \
+            --enable-decoder=flac \
+            --enable-decoder=opus \
+            --enable-decoder=vorbis \
+            --enable-decoder=alac \
+            --enable-decoder=ac3 \
+            --enable-decoder=eac3 \
+            --enable-decoder=dca \
+            --enable-decoder=truehd \
+            --enable-decoder=pcm_s16le \
+            --enable-decoder=pcm_s24le \
+            --enable-decoder=pcm_s32le \
+            --enable-decoder=pcm_f32le \
+            --enable-decoder=pcm_f64le \
+            --enable-decoder=ass \
+            --enable-decoder=ssa \
+            --enable-decoder=subrip \
+            --enable-decoder=webvtt \
+            --enable-decoder=movtext \
+            --enable-decoder=dvdsub \
+            --enable-decoder=dvbsub \
+            --enable-decoder=png \
+            --enable-decoder=mjpeg \
+            --enable-decoder=gif \
+            --enable-decoder=webp \
+            --enable-filter=aformat \
+            --enable-filter=aresample \
+            --enable-filter=anull \
+            --enable-filter=format \
+            --enable-filter=null \
+            --enable-filter=scale \
+            --enable-filter=fps \
+            --enable-filter=framerate \
+            --enable-filter=setpts \
+            --enable-filter=crop \
+            --enable-filter=pad \
+            --enable-filter=rotate \
+            --enable-filter=transpose \
+            --enable-filter=yadif \
+            --enable-filter=bwdif \
             --enable-network \
             --enable-openssl \
             --enable-zlib \
             --enable-pthreads \
-            --extra-cflags="-I$PREFIX/include -fPIC" \
+            --extra-cflags="-I$PREFIX/include $V4L2_COMPAT_CFLAGS -fPIC" \
             --extra-ldflags="-L$PREFIX/lib -Wl,-rpath,$PRIVATE_RPATH -Wl,-rpath-link,$TARGET_SYSROOT/lib64 -Wl,-rpath-link,$TARGET_SYSROOT/usr/lib64" \
             --extra-libs="-ldl -lpthread"
     )
+    ffmpeg_reconfigured=1
 fi
-if test ! -e "$PREFIX/lib/libavformat.so.59" ||
+if test "$ffmpeg_reconfigured" -eq 1 ||
+    test ! -e "$ffmpeg_build_stamp" ||
+    test ! -e "$PREFIX/lib/libavformat.so.59" ||
     test ! -e "$PREFIX/include/libavformat/avformat.h"; then
     env PATH="$CROSS_BIN:$PATH" "$MAKE" -C "$ffmpeg_build" -j"$BUILD_JOBS"
     env PATH="$CROSS_BIN:$PATH" "$MAKE" -C "$ffmpeg_build" install
+    touch "$ffmpeg_build_stamp"
 fi
+grep -Fq '#define CONFIG_V4L2_M2M 1' "$ffmpeg_build/config.h" ||
+    fail 'private FFmpeg hardware support missing: CONFIG_V4L2_M2M'
+for define in \
+    CONFIG_H264_DECODER \
+    CONFIG_HEVC_DECODER \
+    CONFIG_VP8_DECODER \
+    CONFIG_VP9_DECODER \
+    CONFIG_AV1_DECODER \
+    CONFIG_AAC_DECODER \
+    CONFIG_FLAC_DECODER \
+    CONFIG_OPUS_DECODER; do
+    grep -Fq "#define $define 1" "$ffmpeg_build/config_components.h" ||
+        fail "private FFmpeg software fallback missing: $define"
+done
+for define in \
+    CONFIG_AFORMAT_FILTER \
+    CONFIG_ARESAMPLE_FILTER \
+    CONFIG_FORMAT_FILTER \
+    CONFIG_SCALE_FILTER \
+    CONFIG_TRANSPOSE_FILTER; do
+    grep -Fq "#define $define 1" "$ffmpeg_build/config_components.h" ||
+        fail "private FFmpeg playback filter missing: $define"
+done
+for define in \
+    CONFIG_H264_V4L2M2M_DECODER \
+    CONFIG_HEVC_V4L2M2M_DECODER \
+    CONFIG_VP8_V4L2M2M_DECODER \
+    CONFIG_VP9_V4L2M2M_DECODER; do
+    grep -Fq "#define $define 1" "$ffmpeg_build/config_components.h" ||
+        fail "private FFmpeg hardware decoder missing: $define"
+done
 
 libass_build="$BUILD_ROOT/libass"
 if test ! -e "$libass_build/build.ninja"; then
@@ -369,6 +541,10 @@ done
 
 grep -aFq 'https' "$PREFIX/lib/libavformat.so.59" ||
     fail "private FFmpeg lacks HTTPS protocol support"
+for decoder in h264_v4l2m2m hevc_v4l2m2m vp8_v4l2m2m vp9_v4l2m2m; do
+    grep -aFq "$decoder" "$PREFIX/lib/libavcodec.so.59" ||
+        fail "installed private FFmpeg lacks $decoder"
+done
 
 while IFS= read -r -d '' elf; do
     readelf -h "$elf" >/dev/null 2>&1 || continue

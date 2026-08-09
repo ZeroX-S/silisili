@@ -107,6 +107,12 @@ case "$BUILD_ROOT" in
 esac
 if test "${CLEAN_BUILD:-1}" = 1 && test -d "$BUILD_ROOT"; then
     find "$BUILD_ROOT" -mindepth 1 -depth -delete
+elif test "${CLEAN_BUILD:-1}" = 0; then
+    # Keep compiled objects for an incremental application rebuild, but always
+    # recreate packaging inputs so stale resources cannot enter the RPM.
+    for packaging_root in "$BUILD_ROOT/stage" "$BUILD_ROOT/rpmbuild"; do
+        test ! -d "$packaging_root" || find "$packaging_root" -mindepth 1 -depth -delete
+    done
 fi
 
 build_root="$BUILD_ROOT/build"
@@ -120,29 +126,34 @@ export CFLAGS="-ffile-prefix-map=$PROJECT_ROOT=/usr/src/silisili-1.0.0 -ffile-pr
 export CXXFLAGS="$CFLAGS"
 export PKG_CONFIG_PATH="$PRIVATE_PREFIX/lib/pkgconfig"
 
-cmake_run -S "$PROJECT_ROOT" -B "$build_root" -G Ninja \
-    -DCMAKE_MAKE_PROGRAM="$NINJA" \
-    -DPLATFORM_DESKTOP=ON \
-    -DINSTALL=ON \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_BUILD_RPATH="$PRIVATE_RPATH" \
-    -DCMAKE_INSTALL_RPATH="$PRIVATE_RPATH" \
-    -DCMAKE_EXE_LINKER_FLAGS=-Wl,--build-id=sha1 \
-    -DGLFW_BUILD_WAYLAND=ON \
-    -DGLFW_BUILD_X11=OFF \
-    -DUSE_SYSTEM_CURL=ON \
-    -DUSE_GLES2=ON \
-    -DUSE_EGL=ON \
-    -DBRLS_UNITY_BUILD=ON \
-    -DCMAKE_UNITY_BUILD_BATCH_SIZE=16 \
-    -DSILISILI_SAILFISH_MOBILE=ON \
-    -DMPV_INCLUDE_DIR="$PRIVATE_PREFIX/include" \
-    -DMPV_LIBRARY_mpv="$PRIVATE_PREFIX/lib/libmpv.so" \
-    -DCURL_INCLUDE_DIR="$PRIVATE_PREFIX/include" \
-    -DCURL_LIBRARY="$PRIVATE_PREFIX/lib/libcurl.so" \
-    -DCURL_CONFIG_EXECUTABLE="$PRIVATE_PREFIX/bin/curl-config"
-ninja_run -C "$build_root" -j"$BUILD_JOBS"
+if test "${SKIP_APPLICATION_BUILD:-0}" = 1; then
+    test -x "$build_root/silisili" || fail "validated application binary is missing"
+    echo "Reusing validated application binary: $build_root/silisili"
+else
+    cmake_run -S "$PROJECT_ROOT" -B "$build_root" -G Ninja \
+        -DCMAKE_MAKE_PROGRAM="$NINJA" \
+        -DPLATFORM_DESKTOP=ON \
+        -DINSTALL=ON \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_BUILD_RPATH="$PRIVATE_RPATH" \
+        -DCMAKE_INSTALL_RPATH="$PRIVATE_RPATH" \
+        -DCMAKE_EXE_LINKER_FLAGS=-Wl,--build-id=sha1 \
+        -DGLFW_BUILD_WAYLAND=ON \
+        -DGLFW_BUILD_X11=OFF \
+        -DUSE_SYSTEM_CURL=ON \
+        -DUSE_GLES2=ON \
+        -DUSE_EGL=ON \
+        -DBRLS_UNITY_BUILD=ON \
+        -DCMAKE_UNITY_BUILD_BATCH_SIZE=16 \
+        -DSILISILI_SAILFISH_MOBILE=ON \
+        -DMPV_INCLUDE_DIR="$PRIVATE_PREFIX/include" \
+        -DMPV_LIBRARY_mpv="$PRIVATE_PREFIX/lib/libmpv.so" \
+        -DCURL_INCLUDE_DIR="$PRIVATE_PREFIX/include" \
+        -DCURL_LIBRARY="$PRIVATE_PREFIX/lib/libcurl.so" \
+        -DCURL_CONFIG_EXECUTABLE="$PRIVATE_PREFIX/bin/curl-config"
+    ninja_run -C "$build_root" -j"$BUILD_JOBS"
+fi
 
 target_run gcc -Os -fPIE -pie -fno-ident -Wl,-z,relro,-z,now \
     -o "$stage/launcher" "$PACKAGE_DIR/launcher.c"
@@ -201,11 +212,15 @@ find "$stage" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
 readelf -h "$stage/launcher" | grep -Fq AArch64 || fail "launcher is not AArch64"
 readelf -h "$stage/silisili" | grep -Fq AArch64 || fail "application is not AArch64"
 readelf -d "$stage/silisili" | grep -Fq "$PRIVATE_RPATH" || fail "application RPATH is missing"
-grep -aFq 'Sailfish mobile UI baseline: 640x360; fixed short edge: 640; video grids: portrait 2 landscape 4' \
+grep -aFq 'Sailfish mobile UI baseline: 427x240; fixed short edge: 427; video grids: portrait 1 landscape 3' \
     "$stage/silisili" || fail "Sailfish mobile UI marker is missing"
+grep -aFq 'Sailfish mobile typography: native-client hierarchy; text factor 0.800; touch targets 48-56; visible icons 24-28' \
+    "$stage/silisili" || fail "Sailfish mobile text scale marker is missing"
+grep -aFq 'Sailfish adaptive display: mode ' \
+    "$stage/silisili" || fail "Sailfish adaptive display marker is missing"
 grep -aFq 'Sailfish Bilibili fullscreen layout:' "$stage/silisili" ||
     fail "fullscreen layout marker is missing"
-grep -aFq 'Sailfish player controls: 56pt primary touch targets; 52pt secondary touch targets' \
+grep -aFq 'Sailfish player controls: 48-56pt touch targets; 24-28pt visible icons; native-client calibrated' \
     "$stage/silisili" || fail "mobile player control-size marker is missing"
 grep -aFq 'Sailfish page back swipe: started at' "$stage/silisili" ||
     fail "Sailfish page-stack swipe marker is missing"

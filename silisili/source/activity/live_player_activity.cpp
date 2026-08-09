@@ -18,6 +18,7 @@
 #include "utils/dialog_helper.hpp"
 
 #include "view/video_view.hpp"
+#include "view/button_close.hpp"
 #include "view/live_core.hpp"
 #include "view/grid_dropdown.hpp"
 #include "view/qr_image.hpp"
@@ -136,6 +137,7 @@ void LiveActivity::setVideoQuality() {
             "silisili/player/quality"_i18n, this->getQualityDescriptionList(),
             [this](int selected) {
                 defaultQuality = liveUrl.accept_qn[selected];
+                MPVCore::instance().preservePlaybackStateForNextFile();
                 this->requestData(this->liveData.roomid);
             },
             this->getCurrentQualityIndex());
@@ -160,12 +162,11 @@ void LiveActivity::onContentAvailable()
         return;
     }
     
-    this->video->setFullscreenIcon(this->video->isFullscreen());
-
-    this->video->registerCommonActions(this);
-
 #ifdef SILISILI_SAILFISH_MOBILE
     this->video->setCustomCloseAction([this]() { this->close(); });
+    this->closeButton = dynamic_cast<ButtonClose*>(this->getView("live/close"));
+    if (this->closeButton)
+        this->closeButton->setCustomCloseAction([this]() { this->close(); });
     this->registerAction(
         "hints/back"_i18n, brls::ControllerButton::BUTTON_B,
         [this](brls::View*) {
@@ -175,6 +176,9 @@ void LiveActivity::onContentAvailable()
         true);
 #endif
 
+    this->video->setFullscreenIcon(this->video->isFullscreen());
+    this->video->registerCommonActions(this);
+
     brls::Logger::debug("LiveActivity: onContentAvailable");
 
     MPVCore::instance().setAspect(
@@ -183,6 +187,7 @@ void LiveActivity::onContentAvailable()
     // 根据侧边栏设置调整界面布局
     if (this->shouldShowSidebar()) {
         // 绑定侧边栏相关的UI元素
+        this->rootBox = (brls::Box*)this->getView("live/root");
         this->liveAuthor = (UserInfoView*)this->getView("live_author");
         this->liveDanmakuContainer = (brls::Box*)this->getView("live_danmaku_container");
         this->liveDanmakuList = (brls::ScrollingFrame*)this->getView("live_danmaku_list");
@@ -190,6 +195,16 @@ void LiveActivity::onContentAvailable()
         this->anchorTitleLabel = (brls::Label*)this->getView("anchor/title");
         this->liveDanmakuSidebar = (brls::Box*)this->getView("live_danmaku_sidebar");
         this->liveDetailLeftBox = (brls::Box*)this->getView("live_detail_left_box");
+
+#ifdef SILISILI_SAILFISH_MOBILE
+        this->updateResponsiveLayout();
+        if (!this->windowSizeSubscribed) {
+            this->windowSizeSubscription = brls::Application::getWindowSizeChangedEvent()->subscribe([this]() {
+                this->updateResponsiveLayout();
+            });
+            this->windowSizeSubscribed = true;
+        }
+#endif
         
         // 设置直播标题
         if (this->liveTitleLabel) {
@@ -284,6 +299,54 @@ void LiveActivity::onContentAvailable()
 
     GA("open_live", {{"id", std::to_string(this->liveData.roomid)}})
     GA("open_live", {{"live_id", std::to_string(this->liveData.roomid)}})
+}
+
+bool LiveActivity::allowsSailfishPageBackGesture(brls::Point startPosition) const {
+#ifdef SILISILI_SAILFISH_MOBILE
+    // A left-edge-only page gesture remains available when live video fills
+    // the screen, while ordinary horizontal media gestures start elsewhere.
+    return this->video && !this->video->isFullscreen();
+#else
+    return brls::Activity::allowsSailfishPageBackGesture(startPosition);
+#endif
+}
+
+void LiveActivity::updateResponsiveLayout() {
+#ifdef SILISILI_SAILFISH_MOBILE
+    if (!this->rootBox || !this->liveDetailLeftBox || !this->liveDanmakuSidebar || !this->video)
+        return;
+
+    const bool portrait = brls::Application::contentHeight >= brls::Application::contentWidth;
+    this->liveDetailLeftBox->setMargins(0, 0, 0, 0);
+    this->liveDanmakuSidebar->setMargins(0, 0, 0, 0);
+    if (portrait) {
+        constexpr float DETAIL_HEIGHT = 140.0f;
+        const float videoHeight = std::round(brls::Application::contentWidth * 9.0f / 16.0f);
+        const float leftHeight = std::min(brls::Application::contentHeight * 0.55f,
+                                          videoHeight + DETAIL_HEIGHT);
+        this->rootBox->setAxis(brls::Axis::COLUMN);
+        this->liveDetailLeftBox->setWidthPercentage(100);
+        this->liveDetailLeftBox->setHeight(leftHeight);
+        this->liveDetailLeftBox->setGrow(0);
+        this->liveDanmakuSidebar->setWidthPercentage(100);
+        this->liveDanmakuSidebar->setHeight(std::max(1.0f, brls::Application::contentHeight - leftHeight));
+        this->liveDanmakuSidebar->setGrow(1);
+    } else {
+        constexpr float SIDEBAR_WIDTH = 240.0f;
+        this->rootBox->setAxis(brls::Axis::ROW);
+        this->liveDetailLeftBox->setWidth(std::max(1.0f, brls::Application::contentWidth - SIDEBAR_WIDTH));
+        this->liveDetailLeftBox->setHeightPercentage(100);
+        this->liveDetailLeftBox->setGrow(1);
+        this->liveDanmakuSidebar->setWidth(SIDEBAR_WIDTH);
+        this->liveDanmakuSidebar->setHeightPercentage(100);
+        this->liveDanmakuSidebar->setGrow(0);
+    }
+    this->rootBox->invalidate();
+    brls::Logger::info("Sailfish live layout: {} content={}x{} video={}x{}",
+                       portrait ? "portrait" : "landscape",
+                       brls::Application::contentWidth, brls::Application::contentHeight,
+                       this->video->getWidth(), this->video->getHeight());
+#endif
 }
 
 void LiveActivity::close() {
@@ -862,6 +925,11 @@ void LiveActivity::checkPinnedSuperChatExpiry() {
 
 LiveActivity::~LiveActivity() {
     brls::Logger::debug("LiveActivity: delete");
+
+#ifdef SILISILI_SAILFISH_MOBILE
+    if (this->windowSizeSubscribed)
+        brls::Application::getWindowSizeChangedEvent()->unsubscribe(this->windowSizeSubscription);
+#endif
     
     // 恢复底部固定进度条的设置
     VideoView::BOTTOM_BAR = ProgramConfig::instance().getBoolOption(SettingItem::PLAYER_BOTTOM_BAR);

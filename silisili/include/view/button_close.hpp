@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <borealis/core/box.hpp>
 #include <borealis/core/bind.hpp>
 
@@ -22,10 +24,14 @@ public:
 
     void setTextColor(NVGcolor color);
 
+    void setCustomCloseAction(std::function<void()> action);
+
     ~ButtonClose() override;
 
     static View* create();
 
 private:
     BRLS_BIND(brls::Label, label, "close/button/text");
+
+    std::function<void()> customCloseAction;
 };

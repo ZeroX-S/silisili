@@ -203,20 +203,30 @@ void Register::initCustomStyle() {
     brls::getStyle().addMetric("brls/animations/highlight", 200);
 #ifdef SILISILI_SAILFISH_MOBILE
     brls::getStyle().addMetric("silisili/window/width", brls::Application::contentWidth);
+    brls::getStyle().addMetric("brls/tab_frame/content_padding_sides", 16.0f);
+    brls::getStyle().addMetric("brls/tab_frame/content_padding_top_bottom", 16.0f);
+    brls::getStyle().addMetric("brls/sidebar/item_height", 56.0f);
+    brls::getStyle().addMetric("brls/sidebar/item_font_size", 20.0f);
     brls::getStyle().addMetric("brls/dropdown/listPadding", 16.0f);
-    brls::getStyle().addMetric("brls/dropdown/listPaddingSides", 20.0f);
-    brls::getStyle().addMetric("brls/dropdown/listItemHeight", 64.0f);
+    brls::getStyle().addMetric("brls/dropdown/listPaddingSides", 16.0f);
+    brls::getStyle().addMetric("brls/dropdown/listItemHeight", 56.0f);
     brls::getStyle().addMetric("brls/dropdown/listItemTextSize", 20.0f);
-    brls::getStyle().addMetric("brls/dropdown/header_height", 64.0f);
+    brls::getStyle().addMetric("brls/dropdown/header_height", 56.0f);
     brls::getStyle().addMetric("brls/dropdown/header_title_font_size", 22.0f);
-    brls::getStyle().addMetric("brls/dialog/paddingTopBottom", 36.0f);
-    brls::getStyle().addMetric("brls/dialog/paddingLeftRight", 32.0f);
-    brls::getStyle().addMetric("brls/dialog/fontSize", 22.0f);
+    brls::getStyle().addMetric("brls/dialog/paddingTopBottom", 24.0f);
+    brls::getStyle().addMetric("brls/dialog/paddingLeftRight", 20.0f);
+    brls::getStyle().addMetric("brls/dialog/fontSize", 20.0f);
 #else
     brls::getStyle().addMetric("silisili/window/width", brls::Application::ORIGINAL_WINDOW_WIDTH);
 #endif
 
-    if (brls::Application::ORIGINAL_WINDOW_HEIGHT == 360) {
+    if (
+#ifdef SILISILI_SAILFISH_MOBILE
+        true
+#else
+        brls::Application::ORIGINAL_WINDOW_HEIGHT == 360
+#endif
+    ) {
         brls::getStyle().addMetric("silisili/grid/span/5", 4);
         brls::getStyle().addMetric("silisili/grid/span/4", 3);
         brls::getStyle().addMetric("silisili/grid/span/3", 2);

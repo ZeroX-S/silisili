@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE=silisili-sailfish
-EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-3}"
+EXPECTED_VERSION="${EXPECTED_VERSION:-1.0.0-7}"
 APP_USER=defaultuser
 APP_UID="$(id -u "$APP_USER")"
 APP_RUNTIME_DIR="/run/user/$APP_UID"
@@ -333,9 +333,17 @@ mobile_scale_line="$(wait_for_log_line "$EVIDENCE/launch-1/application.log" \
 test -n "$mobile_scale_line" || fail "Sailfish mobile scale diagnostics are missing"
 printf '%s\n' "$mobile_scale_line" >"$EVIDENCE/launch-1/mobile-scale.txt"
 mobile_baseline_line="$(wait_for_log_line "$EVIDENCE/launch-1/application.log" \
-    'Sailfish mobile UI baseline: 640x360; fixed short edge: 640; video grids: portrait 2 landscape 4' || true)"
+    'Sailfish mobile UI baseline: 427x240; fixed short edge: 427; video grids: portrait 1 landscape 3' || true)"
 test -n "$mobile_baseline_line" || fail "Sailfish mobile baseline diagnostics are missing"
 printf '%s\n' "$mobile_baseline_line" >"$EVIDENCE/launch-1/mobile-baseline.txt"
+mobile_text_scale_line="$(wait_for_log_line "$EVIDENCE/launch-1/application.log" \
+    'Sailfish mobile typography: native-client hierarchy; text factor 0.800; touch targets 48-56; visible icons 24-28' || true)"
+test -n "$mobile_text_scale_line" || fail "Sailfish mobile text-scale diagnostics are missing"
+printf '%s\n' "$mobile_text_scale_line" >"$EVIDENCE/launch-1/mobile-text-scale.txt"
+adaptive_display_line="$(wait_for_log_line "$EVIDENCE/launch-1/application.log" \
+    'Sailfish adaptive display: mode ' || true)"
+test -n "$adaptive_display_line" || fail "Sailfish adaptive display diagnostics are missing"
+printf '%s\n' "$adaptive_display_line" >"$EVIDENCE/launch-1/adaptive-display.txt"
 logical_width="$(sed -n 's/.*content size: \([0-9][0-9.]*\)x\([0-9][0-9.]*\).*/\1/p' \
     "$EVIDENCE/launch-1/mobile-scale.txt")"
 logical_height="$(sed -n 's/.*content size: \([0-9][0-9.]*\)x\([0-9][0-9.]*\).*/\2/p' \

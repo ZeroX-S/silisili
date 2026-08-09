@@ -18,6 +18,9 @@
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/glfw/glfw_video.hpp>
 
+#include <algorithm>
+#include <cmath>
+
 // nanovg implementation
 #ifdef BOREALIS_USE_OPENGL
 #include <glad/glad.h>
@@ -69,6 +72,60 @@ static int maxi(int x, int y)
 {
     return x > y ? x : y;
 }
+
+#ifdef SILISILI_SAILFISH_MOBILE
+static void configureSailfishDisplayMetrics(GLFWmonitor* monitor, const GLFWvidmode* mode,
+                                            uint32_t& windowWidth, uint32_t& windowHeight)
+{
+    constexpr float referenceShortEdgeMM = 68.0f;
+    constexpr int referenceLogicalWidth  = 427;
+    constexpr int referenceLogicalHeight = 240;
+    constexpr int minimumLogicalWidth    = 400;
+    constexpr int maximumLogicalWidth    = 640;
+
+    int physicalWidthMM = 0;
+    int physicalHeightMM = 0;
+    glfwGetMonitorPhysicalSize(monitor, &physicalWidthMM, &physicalHeightMM);
+
+    const int pixelShortEdge = std::min(mode->width, mode->height);
+    const int physicalShortEdgeMM = std::min(physicalWidthMM, physicalHeightMM);
+    const float rawDpi = physicalShortEdgeMM > 0
+        ? (float)pixelShortEdge * 25.4f / (float)physicalShortEdgeMM
+        : 0.0f;
+
+    // GLFW substitutes a 96-DPI estimate when Wayland omits physical size.
+    // Reject that estimate, plus implausible panel data, rather than allowing
+    // a compositor placeholder to distort the phone UI.
+    const bool crediblePhysicalSize = physicalShortEdgeMM >= 45 && physicalShortEdgeMM <= 180 &&
+                                      rawDpi >= 160.0f && rawDpi <= 800.0f;
+
+    int logicalWidth = referenceLogicalWidth;
+    if (crediblePhysicalSize)
+    {
+        // Keep the tested 62-78 mm phone class on the exact 427 baseline.
+        // Smaller phones and larger phone/tablet panels receive a bounded
+        // physical-size correction, so controls remain comfortable in mm.
+        if (physicalShortEdgeMM < 62 || physicalShortEdgeMM > 78)
+        {
+            logicalWidth = std::clamp(
+                (int)std::lround(referenceLogicalWidth * physicalShortEdgeMM / referenceShortEdgeMM),
+                minimumLogicalWidth, maximumLogicalWidth);
+        }
+    }
+
+    const int logicalHeight = (int)std::lround(
+        (float)logicalWidth * referenceLogicalHeight / referenceLogicalWidth);
+    Application::ORIGINAL_WINDOW_WIDTH = logicalWidth;
+    Application::ORIGINAL_WINDOW_HEIGHT = logicalHeight;
+    windowWidth = (uint32_t)logicalWidth;
+    windowHeight = (uint32_t)logicalHeight;
+
+    Logger::info(
+        "Sailfish adaptive display: mode {}x{} physical {}x{}mm rawDpi {:.1f} baseline {}x{} source {}",
+        mode->width, mode->height, physicalWidthMM, physicalHeightMM, rawDpi,
+        logicalWidth, logicalHeight, crediblePhysicalSize ? "physical" : "resolution-fallback");
+}
+#endif
 
 static GLFWmonitor* getCurrentMonitor(GLFWwindow* window)
 {
@@ -231,6 +288,9 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
         monitor      = glfwGetPrimaryMonitor();
     }
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+#ifdef SILISILI_SAILFISH_MOBILE
+    configureSailfishDisplayMetrics(monitor, mode, windowWidth, windowHeight);
+#endif
     glfwWindowHint(GLFW_RED_BITS, mode->redBits);
     glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);

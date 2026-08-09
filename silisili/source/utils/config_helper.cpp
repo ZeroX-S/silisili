@@ -104,9 +104,10 @@ unsigned int sceLibcHeapSize             = 24 * 1024 * 1024;
 // 竖屏视频最高清晰度
 #define SILI_VIDEO_QUALITY_PORTRAIT_MAX 128
 #ifdef SILISILI_SAILFISH_MOBILE
-// Fixed phone baseline: 1.5x larger than the previous 960-pixel short edge.
-#define SILI_WINDOW_WIDTH_DEFAULT 640
-#define SILI_WINDOW_HEIGHT_DEFAULT 360
+// Large phone baseline: 1.5x larger than the previous 640-pixel short edge.
+// 640 / 1.5 rounds to 427 logical units; physical window size is unchanged.
+#define SILI_WINDOW_WIDTH_DEFAULT 427
+#define SILI_WINDOW_HEIGHT_DEFAULT 240
 #define SILI_UI_SCALE_DEFAULT 0
 #else
 // 默认窗口大小 (不配置 ui 缩放时的窗口大小)
@@ -580,7 +581,9 @@ void ProgramConfig::load() {
     // A saved desktop scale must not make the phone UI dense again.
     brls::Application::ORIGINAL_WINDOW_WIDTH  = SILI_WINDOW_WIDTH_DEFAULT;
     brls::Application::ORIGINAL_WINDOW_HEIGHT = SILI_WINDOW_HEIGHT_DEFAULT;
-    brls::Logger::info("Sailfish mobile UI baseline: 640x360; fixed short edge: 640; video grids: portrait 2 landscape 4");
+    brls::Logger::info("Sailfish mobile UI baseline: 427x240; fixed short edge: 427; video grids: portrait 1 landscape 3");
+    brls::Logger::info(
+        "Sailfish mobile typography: native-client hierarchy; text factor 0.800; touch targets 48-56; visible icons 24-28");
 #else
     std::string UIScale = getSettingItem(SettingItem::APP_UI_SCALE, std::string{""});
     if (UIScale == "544p") {

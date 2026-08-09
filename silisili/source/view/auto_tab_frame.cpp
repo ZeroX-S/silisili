@@ -900,6 +900,18 @@ void AutoSidebarItem::setTabStyle(AutoTabBarStyle style) {
         default:
             this->inflateFromXMLString(autoSidebarItemXML);
     }
+
+#ifdef SILISILI_SAILFISH_MOBILE
+    // Preserve native-sized touch rows while reducing visible TV-style art.
+    // Phone icon buttons conventionally place 24-26 unit art in a 48-56 hit area.
+    if (style == AutoTabBarStyle::INLINE) {
+        this->icon->setDimensions(26, 26);
+        this->label->setFontSize(20);
+        this->label->setMarginLeft(8);
+    } else if (style == AutoTabBarStyle::PLAIN) {
+        this->icon->setDimensions(24, 24);
+    }
+#endif
 }
 
 void AutoSidebarItem::setActive(bool active) {

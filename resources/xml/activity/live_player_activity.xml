@@ -4,6 +4,7 @@
         headerHidden="true"
         footerHidden="false">
     <brls:Box
+            id="live/root"
             width="auto"
             height="auto"
             grow="1.0"
@@ -112,9 +113,10 @@
         </brls:Box>
 
         <ButtonClose
+                id="live/close"
                 positionType="absolute"
                 positionTop="2"
                 positionRight="2"/>
 
     </brls:Box>
-</brls:AppletFrame> 
+</brls:AppletFrame>

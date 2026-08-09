@@ -4,8 +4,8 @@
         cornerRadius="50"
         highlightCornerRadius="50"
         axis="column"
-        width="50"
-        height="50">
+        width="48"
+        height="48">
     <brls:Label
             id="close/button/text"
             marginTop="7"

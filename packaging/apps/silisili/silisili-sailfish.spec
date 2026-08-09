@@ -3,7 +3,7 @@
 
 Name:           silisili-sailfish
 Version:        1.0.0
-Release:        3
+Release:        7
 Summary:        silisili Bilibili client for Sailfish OS
 License:        GPL-3.0-or-later and GPL-2.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC
 Group:          Applications/Multimedia
@@ -63,6 +63,28 @@ find %{buildroot}/usr/share/silisili %{buildroot}/usr/share/licenses/%{name} \
 /usr/share/silisili
 
 %changelog
+* Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-7
+- Rebalance typography, visible icons, touch targets, and vertical rhythm using
+  native Android/iOS client conventions rather than mobile-web vmin alone.
+- Narrow the phone settings sidebar and remove TV-scale content padding.
+- Reduce the player OSD and seek thumb artwork while retaining accessible hit areas.
+
+* Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-6
+- Calibrate UI text to a 0.8 factor using mobile-web vmin typography.
+- Retain 1.5x control geometry and adaptive resolution, aspect, and DPI logic.
+
+* Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-5
+- Restore UI text to the former visual size while retaining 1.5x controls.
+- Adapt layout to resolution, aspect ratio, and credible physical display size.
+- Keep the close icon, popup bounds, touch targets, Back gestures, and player
+  state-preserving quality switches from revision 4.
+
+* Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-4
+- Enlarge the complete phone UI by another 1.5 times with responsive grids.
+- Route all live-player Back controls through one conflict-free close path.
+- Limit page-stack Back to the inset left-edge zone above media surfaces.
+- Preserve playing or paused state when changing video or live quality.
+
 * Thu Jul 30 2026 silisili contributors <noreply@localhost> - 1.0.0-3
 - Add Sailfish-style whole-page swipe-right Back navigation.
 - Keep media seek gestures isolated from page-stack navigation.

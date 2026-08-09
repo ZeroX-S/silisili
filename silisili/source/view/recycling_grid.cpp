@@ -658,7 +658,9 @@ void RecyclingGrid::onLayout() {
     const bool portrait = brls::Application::contentHeight >= brls::Application::contentWidth;
     int responsiveSpanCount = portrait ? portraitSpanCount : landscapeSpanCount;
     if (responsiveSpanCount <= 0 && !isFlowMode) {
-        const int phoneMaximum = portrait ? 2 : 4;
+        const int phoneMaximum = portrait
+                                     ? (brls::Application::contentWidth < 520.0f ? 1 : 2)
+                                     : (brls::Application::contentWidth < 960.0f ? 3 : 4);
         responsiveSpanCount    = std::min(configuredSpanCount, phoneMaximum);
     }
     if (responsiveSpanCount > 0 && responsiveSpanCount != spanCount) {

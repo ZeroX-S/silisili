@@ -34,6 +34,7 @@ namespace
 constexpr float SAILFISH_BACK_DIRECTION_LOCK = 1.4f;
 constexpr float SAILFISH_BACK_START_DISTANCE = 10.0f;
 constexpr float SAILFISH_BACK_COMMIT_FRACTION = 0.28f;
+constexpr float SAILFISH_BACK_EDGE_WIDTH = 36.0f;
 
 class SailfishPageBackGestureRecognizer : public GestureRecognizer
 {
@@ -125,7 +126,9 @@ class SailfishPageBackGestureRecognizer : public GestureRecognizer
     bool canStart() const
     {
         auto stack = Application::getActivitiesStack();
-        return stack.size() > 1 && stack.back() == this->activity &&
+        return this->startPosition.x >= 0.0f &&
+               this->startPosition.x <= SAILFISH_BACK_EDGE_WIDTH &&
+               stack.size() > 1 && stack.back() == this->activity &&
                this->activity->allowsSailfishPageBackGesture(this->startPosition);
     }
 

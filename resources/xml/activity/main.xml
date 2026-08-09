@@ -9,22 +9,22 @@
         <brls:Box
                 id="main/header"
                 width="100%"
-                height="64"
+                height="60"
                 shrink="0"
-                paddingLeft="20"
-                paddingRight="8"
+                paddingLeft="16"
+                paddingRight="4"
                 alignItems="center"
                 backgroundColor="@theme/color/grey_1">
             <brls:Image
-                    width="116"
-                    height="34"
+                    width="104"
+                    height="30"
                     scalingType="fit"
                     image="@res/icon/silisili-logo.png"/>
             <brls:Box grow="1"/>
             <CustomButton
                     id="main/search"
-                    width="56"
-                    height="56"
+                    width="52"
+                    height="52"
                     focusable="true"
                     wireframe="false"
                     hideHighlightBackground="true"
@@ -38,8 +38,8 @@
             </CustomButton>
             <CustomButton
                     id="main/inbox"
-                    width="56"
-                    height="56"
+                    width="52"
+                    height="52"
                     focusable="true"
                     wireframe="false"
                     hideHighlightBackground="true"
@@ -47,14 +47,14 @@
                     justifyContent="center"
                     alignItems="center">
                 <SVGImage
-                        width="27"
-                        height="27"
+                        width="24"
+                        height="24"
                         SVG="@res/svg/ico-inbox.svg"/>
             </CustomButton>
             <CustomButton
                     id="main/setting"
-                    width="56"
-                    height="56"
+                    width="52"
+                    height="52"
                     focusable="true"
                     wireframe="false"
                     hideHighlightBackground="true"
@@ -62,8 +62,8 @@
                     justifyContent="center"
                     alignItems="center">
                 <SVGImage
-                        width="27"
-                        height="27"
+                        width="24"
+                        height="24"
                         SVG="@res/svg/ico-setting.svg"/>
             </CustomButton>
         </brls:Box>
@@ -71,7 +71,7 @@
         <AutoTabFrame
                 id="main/tabFrame"
                 grow="1"
-                tabHeight="66"
+                tabHeight="60"
                 tabBackgroundColor="@theme/color/grey_1"
                 tabItemActiveTextColor="@theme/color/bilibili"
                 disableNavigationDown="true"
@@ -79,7 +79,7 @@
                 sidebarPosition="bottom">
             <Tab
                     label="@i18n/silisili/navigation/home"
-                    fontSize="24"
+                    fontSize="16"
                     style="plain"
                     icon="@res/svg/ico-home.svg"
                     iconActivate="@res/svg/ico-home-activate.svg">
@@ -87,7 +87,7 @@
             </Tab>
             <Tab
                     label="@i18n/silisili/navigation/dynamic"
-                    fontSize="24"
+                    fontSize="16"
                     style="plain"
                     icon="@res/svg/ico-dynamic.svg"
                     iconActivate="@res/svg/ico-dynamic-activate.svg">
@@ -95,7 +95,7 @@
             </Tab>
             <Tab
                     label="@i18n/silisili/navigation/mine"
-                    fontSize="24"
+                    fontSize="16"
                     style="plain"
                     icon="@res/svg/ico-mine.svg"
                     iconActivate="@res/svg/ico-mine-activate.svg">

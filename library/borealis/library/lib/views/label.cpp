@@ -28,6 +28,17 @@ namespace brls
 
 #define ELLIPSIS "\u2026"
 
+static float effectiveUIFontSize(float requestedSize)
+{
+#ifdef SILISILI_SAILFISH_MOBILE
+    // Keep the 427-pixel phone baseline readable while component-specific XML
+    // defines a native-client title/body/label hierarchy.
+    return requestedSize * 0.8f;
+#else
+    return requestedSize;
+#endif
+}
+
 static size_t strLen(const std::string& str)
 {
     size_t res = 0, inc = 0;
@@ -106,7 +117,7 @@ static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
     }
 
     // Setup nvg state for the measurements
-    nvgFontSize(vg, label->getFontSize());
+    nvgFontSize(vg, effectiveUIFontSize(label->getFontSize()));
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
     nvgFontFaceId(vg, label->getFont());
     nvgTextLineHeight(vg, label->getLineHeight());
@@ -450,7 +461,8 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
     enum NVGalign vertAlign  = this->getNVGVerticalAlign();
     int cursor_position = -1;
 
-    nvgFontSize(vg, this->fontSize);
+    const float renderedFontSize = effectiveUIFontSize(this->fontSize);
+    nvgFontSize(vg, renderedFontSize);
     nvgTextAlign(vg, horizAlign | vertAlign);
     nvgFontFaceId(vg, this->font);
     nvgFontQuality(vg, this->fontQuality);
@@ -469,7 +481,7 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
     if (this->animating)
     {
         nvgSave(vg);
-        float scissorHeight = fontSize * lineHeight;
+        float scissorHeight = renderedFontSize * lineHeight;
         nvgIntersectScissor(vg, x, y, width, scissorHeight < height ? height : scissorHeight);
 
         float baseX   = x - this->scrollingAnimation;
@@ -596,7 +608,7 @@ void Label::onLayout()
         // Compute the position of the ellipsis (in chars), should the string be truncated
         // Cannot do it in the measure function because the margins are not applied yet there
         auto vg = Application::getNVGContext();
-        nvgFontSize(vg, this->fontSize);
+        nvgFontSize(vg, effectiveUIFontSize(this->fontSize));
         nvgTextAlign(vg, this->getNVGHorizontalAlign() | this->getNVGVerticalAlign());
         nvgFontFaceId(vg, this->font);
         nvgTextLineHeight(vg, this->lineHeight);

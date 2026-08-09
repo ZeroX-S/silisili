@@ -15,6 +15,14 @@
 
 const char* TEXTBOX_MORE = "更多";
 
+static float effectiveTextBoxFontSize(float requestedSize) {
+#ifdef SILISILI_SAILFISH_MOBILE
+    return requestedSize * 0.8f;
+#else
+    return requestedSize;
+#endif
+}
+
 // Modified from https://github.com/memononen/nanovg
 // Do not directly modify nanovg for easy upgrade in the future
 // Great thanks to nanovg!
@@ -175,7 +183,8 @@ float TextBox::cutRichTextLines(float width) {
 
     auto* vg = brls::Application::getNVGContext();
 
-    nvgFontSize(vg, this->fontSize);
+    const float renderedFontSize = effectiveTextBoxFontSize(this->fontSize);
+    nvgFontSize(vg, renderedFontSize);
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
     nvgFontFaceId(vg, this->font);
     nvgTextLineHeight(vg, this->lineHeight);
@@ -216,10 +225,11 @@ float TextBox::cutRichTextLines(float width) {
                 tempData.clear();
                 // 设置下一行的起始位置
                 lx = 0;
-                ly += fontSize * lineHeight;
+                ly += renderedFontSize * lineHeight;
             }
             auto item =
-                genRichTextImage(t->url, t->width, t->height, lx + t->l_margin, ly - t->height + fontSize + t->v_align, t->radius);
+                genRichTextImage(t->url, t->width, t->height,
+                                 lx + t->l_margin, ly - t->height + renderedFontSize + t->v_align, t->radius);
             item->t_margin = t->t_margin;
             tempData.emplace_back(item);
             lx += t->width + t->l_margin + t->r_margin;
@@ -229,13 +239,13 @@ float TextBox::cutRichTextLines(float width) {
             tempData.clear();
             // 设置下一行的起始位置
             lx = 0;
-            ly += fontSize * lineHeight;
+            ly += renderedFontSize * lineHeight;
         }
     }
     if (!tempData.empty()) lineContent.emplace_back(tempData);
 
     // 重新扫描一遍，根据图片高度调整行高
-    float height = fontSize * lineHeight;
+    float height = renderedFontSize * lineHeight;
     float bias   = 0;
     for (auto& i : lineContent) {
         // 获取最大行高
@@ -252,7 +262,7 @@ float TextBox::cutRichTextLines(float width) {
         }
     }
 
-    float pxBottomSpace = fontSize * (lineHeight - 1);
+    float pxBottomSpace = renderedFontSize * (lineHeight - 1);
     size_t rows         = maxRows;
     if (isShowMoreText() && maxRows != SIZE_T_MAX) rows++;
 
@@ -262,7 +272,7 @@ float TextBox::cutRichTextLines(float width) {
     }
 
     // 限制最大行数
-    return getLineY(maxRows) + fontSize;
+    return getLineY(maxRows) + renderedFontSize;
 }
 
 float TextBox::getLineY(size_t line) {
@@ -279,7 +289,7 @@ void TextBox::draw(NVGcontext* vg, float x, float y, float width, float height, 
                    brls::FrameContext* ctx) {
     if (width == 0) return;
 
-    nvgFontSize(vg, this->fontSize);
+    nvgFontSize(vg, effectiveTextBoxFontSize(this->fontSize));
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
     nvgFontFaceId(vg, this->font);
     nvgTextLineHeight(vg, this->lineHeight);
@@ -318,7 +328,7 @@ void TextBox::draw(NVGcontext* vg, float x, float y, float width, float height, 
     // 显示 "更多" 提示
     if (!showMoreText) return;
     static auto linkColor = ctx->theme.getColor("color/link");
-    nvgFontSize(vg, this->fontSize);
+    nvgFontSize(vg, effectiveTextBoxFontSize(this->fontSize));
     nvgFillColor(vg, a(linkColor));
     nvgText(vg, x, y + getLineY(maxRows), TEXTBOX_MORE, nullptr);
 }

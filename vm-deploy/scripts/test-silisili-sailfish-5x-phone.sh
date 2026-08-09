@@ -3,7 +3,7 @@ set -euo pipefail
 
 PORT_ROOT="${PORT_ROOT:-/media/psf/bonito-port}"
 TELNET="$PORT_ROOT/vm-deploy/scripts/telnet-cmd.sh"
-PACKAGE="${PACKAGE:-silisili-sailfish-1.0.0-3.aarch64.rpm}"
+PACKAGE="${PACKAGE:-silisili-sailfish-1.0.0-7.aarch64.rpm}"
 PACKAGE_URL="${PACKAGE_URL:-http://192.168.2.20:18082/$PACKAGE}"
 SCREENSHOT_URL="${SCREENSHOT_URL:-http://192.168.2.20:18103}"
 APP_LOG=/tmp/silisili-5x-phone-test.log
@@ -71,7 +71,7 @@ player-fullscreen)
         'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
-        '/tmp/bonito-direct-touch tap 1030 535' \
+        '/tmp/bonito-direct-touch tap 975 515' \
         'sleep 4'
     ;;
 player-fullscreen-capture)
@@ -86,7 +86,7 @@ player-fullscreen-capture)
         'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
-        '/tmp/bonito-direct-touch tap 1030 535' \
+        '/tmp/bonito-direct-touch tap 975 515' \
         'sleep 3' \
         '/tmp/bonito-uinput-camera-key screenshot' \
         'sleep 2' \
@@ -107,7 +107,7 @@ player-fullscreen-cycle-capture)
         'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
-        '/tmp/bonito-direct-touch tap 1030 535' \
+        '/tmp/bonito-direct-touch tap 975 515' \
         'sleep 3' \
         '/tmp/bonito-uinput-camera-key screenshot' \
         'sleep 2' \
@@ -145,7 +145,7 @@ player-quality-capture)
         'sleep 5' \
         '/tmp/bonito-direct-touch tap 540 280' \
         'sleep 1' \
-        '/tmp/bonito-direct-touch tap 840 535' \
+        '/tmp/bonito-direct-touch tap 690 510' \
         'sleep 2' \
         '/tmp/bonito-uinput-camera-key screenshot' \
         'sleep 2' \

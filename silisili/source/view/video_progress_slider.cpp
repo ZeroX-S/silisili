@@ -25,18 +25,33 @@ VideoProgressSlider::VideoProgressSlider() {
 
     setHeight(40);
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    line->setHeight(4);
+    line->setCornerRadius(2.0f);
+    lineEmpty->setHeight(4);
+    lineEmpty->setCornerRadius(2.0f);
+#else
     line->setHeight(7);
     line->setCornerRadius(3.5f);
-
     lineEmpty->setHeight(7);
     lineEmpty->setCornerRadius(3.5f);
+#endif
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    pointerIcon->setDimensions(24, 24);
+#else
     pointerIcon->setDimensions(44, 44);
+#endif
     pointerIcon->setImageFromSVGRes("svg/bpx-svg-sprite-thumb.svg");
 
+#ifdef SILISILI_SAILFISH_MOBILE
+    pointer->setDimensions(48, 48);
+    pointer->setHighlightCornerRadius(48);
+#else
     pointer->setDimensions(60, 60);
-    pointer->setFocusable(true);
     pointer->setHighlightCornerRadius(60);
+#endif
+    pointer->setFocusable(true);
     pointer->setHideHighlightBackground(true);
     pointer->setHideClickAnimation(true);
     pointer->setAlignItems(brls::AlignItems::CENTER);
@@ -183,7 +198,8 @@ void VideoProgressSlider::draw(NVGcontext* vg, float x, float y, float width, fl
             nvgBeginPath(vg);
             nvgFillColor(vg, a(nvgRGBf(1.0f, 1.0f, 1.0f)));
             for (auto& i : clipPointList) {
-                nvgCircle(vg, x + 32 + i * (width - 64), y + height / 2, 3);
+                const float pointerHalf = pointer->getWidth() / 2.0f;
+                nvgCircle(vg, x + pointerHalf + i * (width - pointer->getWidth()), y + height / 2, 3);
             }
             nvgFill(vg);
         }

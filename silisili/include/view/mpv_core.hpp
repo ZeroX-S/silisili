@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <optional>
 #include <cstdlib>
 #include <fmt/format.h>
 #include <borealis/core/geometry.hpp>
@@ -305,6 +306,13 @@ public:
     void reset();
 
     /**
+     * Preserve the current playing/paused state for the next replaced media
+     * file. This is used by quality switches, which must not inherit the
+     * global auto-play preference instead of the current player state.
+     */
+    void preservePlaybackStateForNextFile();
+
+    /**
      * 设置着色器配置
      * @param profile 配置名
      * @param shaders 着色器文件
@@ -339,6 +347,7 @@ public:
     bool video_seeking     = false;
     bool video_playing     = false;
     bool video_eof         = false;
+    std::optional<bool> nextFileShouldPlay;
     float video_aspect     = -1;
     double playback_time   = 0;
     double percent_pos     = 0;

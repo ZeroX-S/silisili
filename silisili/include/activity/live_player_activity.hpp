@@ -22,6 +22,7 @@
 class VideoView;
 class UserInfoView;
 class LiveDanmakuItemView; // 添加前向声明
+class ButtonClose;
 
 class LiveActivity : public brls::Activity, 
                      public LiveDataRequest {
@@ -43,7 +44,7 @@ public:
 
     void onContentAvailable() override;
 
-    bool allowsSailfishPageBackGesture(brls::Point) const override { return false; }
+    bool allowsSailfishPageBackGesture(brls::Point startPosition) const override;
 
     void onLiveData(const bilibili::LiveRoomPlayInfo& result) override;
 
@@ -102,11 +103,14 @@ public:
 
 private:
     void close();
+    void updateResponsiveLayout();
 
     // 关注/取关主播
     void follow_anchor(bool follow);
 
     VideoView* video = nullptr;
+    ButtonClose* closeButton = nullptr;
+    brls::Box* rootBox = nullptr;
     UserInfoView* liveAuthor = nullptr;
     brls::Box* liveDanmakuContainer = nullptr;
     brls::ScrollingFrame* liveDanmakuList = nullptr;
@@ -152,4 +156,6 @@ private:
     };
     std::shared_ptr<ThreadSafeState> threadState{std::make_shared<ThreadSafeState>()};
     bool closing = false;
+    brls::VoidEvent::Subscription windowSizeSubscription;
+    bool windowSizeSubscribed = false;
 };

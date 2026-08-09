@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-/root/bonito-deploy}"
 APP_DIR="${APP_DIR:-$PROJECT_ROOT/artifacts/generated-blobs/apps}"
 LISTEN1_RPM="${LISTEN1_RPM:-$APP_DIR/listen1-sailfish-2.33.0-1.bonito1.aarch64.rpm}"
-SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-3}"
+SILISILI_EXPECTED_VERSION="${SILISILI_EXPECTED_VERSION:-1.0.0-7}"
 SILISILI_RPM="${SILISILI_RPM:-$APP_DIR/silisili-sailfish-${SILISILI_EXPECTED_VERSION}.aarch64.rpm}"
 
 fail() {
@@ -217,8 +217,12 @@ grep -Fq '/usr/lib64/silisili' <<<"$(readelf -d "$sili_root/usr/lib64/silisili/s
     fail "silisili.real still contains its Flatpak resource prefix"
 grep -aFq '/usr/share/silisili/resources/' "$sili_root/usr/lib64/silisili/silisili.real" ||
     fail "silisili.real Sailfish resource prefix missing"
-grep -aFq 'Sailfish mobile UI baseline: 640x360; fixed short edge: 640; video grids: portrait 2 landscape 4' \
+grep -aFq 'Sailfish mobile UI baseline: 427x240; fixed short edge: 427; video grids: portrait 1 landscape 3' \
     "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish mobile UI profile marker missing"
+grep -aFq 'Sailfish mobile typography: native-client hierarchy; text factor 0.800; touch targets 48-56; visible icons 24-28' \
+    "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish mobile text scale marker missing"
+grep -aFq 'Sailfish adaptive display: mode ' \
+    "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish adaptive display marker missing"
 grep -aFq 'Sailfish mobile window' \
     "$sili_root/usr/lib64/silisili/silisili.real" || fail "Sailfish short-edge scaling marker missing"
 grep -aFq 'Sailfish page back swipe: started at' \
@@ -353,7 +357,7 @@ grep -Fq 'id="video/comment/recyclingGrid"' \
     "$sili_root/usr/share/silisili/resources/xml/activity/player_activity.xml" ||
     fail "comment grid missing"
 grep -Fq 'height="72"' "$sili_root/usr/share/silisili/resources/xml/views/video_view.xml" ||
-    fail "compact mobile OSD declaration missing"
+    fail "native-proportioned mobile OSD declaration missing"
 grep -Fq 'id="video/osd/back"' "$sili_root/usr/share/silisili/resources/xml/views/video_view.xml" ||
     fail "touch back control missing"
 test -f "$sili_root/usr/share/silisili/resources/svg/bpx-svg-sprite-back.svg" ||
@@ -384,9 +388,9 @@ with open(os.environ["MAIN_XML"], encoding="utf-8") as source:
     )
 root = ET.fromstring(xml)
 ids = {node.attrib.get("id"): node for node in root.iter() if node.attrib.get("id")}
-assert ids["main/header"].attrib["height"] == "64"
-assert ids["main/search"].attrib["width"] == "56"
-assert ids["main/search"].attrib["height"] == "56"
+assert ids["main/header"].attrib["height"] == "60"
+assert ids["main/search"].attrib["width"] == "52"
+assert ids["main/search"].attrib["height"] == "52"
 assert ids["main/tabFrame"].attrib["sidebarPosition"] == "bottom"
 assert not any(node.attrib.get("positionType") == "absolute" for node in root.iter())
 PY

@@ -18,11 +18,26 @@
 - Complete silisili Sailfish source patch (application, Borealis, and GLFW):
   `patches/silisili-sailfish-mobile.patch`
   SHA-256
-  `92c0e665a77176ed5c386f4a9f2ec5020535fac92d124cc020bba8c6bcc84974`.
+  `44ee2f7321761806cdd66c1449cbb3ea38bc64761df1f50be4d8c8ca35c9420e`.
 - Mobile interaction reference: https://github.com/0xjax/bilibili-mobile
   commit `1e868592c31463b90d4db4d3e6e9bccd3e4ccb32`. It is a userscript and no
   source code is included; only its complete search/menu/history/activity
   reachability was used as an information-architecture reference.
+- Mobile typography reference inspected 2026-07-30: https://m.bilibili.com/
+  with `width=device-width, initial-scale=1`. Its four loaded mstation CSS
+  chunks use frequent `3.2vmin`, `3.73333vmin`, and `4.26667vmin` sizes; their
+  local audit SHA-256 values were `da3808a2`, `fb5f6b3b`, `b6d04911`, and
+  `ef0ad77c`. No Bilibili CSS or code is bundled in this project.
+- Native-client references inspected 2026-07-31: Bilibili's
+  [official iOS App Store presentation](https://apps.apple.com/cn/app/%E5%93%94%E5%93%A9%E5%93%94%E9%87%8C-%E5%BC%B9%E5%B9%95%E7%95%AA%E5%89%A7%E7%9B%B4%E6%92%AD%E9%AB%98%E6%B8%85%E8%A7%86%E9%A2%91/id736536022),
+  Apple's Human Interface Guidelines for
+  [typography](https://developer.apple.com/design/human-interface-guidelines/typography)
+  and
+  [accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility),
+  and Android's
+  [accessibility guidance](https://developer.android.com/guide/topics/ui/accessibility/views/apps-views)
+  for 48dp touch targets. They are proportion references only; no application
+  code or assets are bundled.
 - Sailfish 5.1 z1.5 media-player launcher template SHA-256:
   `a626c13264226d0f8060d773d99038f72c598d879d8823b2fd9efb85268d2e9a`
 
@@ -42,22 +57,35 @@ fullscreen Wayland surface. Its bundled GLFW client binds Qt Wayland's
 BSD-licensed `qt_surface_extension` protocol directly, so no Qt runtime is
 added to the application package.
 
-The Sailfish build fixes the logical baseline at 640x360, making controls and
-text 1.5 times larger than the former 960-pixel short edge. Common video grids
-use 2 columns in portrait and 4 in landscape, with phone-sized navigation,
-spacing, OSD, and touch targets. Lists with an existing refresh action also
+The Sailfish build fixes the logical baseline at 427x240. Mobile-web `vmin`
+measurements are retained only as a content-density cross-check. Navigation,
+settings, popups and the OSD follow native-client roles instead: approximately
+16pt body text, 12-14pt supporting text, 12pt bottom navigation, 24-28pt visible
+icons and 48-56pt touch targets. The global 0.8 text factor keeps the original
+TV-oriented resource sizes within that hierarchy. Responsive fallback grids use 1 column in
+portrait and up to 3 in landscape; explicit dense feeds may retain two portrait
+columns. Lists with an existing refresh action also
 refresh after a 64-unit downward pull from their top boundary. Saved desktop
 UI-scale values are ignored.
+
+The Wayland monitor mode and physical millimetres are checked at startup.
+Credible panels outside the tested 62-78 mm phone class receive a bounded
+400-640 logical-short-edge correction, while missing, implausible, or GLFW's
+96-DPI fallback metadata retains the tested 427 baseline. Thus resolution and
+aspect-ratio reflow remain reliable without letting bad display metadata resize
+the interface.
 
 Search uses Sailfish's system input method directly. The television alphabet
 grid, controller Y shortcut and hint, and its settings toggle are disabled on
 the phone build. A persistent header exposes search, messages, and settings
 from Home, Activity, and Me without covering the channel row. Those three
 primary pages use a fixed bottom touch tab bar; nested screens continue to use
-the native activity stack and Back behavior. A left-to-right pull may begin
-across the page, matching Sailfish page-stack navigation. The player accepts it
-only below the video surface, and live/fullscreen media keep their dedicated
-gestures. Every shared text and numeric
+the native activity stack and Back behavior. A left-to-right pull may begin only
+within the first 36 logical units at the left side. On the tested compositor,
+the outermost physical edge remains reserved for Sailfish system task gestures,
+so application Back starts just inside it. This narrow start zone remains
+available over normal and live video; horizontal media gestures that start
+elsewhere retain their own behavior. Every shared text and numeric
 input page activates the system keyboard after becoming visible, retries once
 after compositor focus settles, and exposes fixed touch Back and OK controls.
 Search results place the editable query in a separate row above their category
@@ -77,9 +105,9 @@ The compact touch OSD also bypasses Borealis custom gamepad navigation routes,
 because its hidden volume and danmaku-setting controls are intentionally not
 focusable.
 
-Phone dialogs reserve a 16-unit safe margin and are capped at 608x1248 inside
-the 640x1280 portrait content area. Standard and grid dropdowns use the current
-content width, 64-unit rows, and a height cap of 73 percent, so opened controls
+Phone dialogs reserve a 16-unit safe margin and are capped at 395x822 inside
+the 427x854 portrait content area. Standard and grid dropdowns use the current
+content width, 56-unit rows, and a height cap of 73 percent, so opened controls
 remain on-screen.
 
 The phone video detail follows Bilibili's mobile information order: a full-width
@@ -89,8 +117,8 @@ Website-only download/open-App controls are intentionally absent. Landscape
 hides the detail content and gives the complete surface to video. mpv owns
 aspect handling within that one video
 surface, so playback, danmaku, subtitles, progress, thumbnails, and touch all
-use the same bounds. The OSD uses compact mobile-sized controls and a 72-unit
-bottom strip.
+use the same bounds. The OSD uses a 56-unit top strip, 72-unit bottom strip,
+48-56-unit touch targets and 24-28-unit visible icons.
 Fullscreen reuses that same `VideoView` inside the detail activity. mpv's
 effective `video-out-params/dw` and `dh` select a portrait or landscape
 orientation mask. Current Lipstick stable-XDG windows ignore that legacy Qt
@@ -100,6 +128,11 @@ coordinates together. It does not set a Wayland buffer transform, which is
 incompatible with Android wayland-egl on this device. Portrait media remains
 unrotated. Exiting fullscreen returns to portrait detail. The OSD has a touch
 Back control; Back exits fullscreen before popping the detail page.
+
+Changing normal-video or live-stream quality snapshots the current playing or
+paused state and applies it once to the replacement media file. It therefore
+does not substitute the global auto-play preference for the user's current
+player state.
 
 While mpv is actively playing in the foreground, the application first tries
 to attach a Wayland idle inhibitor to its surface. Lipstick versions that do

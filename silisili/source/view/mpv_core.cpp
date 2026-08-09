@@ -950,7 +950,7 @@ void MPVCore::eventMainLoop() {
                     brls::Logger::verbose("{}: {}", log->prefix, log->text);
                 }
             } break;
-            case MPV_EVENT_FILE_LOADED:
+            case MPV_EVENT_FILE_LOADED: {
                 brls::Logger::info("========> MPV_EVENT_FILE_LOADED");
                 // event 8: 文件预加载结束，准备解码
                 mpvCoreEvent.fire(MpvEventEnum::MPV_LOADED);
@@ -960,7 +960,13 @@ void MPVCore::eventMainLoop() {
                 // 移除其他备用链接
                 command_async("playlist-clear");
 
-                if (AUTO_PLAY) {
+                const bool shouldPlay = nextFileShouldPlay.value_or(AUTO_PLAY);
+                if (nextFileShouldPlay.has_value()) {
+                    brls::Logger::info("MPV quality switch: restored {} state",
+                                       shouldPlay ? "playing" : "paused");
+                    nextFileShouldPlay.reset();
+                }
+                if (shouldPlay) {
                     mpvCoreEvent.fire(MpvEventEnum::MPV_RESUME);
                     this->resume();
                 } else {
@@ -968,6 +974,7 @@ void MPVCore::eventMainLoop() {
                     this->pause();
                 }
                 break;
+            }
             case MPV_EVENT_START_FILE:
                 // event 6: 开始加载文件
                 brls::Logger::info("========> MPV_EVENT_START_FILE");
@@ -1227,11 +1234,23 @@ void MPVCore::reset() {
     this->video_width    = 0;
     this->video_height   = 0;
     this->mpv_error_code = 0;
+    this->nextFileShouldPlay.reset();
     this->video_aspect   = aspectConverter(MPVCore::VIDEO_ASPECT);
 
     // 软硬解切换后应该手动设置一次渲染尺寸
     // 切换视频前设置渲染尺寸可以顺便将上一条视频的最后一帧画面清空
     setFrameSize(rect);
+}
+
+void MPVCore::preservePlaybackStateForNextFile() {
+    if (this->isStopped() && !this->isPaused()) {
+        this->nextFileShouldPlay.reset();
+        return;
+    }
+
+    this->nextFileShouldPlay = !this->isPaused();
+    brls::Logger::info("MPV quality switch: preserve {} state for next file",
+                       *this->nextFileShouldPlay ? "playing" : "paused");
 }
 
 void MPVCore::setUrl(const std::string &url, const std::string &extra, const std::string &method) {

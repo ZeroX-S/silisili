@@ -71,7 +71,7 @@ VideoView::VideoView() {
     static bool mobileTouchMarkerLogged = false;
     if (!mobileTouchMarkerLogged) {
         brls::Logger::info("Sailfish player touch: tap OSD; center double-tap play; release-to-seek; multi-touch cancellation");
-        brls::Logger::info("Sailfish player controls: 56pt primary touch targets; 52pt secondary touch targets");
+        brls::Logger::info("Sailfish player controls: 48-56pt touch targets; 24-28pt visible icons; native-client calibrated");
         mobileTouchMarkerLogged = true;
     }
 #else
@@ -792,7 +792,7 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
     // 在正常显示 osd 时，将字幕向上偏移，避免被 OSD 挡住
     if (showSubtitleSetting)
         SubtitleCore::instance().drawSubtitle(vg, x, y, width,
-                                              std::max(0.0f, height - ((drawOSD && !is_osd_lock) ? 72.0f : 0.0f)),
+                                              std::max(0.0f, height - ((drawOSD && !is_osd_lock) ? 56.0f : 0.0f)),
                                               alpha);
 
     if (current > this->hintLastShowTime && this->hintBox->getVisibility() == brls::Visibility::VISIBLE) {
