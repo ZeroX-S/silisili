@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.23
+Release:        1.24
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -100,6 +100,16 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.24
+- Keep droidmedia frame callbacks nonblocking by dropping an excess incoming
+  output under GUI pressure, preventing Binder transaction buildup from
+  freezing video while the separate audio clock continues. Retain consecutive
+  queued frames and move queue-sized sliding backpressure to the private demux
+  thread so OMX cannot burst past the display queue or lose source cadence.
+- Detect a stopped hardware frame serial while audio advances and restart only
+  the same-quality video decoder at the retained clock position; keep the
+  audio load, shared texture, controls and media-load serial intact.
+
 * Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.23
 - Bound compressed droidmedia input to 1.5 seconds ahead of the audio clock so
   asynchronous OMX adaptations cannot queue an entire long video, exhaust CMA

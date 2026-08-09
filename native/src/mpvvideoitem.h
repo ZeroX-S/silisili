@@ -115,6 +115,7 @@ signals:
 
 private slots:
     void advanceProgressClock();
+    void monitorHardwareProgress();
     void renderSharedTextureFrame();
     void submitPendingLoad();
     void drainMpvEvents();
@@ -151,6 +152,8 @@ private:
     void resetFrameFloorQualification();
     void reportFrameFloorSummary(const char *reason);
     void syncHardwareClock();
+    void resetHardwareStallWatchdog();
+    void restartHardwareDecodeAfterStall();
     bool startHardwareDecode(const QString &videoUrl, double startPosition);
     void stopHardwareDecode();
     void fallbackToSoftwareDecode(const QString &reason);
@@ -186,6 +189,14 @@ private:
     QTimer m_hardwareFirstFrameTimer;
     bool m_hardwareFirstFramePending;
     bool m_hardwarePresentationCadenceLogged;
+    QTimer m_hardwareStallTimer;
+    QElapsedTimer m_hardwareStallElapsed;
+    int m_hardwareStallObservedSerial;
+    double m_hardwareStallObservedPosition;
+    int m_hardwareStallRecoveryCount;
+    bool m_testHardwareStallEnabled;
+    bool m_testHardwareStallInjected;
+    int m_testHardwareStallGeneration;
     QTimer m_foregroundRestoreTimer;
     int m_foregroundRestoreStage;
     QTimer m_progressClockTimer;

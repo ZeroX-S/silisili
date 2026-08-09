@@ -8,9 +8,9 @@ set -eu
 # quality ladder stays visible, while unverified UHD is capped at real 1080P60
 # hardware decode without ever allocating the unsafe UHD codec session.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.23.aarch64.rpm}
-expected_sha=${2:-8b7106a175da121a38bd4fd02e74f3dbcb34be47a05cd4b00c84cd118d05597b}
-expected_package=silisili-native-devel-1.1.0-1.23.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.24.aarch64.rpm}
+expected_sha=${2:-7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6}
+expected_package=silisili-native-devel-1.1.0-1.24.aarch64
 test_bvid=${SILISILI_UHD_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_UHD_TEST_CID:-37630051884}
 minimum_cma_free_kb=${SILISILI_UHD_MINIMUM_CMA_FREE_KB:-32768}
@@ -148,7 +148,7 @@ printf '%s\n' "$events" | grep -E \
 printf '%s\n' "$events" | grep -E \
     'native player: DASH source resolved, quality 116 .*video 1920 x 1080' >/dev/null
 printf '%s\n' "$events" | grep -E \
-    'native hardware video: OMX decoder started .*size 1920 x 1080 .*decodedQueueLimit 4 .*compressedInputLeadLimitMs 1500 .*binderCallbackBlocking true' \
+    'native hardware video: OMX decoder started .*size 1920 x 1080 .*decodedQueueLimit 8 .*compressedPacketLimit 8 .*steadyPacketLimit 8 .*compressedInputLeadLimitMs 1500 .*binderCallbackBlocking false' \
     >/dev/null
 test -z "$(printf '%s\n' "$events" | grep -F \
     'native hardware video: switching to software fallback' || true)"
@@ -201,7 +201,7 @@ while test "$poll" -lt 80; do
             else consecutive = 0
             last = window_index
         }
-        END { if (consecutive >= 3) print last }
+        END { if (consecutive >= 10) print last }
     ')
     test -n "$stable_start_index" && break
     sleep 0.25
@@ -264,6 +264,8 @@ four_k_minimum=$(printf '%s\n' "$events" | awk -v start="$stable_start_index" '
 awk -v fps="$four_k_minimum" 'BEGIN { exit !(fps + 0 >= 45.0) }'
 test -z "$(printf '%s\n' "$events" | grep -F \
     'native hardware video: decoded frame queue pressure' || true)"
+test -z "$(printf '%s\n' "$events" | grep -F \
+    'native hardware video: nonblocking callback dropped excess frame' || true)"
 test -z "$(printf '%s\n' "$events" | grep -E \
     'QML.*Error|TypeError|ReferenceError|Binding loop|Segmentation fault|ANOM_ABEND|Out of memory|Killed process' || true)"
 
@@ -298,7 +300,7 @@ printf '%s\n' "$events" | grep -E \
     'unsafe ultra-HD representation avoided.*requested 127 selected 116 .*selectedGeometry 1920 x 1080 .*operationalMaximumQuality 116 .*softwareFallback false' \
     >/dev/null
 printf '%s\n' "$events" | grep -E \
-    'native hardware video: OMX decoder started .*size 1920 x 1080 .*decodedQueueLimit 4 .*compressedInputLeadLimitMs 1500 .*binderCallbackBlocking true' \
+    'native hardware video: OMX decoder started .*size 1920 x 1080 .*decodedQueueLimit 8 .*compressedPacketLimit 8 .*steadyPacketLimit 8 .*compressedInputLeadLimitMs 1500 .*binderCallbackBlocking false' \
     >/dev/null
 test -z "$(printf '%s\n' "$events" | grep -F \
     'native hardware video: switching to software fallback' || true)"
@@ -333,6 +335,8 @@ done
 events=$(events_for_pid "$test_pid")
 test -z "$(printf '%s\n' "$events" | grep -F \
     'native hardware video: decoded frame queue pressure' || true)"
+test -z "$(printf '%s\n' "$events" | grep -F \
+    'native hardware video: nonblocking callback dropped excess frame' || true)"
 
 phase=production-relaunch
 stop_application
@@ -343,7 +347,7 @@ poll=0
 while test "$poll" -lt 60; do
     production_events=$(events_for_pid "$production_pid")
     printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.23"' \
+        'native app: build identity "silisili-native-devel" "1.1.0" "1.24"' \
         >/dev/null && break
     sleep 0.25
     poll=$((poll + 1))

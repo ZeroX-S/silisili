@@ -5,13 +5,49 @@ Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.23.aarch64`
-- RPM SHA-256: `8b7106a175da121a38bd4fd02e74f3dbcb34be47a05cd4b00c84cd118d05597b`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.23.aarch64.rpm`
+- NEVRA: `silisili-native-devel-1.1.0-1.24.aarch64`
+- RPM SHA-256: `7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.24.aarch64.rpm`
 - Build/install date: `2026-08-10`
 - stable package state during this validation: absent
 
-## Latest 1.23 UHD loading, controls and input pacing
+## Latest 1.24 mid-play hardware-frame stall recovery
+
+All checks used deterministic decoder-frame suppression plus resolver, audio
+clock, decoder generation, shared-texture serial, process, memory and package
+markers. No screenshot interpretation or visual model was used.
+
+- The droidmedia frame callback no longer waits for display-queue space on its
+  Binder delivery thread. Backpressure now runs on the private demux thread.
+  An eight-credit bootstrap window satisfies H.264/HEVC reference-frame
+  reordering after load or seek; after the requested target is decoded, normal
+  video uses a matching eight-frame sliding window and UHD narrows to its
+  one-frame CMA-safe waiting limit. The validated 30 FPS run logged zero
+  callback frame drops.
+- A 500 ms progress monitor is active only during genuinely running hardware
+  playback. If the shared-texture serial is unchanged for at least 3 seconds
+  while the separate audio/playback position advances by at least 1 second,
+  it restarts only the same-quality droidmedia video decoder at the retained
+  audio-clock position. It does not reload libmpv audio, change the media-load
+  serial, withdraw the current texture or manipulate the quality selection.
+- The deterministic gate suppressed generation 1 after frame serial 60. The
+  watchdog detected the stall, restarted generation 2 in the same PID, kept
+  audio reloads at 0 and media loads at 1, retained the visible texture, and
+  resumed source frames at `30.09 fps` for the real 30 FPS representation.
+  Free CMA was `66488 KiB`; the exact installed RPM passed `rpm -V`.
+- The follow-up 1080P60/UHD safety gate accepted physical pause/resume, then
+  held 63 stable one-second windows for 60 seconds with a minimum
+  `55.944 fps`. Frame indices advanced in every sample, callback drops and
+  queue pressure remained zero, and CMA stayed above the `32768 KiB` guard.
+  Requests for 4K and 8K still selected the verified 1920x1080/60 hardware
+  representation without attempting an unsafe UHD OMX allocation.
+- Android's gbinder workaround diagnostic can still be emitted by this device,
+  but the callback no longer blocks on the application queue and neither
+  validated run stopped video progression.
+- Final RPM SHA-256:
+  `7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6`.
+
+## Historical 1.23 UHD loading, controls and input pacing
 
 All checks used resolver, decoder, playback-session, physical touchscreen,
 memory, frame-window and package markers. No screenshot interpretation or

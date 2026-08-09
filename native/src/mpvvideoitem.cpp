@@ -240,6 +240,11 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
       m_fullResolutionPresentation(false),
       m_hardwareDecodeActive(false), m_hardwareFallbackForCurrentLoad(false),
       m_hardwareFirstFramePending(false), m_hardwarePresentationCadenceLogged(false),
+      m_hardwareStallObservedSerial(0), m_hardwareStallObservedPosition(0.0),
+      m_hardwareStallRecoveryCount(0),
+      m_testHardwareStallEnabled(
+          qgetenv("SILISILI_NATIVE_TEST_HARDWARE_STALL_ONCE") == QByteArrayLiteral("1")),
+      m_testHardwareStallInjected(false), m_testHardwareStallGeneration(0),
       m_foregroundRestoreStage(0), m_progressClockTicks(0), m_loadSerial(0),
       m_loadCommandPending(false), m_pendingLoadStart(0.0), m_pendingLoadPause(false),
       m_requestedPaused(false), m_requestedPosition(0.0), m_requestedVolume(100.0),
@@ -271,6 +276,10 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
         if (qApp && qApp->applicationState() == Qt::ApplicationActive)
             update();
     });
+    m_hardwareStallTimer.setInterval(500);
+    m_hardwareStallTimer.setTimerType(Qt::PreciseTimer);
+    connect(&m_hardwareStallTimer, &QTimer::timeout,
+            this, &MpvVideoItem::monitorHardwareProgress);
     m_hardwareFirstFrameTimer.setSingleShot(true);
     // UHD opt-in retains the short allocation-safety deadline. Ordinary
     // 1080P hardware startup gets a wider deadline so a busy adaptation does
@@ -942,6 +951,8 @@ void MpvVideoItem::stopHardwareDecode() {
     const bool wasActive = m_hardwareDecodeActive;
     m_hardwareDecodeActive = false;
     m_hardwarePresentationTimer.stop();
+    m_hardwareStallTimer.stop();
+    m_hardwareStallElapsed.invalidate();
     m_hardwareFirstFrameTimer.stop();
     m_hardwareFirstFramePending = false;
     m_hardwarePresentationCadenceLogged = false;
@@ -953,6 +964,8 @@ void MpvVideoItem::stopHardwareDecode() {
 void MpvVideoItem::syncHardwareClock() {
     if (!m_hardwareDecodeActive || !m_hardwareDecoder) {
         m_hardwarePresentationTimer.stop();
+        m_hardwareStallTimer.stop();
+        m_hardwareStallElapsed.invalidate();
         return;
     }
     const bool running = m_playing && !m_paused && !m_loading && !m_ended
@@ -969,9 +982,98 @@ void MpvVideoItem::syncHardwareClock() {
                     << "decodeCopies" << 0
                     << "presentationOnly" << true;
         }
+        if (!m_hardwareStallTimer.isActive())
+            m_hardwareStallTimer.start();
+        if (!m_hardwareStallElapsed.isValid())
+            resetHardwareStallWatchdog();
     } else {
         m_hardwarePresentationTimer.stop();
+        m_hardwareStallTimer.stop();
+        m_hardwareStallElapsed.invalidate();
     }
+}
+
+void MpvVideoItem::resetHardwareStallWatchdog() {
+    m_hardwareStallObservedSerial = m_sharedTextureFrameSerial;
+    m_hardwareStallObservedPosition = position();
+    m_hardwareStallElapsed.restart();
+}
+
+void MpvVideoItem::monitorHardwareProgress() {
+    const bool eligible = m_hardwareDecodeActive && m_hardwareDecoder
+            && !m_hardwareFirstFramePending && m_sharedTextureFrameSerial > 0
+            && m_playing && !m_paused && !m_loading && !m_ended
+            && !m_buffering && !m_seekPending;
+    if (!eligible) {
+        m_hardwareStallElapsed.invalidate();
+        return;
+    }
+
+    const int frameSerial = m_sharedTextureFrameSerial;
+    const double playbackPosition = position();
+    if (!m_hardwareStallElapsed.isValid()
+            || frameSerial != m_hardwareStallObservedSerial
+            || playbackPosition + 0.25 < m_hardwareStallObservedPosition) {
+        resetHardwareStallWatchdog();
+        return;
+    }
+    const double audioAdvance = playbackPosition - m_hardwareStallObservedPosition;
+    if (audioAdvance < 1.0 || m_hardwareStallElapsed.elapsed() < 3000)
+        return;
+
+    qWarning() << "native hardware video: playback frame stall detected"
+               << "generation" << m_hardwareDecoder->generation()
+               << "frameSerial" << frameSerial
+               << "stalledMs" << m_hardwareStallElapsed.elapsed()
+               << "audioAdvance" << audioAdvance
+               << "position" << playbackPosition
+               << "loading" << m_loading
+               << "buffering" << m_buffering;
+    restartHardwareDecodeAfterStall();
+}
+
+void MpvVideoItem::restartHardwareDecodeAfterStall() {
+    if (!m_hardwareDecodeActive || !m_hardwareDecoder
+            || m_originalVideoUrl.isEmpty())
+        return;
+    const double retainedPosition = position();
+    const int retainedFrameSerial = m_sharedTextureFrameSerial;
+    const int previousGeneration = m_hardwareDecoder->generation();
+    ++m_hardwareStallRecoveryCount;
+
+    m_hardwareStallTimer.stop();
+    m_hardwareStallElapsed.invalidate();
+    m_hardwarePresentationTimer.stop();
+    m_hardwareFirstFrameTimer.stop();
+    m_hardwareFirstFramePending = false;
+    m_hardwareDecoder->stop();
+
+    const bool restarted = m_hardwareDecoder->start(m_originalVideoUrl,
+                                                    retainedPosition);
+    m_hardwareDecodeActive = restarted;
+    if (!restarted) {
+        // Keep the existing complete compatibility path as the last resort.
+        // This branch is not used by the normal same-quality recovery.
+        m_hardwareDecodeActive = true;
+        fallbackToSoftwareDecode(QStringLiteral("runtime-stall-restart-failed"));
+        return;
+    }
+
+    m_hardwareFirstFramePending = true;
+    m_hardwarePresentationCadenceLogged = false;
+    m_hardwareDecoder->setPaused(false);
+    m_hardwareDecoder->updateMasterClock(retainedPosition, m_speed, true);
+    resetHardwareStallWatchdog();
+    syncHardwareClock();
+    qWarning() << "native hardware video: same-quality decoder restart completed"
+               << "previousGeneration" << previousGeneration
+               << "generation" << m_hardwareDecoder->generation()
+               << "recoveryCount" << m_hardwareStallRecoveryCount
+               << "position" << retainedPosition
+               << "frameSerialRetained" << retainedFrameSerial
+               << "audioReload" << false
+               << "mediaLoadSerial" << m_loadSerial
+               << "textureRetained" << true;
 }
 
 void MpvVideoItem::hardwareStreamReady(int generation, int width, int height,
@@ -1044,6 +1146,22 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
     }
     if (!m_hardwareDecodeActive || generation != m_hardwareDecoder->generation()
             || !m_backend) {
+        droid_media_buffer_release(buffer, 0, 0);
+        m_hardwareDecoder->frameRenderCompleted(generation);
+        return;
+    }
+
+    if (m_testHardwareStallEnabled && !m_testHardwareStallInjected
+            && m_sharedTextureFrameSerial >= 60) {
+        m_testHardwareStallInjected = true;
+        m_testHardwareStallGeneration = generation;
+        qWarning() << "native hardware video: deterministic frame stall injected"
+                   << "generation" << generation
+                   << "frameSerial" << m_sharedTextureFrameSerial
+                   << "oneShot" << true;
+    }
+    if (m_testHardwareStallInjected
+            && generation == m_testHardwareStallGeneration) {
         droid_media_buffer_release(buffer, 0, 0);
         m_hardwareDecoder->frameRenderCompleted(generation);
         return;
@@ -1389,6 +1507,7 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
     if (m_videoWidth != visibleWidth || m_videoHeight != visibleHeight)
         updateVideoGeometryFromMpv(visibleWidth, visibleHeight);
     if (!published) return;
+    resetHardwareStallWatchdog();
     m_hardwareFirstFramePending = false;
     m_hardwareFirstFrameTimer.stop();
     if (firstPublishedFrame) {

@@ -7,9 +7,9 @@ set -eu
 # retained. It does not disable Wi-Fi, mobile data, RNDIS, Lipstick or the
 # display compositor.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.23.aarch64.rpm}
-expected_sha=${2:-8b7106a175da121a38bd4fd02e74f3dbcb34be47a05cd4b00c84cd118d05597b}
-expected_package=silisili-native-devel-1.1.0-1.23.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.24.aarch64.rpm}
+expected_sha=${2:-7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6}
+expected_package=silisili-native-devel-1.1.0-1.24.aarch64
 phase=preflight
 test_pid=
 production_pid=

@@ -89,7 +89,11 @@ private:
     mutable std::mutex m_frameMutex;
     std::condition_variable m_frameReady;
     std::condition_variable m_frameSpace;
+    int m_inFlightPackets;
+    std::atomic<bool> m_targetFrameReached;
     std::atomic<int> m_maxDecodedFrames;
+    std::atomic<int> m_maxCodecPackets;
+    std::atomic<int> m_callbackFrameDrops;
     std::atomic<bool> m_feedThrottleLogged;
 
     _DroidMediaBuffer *m_guiPendingFrame;

@@ -37,14 +37,18 @@ const int kMaximumSourceHeight = 2304;
 const long long kMaximumSourcePixels = 4096LL * 2304LL;
 const long long kMaximumCompressedInputLeadUs = 1500000;
 
-int decodedFrameQueueLimit(int width, int height) {
+int decodedFrameQueueLimit(int width, int height, double framesPerSecond) {
     const long long pixels = static_cast<long long>(qMax(1, width))
             * static_cast<long long>(qMax(1, height));
     // A decoded 4K gralloc frame consumes roughly four times the contiguous
     // memory of 1080P. Keep only one waiting frame at UHD; the codec and the
     // EGL-fenced GUI hand-off already retain their own bounded buffers.
     if (pixels > 1920LL * 1080LL) return 1;
-    return 4;
+    // Eight frames cover the adaptation's minimum H.264/HEVC reorder runway
+    // without letting decoded gralloc ownership grow with the media duration.
+    // UHD remains at one application-owned waiting frame to protect CMA.
+    Q_UNUSED(framesPerSecond);
+    return 8;
 }
 
 long long steadyNowUs() {
@@ -91,9 +95,12 @@ DroidVideoDecoder::DroidVideoDecoder(MpvVideoItem *owner)
       m_paused(false), m_failed(false), m_ultraHdSource(false),
       m_seekSerial(0), m_seekTargetUs(0),
       m_dropBeforeUs(0), m_format(0), m_bsf(0), m_videoStream(-1),
-      m_codec(0), m_bufferQueue(0), m_guiPendingFrame(0),
-      m_maxDecodedFrames(4), m_feedThrottleLogged(false),
-      m_guiUpdateQueued(false), m_masterValid(false), m_masterRunning(false),
+      m_codec(0), m_bufferQueue(0), m_inFlightPackets(0),
+      m_targetFrameReached(false), m_maxDecodedFrames(8),
+      m_maxCodecPackets(8), m_callbackFrameDrops(0),
+      m_feedThrottleLogged(false),
+      m_guiPendingFrame(0), m_guiUpdateQueued(false),
+      m_masterValid(false), m_masterRunning(false),
       m_masterPositionUs(0), m_masterAnchorUs(0), m_masterSpeed(1.0),
       m_startWallUs(0), m_firstVideoPtsUs(-1) {
 }
@@ -112,7 +119,14 @@ bool DroidVideoDecoder::start(const QString &url, double startPosition) {
     m_paused.store(false);
     m_failed.store(false);
     m_ultraHdSource.store(false);
-    m_maxDecodedFrames.store(4);
+    m_targetFrameReached.store(false);
+    m_maxDecodedFrames.store(8);
+    m_maxCodecPackets.store(8);
+    m_callbackFrameDrops.store(0);
+    {
+        std::lock_guard<std::mutex> lock(m_frameMutex);
+        m_inFlightPackets = 0;
+    }
     m_feedThrottleLogged.store(false);
     m_seekSerial.store(0);
     m_seekTargetUs.store(static_cast<long long>(qMax(0.0, startPosition) * 1000000.0));
@@ -172,6 +186,7 @@ void DroidVideoDecoder::seek(double position) {
     const long long targetUs = static_cast<long long>(qMax(0.0, position) * 1000000.0);
     m_seekTargetUs.store(targetUs);
     m_dropBeforeUs.store(qMax<long long>(0, targetUs - 100000));
+    m_targetFrameReached.store(false);
     m_seekSerial.fetch_add(1);
     m_firstVideoPtsUs = -1;
     qInfo() << "native hardware video: in-place seek requested"
@@ -245,8 +260,6 @@ bool DroidVideoDecoder::openInput(int generation) {
         postFailure(generation, QStringLiteral("source-exceeds-device-buffer-budget"));
         return false;
     }
-    m_maxDecodedFrames.store(decodedFrameQueueLimit(sourceWidth, sourceHeight));
-
     const CodecMap *codecMap = codecMapFor(stream->codecpar->codec_id);
     if (!codecMap) {
         postFailure(generation, QStringLiteral("unsupported-video-codec"));
@@ -275,6 +288,13 @@ bool DroidVideoDecoder::openInput(int generation) {
     const AVRational frameRate = stream->avg_frame_rate.num > 0
             ? stream->avg_frame_rate : stream->r_frame_rate;
     const double fps = frameRate.den > 0 ? av_q2d(frameRate) : 30.0;
+    m_maxDecodedFrames.store(decodedFrameQueueLimit(sourceWidth, sourceHeight,
+                                                    fps));
+    // Bootstrap with eight credits so a backward keyframe seek can satisfy the
+    // adaptation's reference-frame reorder runway. Once the requested target
+    // is reached, UHD narrows to its one-frame CMA-safe sliding window while a
+    // normal source keeps the matching eight-frame input/output window.
+    m_maxCodecPackets.store(qMax(8, m_maxDecodedFrames.load()));
     metadata.parent.fps = qMax(1, qRound(fps));
     metadata.parent.flags = DROID_MEDIA_CODEC_HW_ONLY;
     if (stream->codecpar->extradata && stream->codecpar->extradata_size > 0) {
@@ -335,9 +355,11 @@ bool DroidVideoDecoder::openInput(int generation) {
             << "fps" << fps
             << "flags" << "HW_ONLY"
             << "decodedQueueLimit" << m_maxDecodedFrames.load()
+            << "compressedPacketLimit" << m_maxCodecPackets.load()
+            << "steadyPacketLimit" << m_maxDecodedFrames.load()
             << "compressedInputLeadLimitMs"
             << kMaximumCompressedInputLeadUs / 1000
-            << "binderCallbackBlocking" << true
+            << "binderCallbackBlocking" << false
             << "cpuPixelCopies" << 0;
     return true;
 }
@@ -350,9 +372,11 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
     // Some droidmedia adaptations accept compressed input asynchronously
     // instead of blocking when OMX is full. Without an application-side
     // window, FFmpeg can enqueue the entire DASH representation in seconds,
-    // consume all CMA and leave the GUI stuck in loading. Keep at most 1.5 s
-    // of compressed video ahead of the libmpv audio/master clock. This is the
-    // single-stream equivalent of RooTheater's bounded demux-to-codec queue.
+    // consume all CMA and leave the GUI stuck in loading. Match the compressed
+    // lead to a bounded 1.5-second packet window instead of relying on a
+    // blocked Binder callback for backpressure. The decoder needs this much
+    // runway to absorb network and hardware output latency without producing
+    // late frames at only a fraction of the source cadence.
     while (!m_stop.load() && !m_failed.load()
            && m_seekSerial.load() == seekSerial) {
         if (m_paused.load()) {
@@ -381,8 +405,39 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
             || m_seekSerial.load() != seekSerial)
         return false;
 
+    // Apply decoder backpressure on the private demux thread, never inside
+    // droidmedia's Binder frame callback. Count packets queued into OMX but
+    // not yet returned plus decoded frames waiting for presentation. Retain
+    // a queue-sized sliding packet window so H.264/HEVC reference-frame
+    // reordering cannot starve output while OMX can never return a decoded
+    // burst larger than the application is ready to retain.
+    {
+        std::unique_lock<std::mutex> lock(m_frameMutex);
+        m_frameSpace.wait(lock, [this, seekSerial]() {
+            const int packetLimit = m_targetFrameReached.load()
+                    ? qMax(1, m_maxDecodedFrames.load())
+                    : qMax(8, m_maxCodecPackets.load());
+            return m_stop.load() || m_failed.load()
+                    || m_seekSerial.load() != seekSerial
+                    || m_frames.size() + static_cast<size_t>(
+                        qMax(0, m_inFlightPackets))
+                    < static_cast<size_t>(packetLimit);
+        });
+        if (m_stop.load() || m_failed.load()
+                || m_seekSerial.load() != seekSerial)
+            return false;
+        ++m_inFlightPackets;
+    }
+
     void *copy = std::malloc(static_cast<size_t>(size));
-    if (!copy) return false;
+    if (!copy) {
+        {
+            std::lock_guard<std::mutex> lock(m_frameMutex);
+            if (m_inFlightPackets > 0) --m_inFlightPackets;
+        }
+        m_frameSpace.notify_all();
+        return false;
+    }
     std::memcpy(copy, data, static_cast<size_t>(size));
     DroidMediaCodecData codecData;
     std::memset(&codecData, 0, sizeof(codecData));
@@ -472,24 +527,50 @@ void DroidVideoDecoder::onFrameAvailable(_DroidMediaBuffer *buffer) {
     std::memset(&info, 0, sizeof(info));
     droid_media_buffer_get_info(buffer, &info);
     const long long ptsUs = info.timestamp / 1000;
-    // This is the bounded-backpressure point used by RooTheater's droidmedia
-    // path. Waiting only when the decoded queue is genuinely full prevents OMX
-    // from decoding the whole DASH file ahead, while the normal callback path
-    // returns immediately at display cadence.
-    std::unique_lock<std::mutex> lock(m_frameMutex);
-    m_frameSpace.wait(lock, [this]() {
-        return m_stop.load() || m_failed.load()
-                || m_frames.size() < static_cast<size_t>(
+    if (ptsUs >= m_dropBeforeUs.load()) {
+        bool expected = false;
+        if (m_targetFrameReached.compare_exchange_strong(expected, true)) {
+            qInfo() << "native hardware video: target frame decode window reached"
+                    << "generation" << m_generation.load()
+                    << "ptsUs" << ptsUs
+                    << "steadyPacketLimit" << m_maxDecodedFrames.load();
+        }
+    }
+    // This callback runs on the adaptation's Binder delivery thread. Blocking
+    // it while the GUI queue is full leaves later asynchronous BufferQueue
+    // transactions pending in the kernel and can permanently stop video output
+    // while libmpv audio continues. Keep the queue bounded without blocking:
+    // preserve its earliest consecutive frames and discard an excess incoming
+    // output. Compressed input is independently bounded by time and packet
+    // count, so the next accepted frame remains adjacent instead of jumping
+    // far into the future, and whole-file/CMA growth cannot return.
+    bool droppedIncoming = false;
+    {
+        std::lock_guard<std::mutex> lock(m_frameMutex);
+        if (m_inFlightPackets > 0) --m_inFlightPackets;
+        const size_t queueLimit = static_cast<size_t>(
                     qMax(1, m_maxDecodedFrames.load()));
-    });
-    if (m_stop.load() || m_failed.load()) {
-        lock.unlock();
+        if (m_frames.size() >= queueLimit) {
+            droppedIncoming = true;
+        } else {
+            m_frames.push_back(PendingFrame{buffer, ptsUs});
+        }
+    }
+    if (droppedIncoming) {
         droid_media_buffer_release(buffer, 0, 0);
+        const int dropCount = m_callbackFrameDrops.fetch_add(1) + 1;
+        if (dropCount == 1 || dropCount % 120 == 0) {
+            qWarning() << "native hardware video: nonblocking callback dropped excess frame"
+                       << "generation" << m_generation.load()
+                       << "drops" << dropCount
+                       << "queueLimit" << m_maxDecodedFrames.load()
+                       << "binderCallbackBlocking" << false;
+        }
+        m_frameSpace.notify_all();
         return;
     }
-    m_frames.push_back(PendingFrame{buffer, ptsUs});
-    lock.unlock();
     m_frameReady.notify_one();
+    m_frameSpace.notify_all();
 }
 
 void DroidVideoDecoder::presentLoop(int generation) {
@@ -508,7 +589,7 @@ void DroidVideoDecoder::presentLoop(int generation) {
             frame = m_frames.front();
             m_frames.pop_front();
         }
-        m_frameSpace.notify_one();
+        m_frameSpace.notify_all();
         if (frame.ptsUs < m_dropBeforeUs.load()) {
             droid_media_buffer_release(frame.buffer, 0, 0);
             continue;
@@ -608,6 +689,7 @@ void DroidVideoDecoder::clearDecodedFrames() {
     {
         std::lock_guard<std::mutex> lock(m_frameMutex);
         frames.swap(m_frames);
+        m_inFlightPackets = 0;
     }
     for (std::deque<PendingFrame>::const_iterator frame = frames.begin();
          frame != frames.end(); ++frame) {
@@ -632,6 +714,8 @@ void DroidVideoDecoder::postFailure(int generation, const QString &reason) {
                << "reason" << effectiveReason
                << "fallback" << (softwareFallbackSafe
                                   ? "software-same-position" : "suppressed-unsafe");
+    m_frameReady.notify_all();
+    m_frameSpace.notify_all();
     QMetaObject::invokeMethod(m_owner, "hardwareDecodeFailed", Qt::QueuedConnection,
                               Q_ARG(int, generation), Q_ARG(QString, effectiveReason));
 }
