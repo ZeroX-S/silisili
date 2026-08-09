@@ -5,11 +5,94 @@ Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.16.aarch64`
-- RPM SHA-256: `66f42ca9527cf30cc18dd6fee9dfec7937542a5880a77de427c9dd7e4063af4b`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.16.aarch64.rpm`
-- Build/install date: `2026-08-09`
+- NEVRA: `silisili-native-devel-1.1.0-1.23.aarch64`
+- RPM SHA-256: `8b7106a175da121a38bd4fd02e74f3dbcb34be47a05cd4b00c84cd118d05597b`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.23.aarch64.rpm`
+- Build/install date: `2026-08-10`
 - stable package state during this validation: absent
+
+## Latest 1.23 UHD loading, controls and input pacing
+
+All checks used resolver, decoder, playback-session, physical touchscreen,
+memory, frame-window and package markers. No screenshot interpretation or
+visual model was used.
+
+- A direct hardware decoder that missed its first-frame deadline could restart
+  the same source through the software path with a newer media-load serial.
+  The playback session previously kept waiting for the older serial even while
+  new video frames were being presented, leaving the loading spinner active
+  and disabling the transport controls. The session now adopts a newer serial
+  only within the same active load and continues to reject genuinely stale
+  frames from older videos.
+- The droidmedia packet feeder now limits compressed video to 1500 ms ahead of
+  libmpv's master clock and discards packets from an obsolete seek serial.
+  FFmpeg can no longer enqueue an entire long DASH representation into the
+  asynchronous OMX adaptation and exhaust device memory or CMA while the user
+  waits at a spinner.
+- The 4K request (`qn=120`) for `BV1P4ddBBEJF` safely selected quality 116 at
+  1920x1080/60 on this device. It resumed from the recorded `14s` history
+  position, cleared loading, and accepted physical touchscreen pause and resume
+  without changing the process.
+- The final 60-second run collected 63 qualifying display windows with a
+  minimum `55.281 fps`. Queue pressure remained zero, CMA stayed above the
+  32768 KiB guard, no unverified UHD OMX allocation or UHD software fallback
+  occurred, and the 8K request (`qn=127`) obeyed the same safe ceiling.
+- The exact installed RPM passed `rpm -V`; its final SHA-256 is
+  `8b7106a175da121a38bd4fd02e74f3dbcb34be47a05cd4b00c84cd118d05597b`.
+
+## Historical 1.22 UHD safety and continuous playback
+
+All checks used resolver, decoder, process, memory, frame-window and package
+markers. No screenshot interpretation or visual model was used.
+
+- The complete server-advertised quality catalog remains visible, including
+  4K and 8K. Because droidmedia capability enumeration alone did not prove
+  that this adaptation could allocate and present UHD OMX buffers, the default
+  operational ceiling for an unverified device is quality 116 (real
+  1920x1080/60). Explicitly verified devices can opt into the guarded UHD
+  first-frame path with `SILISILI_NATIVE_ALLOW_UNVERIFIED_ULTRAHD=1`.
+- The 4K request (`qn=120`) and 8K request (`qn=127`) for
+  `BV1P4ddBBEJF` both selected quality 116 at 1920x1080. Neither test attempted
+  an UHD OMX allocation or phone-side UHD software decode.
+- The 4K-request regression held playback for 60 seconds, collected 63
+  qualifying frame windows and measured a minimum `46.766 fps`, above the
+  required 45 fps floor. Frame indices advanced throughout, frame-queue
+  pressure remained zero, and free CMA stayed above the 32768 KiB guard.
+- The subsequent 8K-request guard held the same safe representation for 20
+  seconds with advancing frames. The production launcher then started
+  normally; the package stayed installed and `rpm -V` was clean.
+
+## Historical 1.22 physical Wi-Fi disconnect recovery
+
+All checks used physical touchscreen input plus request/model, process, package
+and QML markers. The exact user sequence disabled Wi-Fi during an in-flight
+home-page swipe, restored it during cleanup, and did not use a visual model.
+
+- Every bounded `QNetworkReply` now observes Qt's online state, the owning
+  manager's accessibility and the default bearer identity. A transition to
+  offline or a different bearer marks and aborts the obsolete reply instead of
+  waiting for its 7–12 second hard timeout.
+- Home, live, dynamic and inbox refresh/category operations cancel their active
+  reply. Generation guards ignore a late response, preventing stale rows or an
+  old error from overwriting the new page state. Danmaku requests use the same
+  central timeout and connectivity lifecycle instead of a separate raw timer.
+- Home pagination now publishes the failure/error gate before
+  `loadingChanged(false)`. The list-end observers therefore cannot re-enter
+  `loadMore()` and start an unbounded offline request loop while the user keeps
+  scrolling.
+- With Wi-Fi disabled in the middle of a real swipe, the application retained
+  the same PID. All 12 subsequent physical swipes were accepted, the UI
+  emitted a scroll-end marker, `contentY` advanced to 6403, and no request
+  failures accumulated. Wi-Fi was restored before the gate exited.
+- The deterministic follow-up injected a connection transition into the first
+  home request, then exercised 64 continued-scroll load attempts. It observed
+  no offline request storm, refreshed successfully in the same PID after three
+  recovery polls, and started the ordinary production launcher without test
+  variables.
+- Production PID `22653` loaded the recommended home feed, remained alive with
+  the same start time, passed the QML/crash marker scan, and left
+  `rpm -V silisili-native-devel` clean. The final AArch64 RPM digest is
+  `387f1716a243c50a2bfece0576725934e9acee2061875bf482f29a82e49d3d4c`.
 
 ## Latest 1.16 complete quality catalog and exact media selection
 

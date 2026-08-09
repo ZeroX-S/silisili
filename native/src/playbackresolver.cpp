@@ -11,6 +11,8 @@
 #include <QHash>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QSettings>
+#include <QStringList>
 #include <QTimer>
 #include <QUrlQuery>
 
@@ -20,6 +22,9 @@ namespace {
 const int kDefaultQuality = 80;             // Restore the normal 1080P path.
 const int kProgressiveFallbackQuality = 64; // Keep the old reliable 720P progressive path.
 const int kCapabilityProbeQuality = 127;    // Ask for the complete account-visible DASH ladder.
+const int kMaximumDirectSourceWidth = 4096;
+const int kMaximumDirectSourceHeight = 2304;
+const qint64 kMaximumDirectSourcePixels = 4096LL * 2304LL;
 
 int normalizedQuality(int requestedQuality) {
     return requestedQuality > 0
@@ -41,6 +46,49 @@ int codecRank(int codecid) {
     return 9;
 }
 
+bool isDirectRouteCodec(int codecid) {
+    // The direct droidmedia path currently maps AVC and HEVC. Bilibili's 8K
+    // representation is commonly AV1; handing that to libmpv software decode
+    // on a phone can consume gigabytes before the first frame is presented.
+    return codecid == 7 || codecid == 12;
+}
+
+int dashFramesPerSecond(const QJsonObject &video) {
+    const QJsonValue value = video.value(QStringLiteral("frame_rate"));
+    if (value.isDouble()) return qRound(value.toDouble());
+    const QString text = value.toString().trimmed();
+    if (text.isEmpty()) return 60; // Fail closed for an unknown UHD cadence.
+    const QStringList parts = text.split(QLatin1Char('/'));
+    bool numeratorOk = false;
+    const double numerator = parts.value(0).toDouble(&numeratorOk);
+    bool denominatorOk = true;
+    const double denominator = parts.size() > 1
+            ? parts.value(1).toDouble(&denominatorOk) : 1.0;
+    if (!numeratorOk || !denominatorOk || denominator <= 0.0) return 60;
+    return qMax(1, qRound(numerator / denominator));
+}
+
+bool isWithinDirectFrameBudget(const QJsonObject &video,
+                               const DirectVideoCapabilities &capabilities) {
+    const int width = video.value(QStringLiteral("width")).toInt();
+    const int height = video.value(QStringLiteral("height")).toInt();
+    if (width <= 0 || height <= 0) return false;
+    const qint64 pixels = static_cast<qint64>(width) * static_cast<qint64>(height);
+    const int longSide = qMax(width, height);
+    const int shortSide = qMin(width, height);
+    const bool insideApplicationBudget = longSide <= kMaximumDirectSourceWidth
+            && shortSide <= kMaximumDirectSourceHeight
+            && pixels <= kMaximumDirectSourcePixels;
+    if (!insideApplicationBudget) return false;
+    if (!capabilities.available()) {
+        // A device without a positive OMX capability result may still use the
+        // existing software fallback, but never feed it phone-hostile UHD.
+        return longSide <= 1920 && shortSide <= 1080;
+    }
+    return capabilities.supports(video.value(QStringLiteral("codecid")).toInt(),
+                                 width, height, dashFramesPerSecond(video));
+}
+
 bool isBetterVideo(const QJsonObject &candidate, const QJsonObject &best) {
     if (best.isEmpty()) return true;
     const int candidateQuality = candidate.value(QStringLiteral("id")).toInt();
@@ -59,16 +107,33 @@ bool isBetterVideo(const QJsonObject &candidate, const QJsonObject &best) {
             > best.value(QStringLiteral("bandwidth")).toInt();
 }
 
-QJsonObject chooseDashVideo(const QJsonArray &videos, int requestedQuality) {
-    const int desiredQuality = normalizedQuality(requestedQuality);
+QJsonObject chooseDashVideo(const QJsonArray &videos, int requestedQuality,
+                            const DirectVideoCapabilities &capabilities,
+                            int operationalMaximumQuality,
+                            bool *ultraHdGuardApplied) {
+    const int normalizedRequestedQuality = normalizedQuality(requestedQuality);
+    const int desiredQuality = qMin(normalizedRequestedQuality,
+                                    operationalMaximumQuality);
     QJsonObject best;
+    int highestRejectedQuality = normalizedRequestedQuality > desiredQuality
+            ? normalizedRequestedQuality : 0;
 
     for (const QJsonValue &value : videos) {
         const QJsonObject video = value.toObject();
         if (dashMediaUrl(video).isEmpty()) continue;
         const int quality = video.value(QStringLiteral("id")).toInt();
         if (quality <= 0 || quality > desiredQuality) continue;
+        if (!isDirectRouteCodec(video.value(QStringLiteral("codecid")).toInt())
+                || !isWithinDirectFrameBudget(video, capabilities)) {
+            highestRejectedQuality = qMax(highestRejectedQuality, quality);
+            continue;
+        }
         if (isBetterVideo(video, best)) best = video;
+    }
+    if (ultraHdGuardApplied) {
+        *ultraHdGuardApplied = highestRejectedQuality > 0
+                && (best.isEmpty()
+                    || highestRejectedQuality > best.value(QStringLiteral("id")).toInt());
     }
     // Never silently substitute a representation above the requested id.
     // A server can return only its current highest DASH item; choosing that
@@ -153,9 +218,80 @@ QString fallbackQualityLabel(const QHash<int, QString> &labelsById, int quality,
 }
 }
 
-PlaybackResolver::PlaybackResolver(AccountService *accountService, QObject *parent)
-    : QObject(parent), m_accountService(accountService), m_loading(false), m_selectedQuality(0),
-      m_revision(0), m_requestSerial(0), m_waitingPrefetchSerial(0) {}
+DirectVideoCapabilities::DirectVideoCapabilities()
+    : avc30MaximumWidth(0), avc30MaximumHeight(0),
+      avc60MaximumWidth(0), avc60MaximumHeight(0),
+      hevc30MaximumWidth(0), hevc30MaximumHeight(0),
+      hevc60MaximumWidth(0), hevc60MaximumHeight(0) {}
+
+bool DirectVideoCapabilities::available() const {
+    return (avc30MaximumWidth > 0 && avc30MaximumHeight > 0)
+            || (avc60MaximumWidth > 0 && avc60MaximumHeight > 0)
+            || (hevc30MaximumWidth > 0 && hevc30MaximumHeight > 0)
+            || (hevc60MaximumWidth > 0 && hevc60MaximumHeight > 0);
+}
+
+bool DirectVideoCapabilities::supports(int codecId, int width, int height,
+                                       int framesPerSecond) const {
+    const bool highCadence = framesPerSecond > 30;
+    const int maximumWidth = codecId == 7
+            ? (highCadence ? avc60MaximumWidth : avc30MaximumWidth)
+            : codecId == 12
+              ? (highCadence ? hevc60MaximumWidth : hevc30MaximumWidth) : 0;
+    const int maximumHeight = codecId == 7
+            ? (highCadence ? avc60MaximumHeight : avc30MaximumHeight)
+            : codecId == 12
+              ? (highCadence ? hevc60MaximumHeight : hevc30MaximumHeight) : 0;
+    if (maximumWidth <= 0 || maximumHeight <= 0) return false;
+    const int longSide = qMax(width, height);
+    const int shortSide = qMin(width, height);
+    return longSide <= qMax(maximumWidth, maximumHeight)
+            && shortSide <= qMin(maximumWidth, maximumHeight)
+            && static_cast<qint64>(width) * static_cast<qint64>(height)
+               <= static_cast<qint64>(maximumWidth) * maximumHeight;
+}
+
+PlaybackResolver::PlaybackResolver(
+        AccountService *accountService,
+        const DirectVideoCapabilities &directCapabilities, QObject *parent)
+    : QObject(parent), m_accountService(accountService),
+      m_directCapabilities(directCapabilities), m_loading(false), m_selectedQuality(0),
+      m_operationalMaximumQuality(116),
+      m_revision(0), m_requestSerial(0), m_waitingPrefetchSerial(0) {
+    QSettings settings;
+    const bool allowUnverifiedUltraHd =
+            qgetenv("SILISILI_NATIVE_ALLOW_UNVERIFIED_ULTRAHD")
+            == QByteArrayLiteral("1");
+    const int safeDefaultQuality = allowUnverifiedUltraHd ? 127 : 116;
+    if (qgetenv("SILISILI_NATIVE_TEST_RESET_OPERATIONAL_QUALITY")
+            == QByteArrayLiteral("1")) {
+        settings.remove(QStringLiteral("playback/operationalMaximumQualityV2"));
+        settings.sync();
+        qInfo() << "native player: operational quality ceiling reset for regression";
+    }
+    m_operationalMaximumQuality = qBound(
+                64, settings.value(QStringLiteral(
+                    "playback/operationalMaximumQualityV2"),
+                    safeDefaultQuality).toInt(), 127);
+    qInfo() << "native player: persisted operational quality ceiling"
+            << m_operationalMaximumQuality
+            << "safeDefault" << safeDefaultQuality
+            << "unverifiedUltraHdOptIn" << allowUnverifiedUltraHd;
+}
+
+void PlaybackResolver::setOperationalMaximumQuality(int quality,
+                                                     const QString &reason) {
+    const int boundedQuality = qBound(64, quality, 127);
+    if (boundedQuality >= m_operationalMaximumQuality) return;
+    m_operationalMaximumQuality = boundedQuality;
+    QSettings settings;
+    settings.setValue(QStringLiteral("playback/operationalMaximumQualityV2"),
+                      m_operationalMaximumQuality);
+    settings.sync();
+    qWarning() << "native player: operational quality ceiling lowered"
+               << "maximumQuality" << m_operationalMaximumQuality
+               << "reason" << reason << "persisted" << true;
+}
 
 QByteArray PlaybackResolver::cookieHeader() const {
     return m_accountService ? m_accountService->cookieHeader() : QByteArray();
@@ -476,8 +612,12 @@ void PlaybackResolver::publishResponse(bool pgc, const QString &aid,
             << "retainedChoices" << m_qualities.size();
 
     const QJsonObject dash = data.value(QStringLiteral("dash")).toObject();
+    bool ultraHdGuardApplied = false;
     const QJsonObject dashVideo = chooseDashVideo(
-                dash.value(QStringLiteral("video")).toArray(), quality);
+                dash.value(QStringLiteral("video")).toArray(), quality,
+                m_directCapabilities,
+                m_operationalMaximumQuality,
+                &ultraHdGuardApplied);
     if (highQualityAttempt && !dashVideo.isEmpty()) {
         const int dashQuality = dashVideo.value(QStringLiteral("id")).toInt();
         const int dashHeight = dashVideo.value(QStringLiteral("height")).toInt();
@@ -497,6 +637,31 @@ void PlaybackResolver::publishResponse(bool pgc, const QString &aid,
                     << "audio" << dashAudio.value(QStringLiteral("id")).toInt()
                     << "choices" << m_qualities.size()
                     << "prefetched" << fromPrefetch;
+            if (ultraHdGuardApplied) {
+                qWarning() << "native player: unsafe ultra-HD representation avoided"
+                           << "requested" << quality
+                           << "selected" << dashQuality
+                           << "selectedGeometry"
+                           << dashVideo.value(QStringLiteral("width")).toInt()
+                           << "x" << dashHeight
+                           << "maximumGeometry" << kMaximumDirectSourceWidth
+                           << "x" << kMaximumDirectSourceHeight
+                           << "deviceAvc30Maximum"
+                           << m_directCapabilities.avc30MaximumWidth << "x"
+                           << m_directCapabilities.avc30MaximumHeight
+                           << "deviceAvc60Maximum"
+                           << m_directCapabilities.avc60MaximumWidth << "x"
+                           << m_directCapabilities.avc60MaximumHeight
+                           << "deviceHevc30Maximum"
+                           << m_directCapabilities.hevc30MaximumWidth << "x"
+                           << m_directCapabilities.hevc30MaximumHeight
+                           << "deviceHevc60Maximum"
+                           << m_directCapabilities.hevc60MaximumWidth << "x"
+                           << m_directCapabilities.hevc60MaximumHeight
+                           << "operationalMaximumQuality"
+                           << m_operationalMaximumQuality
+                           << "softwareFallback" << false;
+            }
             emit changed();
             return;
         }

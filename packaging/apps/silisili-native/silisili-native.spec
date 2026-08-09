@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.18
+Release:        1.23
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -100,6 +100,53 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.23
+- Bound compressed droidmedia input to 1.5 seconds ahead of the audio clock so
+  asynchronous OMX adaptations cannot queue an entire long video, exhaust CMA
+  and leave the player stuck in loading.
+- Reconcile the internal hardware-to-software load serial, retain pause/seek
+  intent during a quality transition, and keep transport controls interactive
+  beneath a passive loading indicator.
+- Keep the 1200 ms first-frame safety deadline for verified UHD opt-in while
+  allowing ordinary 1080P hardware startup 3500 ms before software fallback.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.22
+- Treat droidmedia's advertised UHD support as provisional and default
+  unverified devices to the real 1080P60 hardware representation while keeping
+  every server-advertised quality row visible.
+- Retain an explicit verified-device UHD opt-in with a 1200 ms first-frame
+  watchdog; a failed opt-in persists the stable operational ceiling and
+  retries at 1080P60 without unsafe UHD software decode.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.21
+- Probe AVC/HEVC OMX limits per device and cadence (30/60fps), then resolve
+  requested 4K/8K rows to
+  the highest real representation the installed hardware decoder declares,
+  avoiding codecs that can be created but never output a first UHD frame.
+- Gate home-feed pagination after a network failure before publishing
+  loading=false, preventing the loading/contentY handlers from recursively
+  starting offline requests while the user continues scrolling.
+- Exercise the exact pagination failure with 64 continued-scroll loadMore
+  attempts and require same-process refresh recovery.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.20
+- Keep droidmedia's reference bounded callback backpressure, retain only one
+  waiting gralloc frame above 1080P, and stop OMX before worker joins so a
+  blocked input queue cannot freeze teardown.
+- Reject dimensions beyond the bounded 4096x2304 direct-decoder allocation
+  budget.
+- Keep 8K and unsupported AV1 rows visible while resolving them to the highest
+  safe real AVC/HEVC representation instead of attempting phone-side 8K
+  software decode.
+
+* Sun Aug 09 2026 silisili contributors <noreply@localhost> - 1.1.0-1.19
+- Abort obsolete replies immediately when Qt reports an offline or changed
+  network bearer instead of leaving pages blocked until their hard timeout.
+- Let refresh and category changes cancel in-flight home, live, dynamic, and
+  inbox requests, while generation guards reject stale responses.
+- Apply the same bounded connectivity lifecycle to danmaku requests and add a
+  deterministic same-process network recovery regression.
+
 * Sun Aug 09 2026 silisili contributors <noreply@localhost> - 1.1.0-1.18
 - Suppress notification-surface remapping while asynchronous lca-tool task
   activation returns the existing player to the foreground, preventing a PiP

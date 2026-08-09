@@ -82,7 +82,11 @@ void HomeFeedModel::refresh() {
 }
 
 void HomeFeedModel::loadMore() {
-    if (m_loading || !m_hasMore) return;
+    // Automatic pagination can be triggered by contentY, movement, count and
+    // loading notifications in the same GUI-thread event turn.  Once a page
+    // request has failed, do not let those signals immediately create another
+    // offline request.  An explicit refresh clears the error in requestFeed().
+    if (m_loading || !m_hasMore || !m_errorMessage.isEmpty()) return;
     requestFeed(false);
 }
 
@@ -109,6 +113,12 @@ void HomeFeedModel::loadFeed(const QString &feedKind) {
 
 void HomeFeedModel::requestFeed(bool reset) {
     const int requestSerial = ++m_requestSerial;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+        qInfo() << "native home: obsolete request cancelled for refresh";
+    }
     setLoading(true);
     setErrorMessage(QString());
     const int requestedPage = qMax(1, m_nextPage);
@@ -128,17 +138,32 @@ void HomeFeedModel::requestFeed(bool reset) {
     const QString requestedKind = m_feedKind;
     const bool requestedReset = reset;
     QNetworkReply *reply = m_network.get(request);
+    m_activeReply = reply;
     NetworkUtils::setReplyTimeout(reply, 12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply, requestSerial, requestedKind, requestedReset, requestedPage]() {
         const QByteArray payload = reply->readAll();
         const QNetworkReply::NetworkError networkError = reply->error();
+        const bool timedOut = NetworkUtils::replyTimedOut(reply);
+        const bool networkChanged = NetworkUtils::replyNetworkChanged(reply);
         const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (m_activeReply == reply) m_activeReply.clear();
         reply->deleteLater();
         if (requestSerial != m_requestSerial) return;
         if (networkError != QNetworkReply::NoError) {
+            setErrorMessage(networkChanged ? tr("网络已切换，请下拉重试")
+                            : timedOut ? tr("网络请求超时，请下拉重试")
+                            : requestedReset ? tr("网络请求失败，请下拉重试")
+                                             : tr("加载更多失败，请下拉刷新后重试"));
+            // Publish the failure gate before loadingChanged(false).  The home
+            // page observes loadingChanged and may synchronously call
+            // loadMore() while it is still near the list end; reversing this
+            // order caused a re-entrant offline request storm and a frozen UI.
             setLoading(false);
-            setErrorMessage(requestedReset ? tr("网络请求失败，请下拉重试")
-                                           : tr("加载更多失败，可继续滑到底部重试"));
+            qWarning() << "native home: request failed"
+                       << "serial" << requestSerial
+                       << "timeout" << timedOut
+                       << "networkChanged" << networkChanged
+                       << "error" << networkError;
             return;
         }
         QJsonParseError parseError;

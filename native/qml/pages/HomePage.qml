@@ -4,6 +4,7 @@ import "../components"
 
 Page {
     id: page
+    property int networkScrollReleaseCount: 0
     allowedOrientations: Orientation.All
 
     ResponsivePageMetrics {
@@ -63,9 +64,22 @@ Page {
         }
         onAtYEndChanged: maybeLoadMore()
         onContentYChanged: maybeLoadMore()
+        onMovementStarted: {
+            if (nativeTestPage === "network-scroll")
+                console.log("native home: physical scroll movement started",
+                            "contentY", Math.round(contentY))
+        }
         onMovementEnded: {
             maybeLoadMore()
             prepareCenteredVideo()
+            if (nativeTestPage === "network-scroll") {
+                ++page.networkScrollReleaseCount
+                console.log("native home: physical scroll movement ended",
+                            "count", page.networkScrollReleaseCount,
+                            "contentY", Math.round(contentY),
+                            "loading", homeFeed.loading,
+                            "error", homeFeed.errorMessage.length > 0)
+            }
         }
         onCountChanged: maybeLoadMore()
 

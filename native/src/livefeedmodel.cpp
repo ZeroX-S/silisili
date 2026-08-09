@@ -65,8 +65,14 @@ void LiveFeedModel::setHasMore(bool value) {
 }
 
 void LiveFeedModel::refresh() {
-    if (m_loading) return;
     ++m_generation;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+        qInfo() << "native live feed: obsolete request cancelled for refresh";
+    }
+    setLoading(false);
     m_page = 1;
     m_seenRoomIds.clear();
     beginResetModel();
@@ -125,15 +131,25 @@ void LiveFeedModel::requestPage(bool reset) {
     const int requestPage = m_page;
     const int generation = m_generation;
     QNetworkReply *reply = m_network.get(request);
+    m_activeReply = reply;
     NetworkUtils::setReplyTimeout(reply, 12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply, requestPage, generation, reset]() {
         const QByteArray payload = reply->readAll();
         const QNetworkReply::NetworkError networkError = reply->error();
+        const bool timedOut = NetworkUtils::replyTimedOut(reply);
+        const bool networkChanged = NetworkUtils::replyNetworkChanged(reply);
+        if (m_activeReply == reply) m_activeReply.clear();
         reply->deleteLater();
         if (generation != m_generation) return;
         setLoading(false);
         if (networkError != QNetworkReply::NoError) {
-            setErrorMessage(tr("直播列表请求失败"));
+            setErrorMessage(networkChanged ? tr("网络已切换，请下拉重试")
+                            : timedOut ? tr("直播列表请求超时，请下拉重试")
+                                       : tr("直播列表请求失败"));
+            qWarning() << "native live feed: request failed"
+                       << "timeout" << timedOut
+                       << "networkChanged" << networkChanged
+                       << "error" << networkError;
             setHasMore(false);
             return;
         }

@@ -187,6 +187,11 @@ void DynamicFeedModel::setSection(const QString &section) {
     // still completing for the previous section before the new page refreshes.
     // Otherwise a late video reply can append into the non-video model.
     ++m_generation;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+    }
     m_section = normalized;
     m_loading = false;
     m_hasMore = true;
@@ -202,8 +207,14 @@ void DynamicFeedModel::setSection(const QString &section) {
 }
 
 void DynamicFeedModel::refresh() {
-    if (m_loading) return;
     ++m_generation;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+        qInfo() << "native dynamic: obsolete request cancelled for refresh";
+    }
+    m_loading = false;
     m_offset.clear();
     m_seen.clear();
     m_hasMore = true;
@@ -250,12 +261,15 @@ void DynamicFeedModel::request(bool reset) {
     request.setRawHeader("Cookie", m_account->cookieHeader());
 
     QNetworkReply *reply = m_network.get(request);
+    m_activeReply = reply;
     NetworkUtils::setReplyTimeout(reply, 12000);
     connect(reply, &QNetworkReply::finished, this,
             [this, reply, reset, requestGeneration, requestSection]() {
         const QByteArray payload = reply->readAll();
         const bool timedOut = NetworkUtils::replyTimedOut(reply);
+        const bool networkChanged = NetworkUtils::replyNetworkChanged(reply);
         const QNetworkReply::NetworkError networkError = reply->error();
+        if (m_activeReply == reply) m_activeReply.clear();
         reply->deleteLater();
         if (requestGeneration != m_generation || requestSection != m_section) {
             qInfo() << "native dynamic: stale reply ignored section" << requestSection
@@ -269,10 +283,12 @@ void DynamicFeedModel::request(bool reset) {
         if (networkError != QNetworkReply::NoError || parseError.error != QJsonParseError::NoError
                 || root.value(QStringLiteral("code")).toInt(-1) != 0) {
             const int code = root.value(QStringLiteral("code")).toInt(-1);
-            m_errorMessage = timedOut ? tr("动态请求超时，请下拉重试")
-                                      : tr("动态请求失败或登录已过期");
+            m_errorMessage = networkChanged ? tr("网络已切换，请下拉重试")
+                             : timedOut ? tr("动态请求超时，请下拉重试")
+                                        : tr("动态请求失败或登录已过期");
             qWarning() << "native dynamic: request failed section" << requestSection
-                       << "timeout" << timedOut << "network" << networkError
+                       << "timeout" << timedOut << "networkChanged" << networkChanged
+                       << "network" << networkError
                        << "code" << code;
             emit stateChanged();
             return;

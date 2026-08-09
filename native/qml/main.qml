@@ -12,6 +12,8 @@ ApplicationWindow {
     property bool compactTestTransitionComplete: false
     property int compactContinuityStage: 0
     property bool multipartEofTestRequested: false
+    property int networkRecoveryStage: 0
+    property bool networkRecoveryComplete: false
     allowedOrientations: runtimeOrientations
     initialPage: nativeTestPage === "navigation" ? navigationTestPage
                  : nativeTestPage === "about" ? aboutTestPage
@@ -74,10 +76,57 @@ ApplicationWindow {
             videoTitle: qsTr("横屏与悬浮窗测试")
             historyResumeRequested: nativeTestPage === "history-resume"
             historyResumePosition: nativeTestStartPosition
+            initialPlaybackQuality: nativeTestQuality > 0 ? nativeTestQuality : 80
             // Direct regression models a tap after the visible home cards
             // have finished their bounded metadata prefetch.
             deferAutoplayUntilPrefetched: nativeTestPage !== "history-resume"
                                            && nativeTestContentMode !== "direct"
+        }
+    }
+
+    Timer {
+        // A dedicated device regression loads the first home page, injects a
+        // connectivity loss into pagination, then repeats loadMore as a fast
+        // scroll would.  The failed-request gate must keep all of those calls
+        // non-blocking before an explicit refresh recovers in the same process.
+        interval: 100
+        repeat: true
+        running: nativeTestPage === "network-recovery"
+                 && !appWindow.networkRecoveryComplete
+        onTriggered: {
+            if (homeFeed.loading)
+                return
+            if (appWindow.networkRecoveryStage === 0
+                    && homeFeed.errorMessage.length === 0
+                    && homeFeed.hasMore) {
+                appWindow.networkRecoveryStage = 1
+                console.log("native network recovery: initial page ready")
+                homeFeed.loadMore()
+                console.log("native network recovery: pagination requested")
+                return
+            }
+            if (appWindow.networkRecoveryStage === 1
+                    && homeFeed.errorMessage.length > 0) {
+                for (var attempt = 0; attempt < 64; ++attempt)
+                    homeFeed.loadMore()
+                console.log("native network recovery: continued scroll survived",
+                            "attempts", 64,
+                            "loading", homeFeed.loading,
+                            "errorRetained", homeFeed.errorMessage.length > 0)
+                if (homeFeed.loading)
+                    return
+                appWindow.networkRecoveryStage = 2
+                homeFeed.refresh()
+                console.log("native network recovery: retry requested")
+                return
+            }
+            if (appWindow.networkRecoveryStage === 2
+                    && homeFeed.errorMessage.length === 0) {
+                appWindow.networkRecoveryComplete = true
+                console.log("native network recovery: ready",
+                            "loading", homeFeed.loading,
+                            "hasMore", homeFeed.hasMore)
+            }
         }
     }
 

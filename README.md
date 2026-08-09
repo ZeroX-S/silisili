@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.18` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.23` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -30,7 +30,7 @@
 
 ## 原生版界面
 
-以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上当前安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。点击图片可查看原始分辨率。
+以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.23` 的网络、超高清保护和加载状态修复不改变这些界面。点击图片可查看原始分辨率。
 
 <p align="center">
   <a href="docs/screenshots/native-readme/home.png"><img src="docs/screenshots/native-readme/home.png" alt="原生首页" width="23%"></a>
@@ -69,12 +69,14 @@
 - 历史记录、收藏夹、订阅合集、追番、追剧和稍后再看。
 - 从历史记录进入视频时恢复到已记录位置，播放过程中持续上报进度。
 - 主评论、回复楼层、发布评论、回复、点赞与取消点赞。
+- 网络断开或 Wi-Fi/移动网络切换时立即释放旧请求；下拉刷新和分类切换会取消在途请求并隔离迟到回包，不再让页面长期停在加载状态。
 
 ### 视频、番剧与直播
 
 - 普通视频、番剧/影视、直播和多 P 视频；当前分 P 播放完成后自动续播下一 P。
 - 展示接口实际返回的全部清晰度档位，并按选择的精确 `qn` 请求 DASH 媒体；清晰度面板可滑动，不会因切换到低清后丢失高画质选项。
 - 画质标签来自实际解析结果。1080P、1080P+ 和高帧率档位仍取决于账号权益及服务端是否返回对应视频轨道。
+- 4K/8K 档位仍会完整展示；未验证 UHD 能力的设备默认安全选择真实 1080P60 硬解轨道，避免 OMX 耗尽连续内存后整机卡死。只有经过真机验证的适配才应启用 UHD 解码试运行。
 - 弹幕分段加载、透明度、字号、速度和安全轨道布局。
 - 播放/暂停、精确跳转、倍速、音量、亮度、进度条与当前/总时长同步。
 - 横竖屏与全屏自适应，保持视频原始比例，不把横屏直播或后续视频过度拉伸。
@@ -131,11 +133,13 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-当前 `1.1.0-1.18` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+当前 `1.1.0-1.23` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+
+后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.18.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.23.aarch64.rpm
 ```
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
@@ -176,13 +180,13 @@ export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
 bash vm-deploy/scripts/build-silisili-native-rpm.sh
 ```
 
-产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.18.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.23.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
 
 旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
 
 ## 验证基线
 
-`1.1.0-1.18` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了基于进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记的回归；测试不依赖截图内容推断。
+`1.1.0-1.23` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了网络恢复、进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记回归；测试不依赖截图内容推断。
 
 - Android OMX 硬解、gralloc/EGLImage 共享纹理，CPU 整帧拷贝为 `0`，未触发软件回退。
 - 连续 60 秒显示帧率窗口不低于 45 fps。
@@ -190,8 +194,12 @@ bash vm-deploy/scripts/build-silisili-native-rpm.sh
 - Cover、前台与系统 PiP 使用同一解码器、同一媒体加载和同一播放时钟。
 - 系统 PiP 经过横竖方向、拖动与位置持久化、锁屏隐藏/解锁恢复、点按返回和连续两轮后台/恢复回归。
 - PiP 返回前台时没有重复加载、隐藏 seek 或中间重映射闪现；关闭按钮只显示主题关闭图标，不再覆盖半透明圆形背景。
+- 一次性网络切换回归在首个请求失效后立即退出 loading，同一 PID 的新请求成功；随后普通生产入口首页加载完成，`rpm -V` 和 QML 错误扫描均保持干净。
+- 首页正在滑动时物理关闭 Wi-Fi 后，应用保持同一 PID，后续 12 次触控滑动全部成功且没有离线请求风暴；恢复网络后首页能继续刷新。
+- 4K/8K 请求在当前未验证 UHD 的设备上都安全解析到真实 1920×1080/60 硬解；4K 请求从历史位置 `14s` 启播，加载状态正常结束，物理触控暂停/恢复均可用，连续 60 秒的 63 个显示窗口最低 `55.281 fps`，没有 UHD OMX 分配、软件解码回退、帧队列堵塞或 CMA 耗尽。
 
 完整历史记录、边界和已知限制见 [真机验证记录](docs/NATIVE_DEVICE_VALIDATION.md)、[迁移矩阵](docs/NATIVE_MIGRATION_MATRIX.md) 与 [测试部署工具说明](docs/NATIVE_TESTING_TOOLS.md)。
+GitHub RPM 的版本、摘要、标签和发布门禁见 [原生 RPM 发布流程](docs/NATIVE_RELEASE_PROCESS.md)。
 
 ## 目录结构
 

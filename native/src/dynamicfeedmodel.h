@@ -3,11 +3,13 @@
 #include <QAbstractListModel>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QSet>
 #include <QStringList>
 #include <QVector>
 
 class AccountService;
+class QNetworkReply;
 
 class DynamicFeedModel : public QAbstractListModel {
     Q_OBJECT
@@ -82,6 +84,7 @@ private:
 
     AccountService *m_account;
     QNetworkAccessManager m_network;
+    QPointer<QNetworkReply> m_activeReply;
     QVector<Item> m_items;
     QSet<QString> m_seen;
     bool m_loading;

@@ -109,6 +109,8 @@ private slots:
     void resolverChanged();
     void playerChanged();
     void firstFramePresented(int loadSerial, double position);
+    void hardwareFirstFrameTimedOut(int loadSerial, int width, int height,
+                                    double framesPerSecond);
     void sharedTextureFrameChanged(int frameSerial);
     void applicationStateChanged(Qt::ApplicationState state);
 

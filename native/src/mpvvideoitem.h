@@ -106,6 +106,8 @@ signals:
     // Emitted only after the new source has produced a real application-owned
     // texture. Device tests use this as the end of the startup latency gate.
     void firstFramePresented(int loadSerial, double position);
+    void hardwareFirstFrameTimedOut(int loadSerial, int width, int height,
+                                    double framesPerSecond);
     // A lightweight second QQuickItem can sample the same application-owned
     // texture in Lipstick's system overlay. This signal never owns or decodes
     // media; it only schedules another scene-graph presentation of the frame.
@@ -181,6 +183,8 @@ private:
     bool m_hardwareDecodeActive;
     bool m_hardwareFallbackForCurrentLoad;
     QTimer m_hardwarePresentationTimer;
+    QTimer m_hardwareFirstFrameTimer;
+    bool m_hardwareFirstFramePending;
     bool m_hardwarePresentationCadenceLogged;
     QTimer m_foregroundRestoreTimer;
     int m_foregroundRestoreStage;

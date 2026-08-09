@@ -2,10 +2,12 @@
 
 #include <QAbstractListModel>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QSet>
 #include <QVector>
 
 class AccountService;
+class QNetworkReply;
 
 class HomeFeedModel : public QAbstractListModel {
     Q_OBJECT
@@ -52,6 +54,7 @@ private:
     QVector<Item> m_items;
     QSet<QString> m_seenBvids;
     QNetworkAccessManager m_network;
+    QPointer<QNetworkReply> m_activeReply;
     AccountService *m_accountService;
     bool m_loading, m_hasMore;
     int m_requestSerial, m_nextPage;

@@ -10,9 +10,12 @@ namespace NetworkUtils {
 
 // Qt 5.6 has no transfer timeout on QNetworkRequest. Abort a reply after a
 // bounded interval and mark it so callers can distinguish a timeout from an
-// ordinary cancellation.
+// ordinary cancellation. Replies are also aborted when Qt reports that the
+// active bearer disappeared or changed, so pages do not remain stuck in a
+// loading state while an obsolete socket waits for its absolute timeout.
 void setReplyTimeout(QNetworkReply *reply, int timeoutMs = 12000);
 bool replyTimedOut(const QNetworkReply *reply);
+bool replyNetworkChanged(const QNetworkReply *reply);
 
 // Bilibili's space and high-quality player endpoints require a WBI signature.
 // The mixin key is derived from /x/web-interface/nav and remains valid for the

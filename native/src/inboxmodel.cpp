@@ -27,7 +27,7 @@ QString idString(const QJsonValue &value) {
 
 InboxModel::InboxModel(AccountService *account, QObject *parent)
     : QAbstractListModel(parent), m_account(account), m_loading(false), m_hasMore(false),
-      m_category(QStringLiteral("reply")) {}
+      m_generation(0), m_category(QStringLiteral("reply")) {}
 
 int InboxModel::rowCount(const QModelIndex &parent) const {
     return parent.isValid() ? 0 : m_items.size();
@@ -77,13 +77,20 @@ void InboxModel::showLikes() {
 }
 
 void InboxModel::selectCategory(const QString &category) {
-    if (m_loading || category == m_category) return;
+    if (category == m_category) return;
     m_category = category;
     refresh();
 }
 
 void InboxModel::refresh() {
-    if (m_loading) return;
+    ++m_generation;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+        qInfo() << "native inbox: obsolete request cancelled for refresh";
+    }
+    m_loading = false;
     m_cursorId.clear();
     m_cursorTime.clear();
     m_seen.clear();
@@ -126,19 +133,37 @@ void InboxModel::request(bool reset) {
     request.setRawHeader("Accept-Encoding", "identity");
     request.setRawHeader("Cookie", m_account->cookieHeader());
 
+    const int requestGeneration = m_generation;
+    const QString requestCategory = m_category;
     QNetworkReply *reply = m_network.get(request);
+    m_activeReply = reply;
     NetworkUtils::setReplyTimeout(reply, 12000);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, reset]() {
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, reset, requestGeneration, requestCategory]() {
         const QByteArray payload = reply->readAll();
         const QNetworkReply::NetworkError networkError = reply->error();
+        const bool timedOut = NetworkUtils::replyTimedOut(reply);
+        const bool networkChanged = NetworkUtils::replyNetworkChanged(reply);
+        if (m_activeReply == reply) m_activeReply.clear();
         reply->deleteLater();
+        if (requestGeneration != m_generation || requestCategory != m_category) {
+            qInfo() << "native inbox: stale reply ignored" << requestCategory
+                    << "generation" << requestGeneration << "current" << m_generation;
+            return;
+        }
         m_loading = false;
 
         QJsonParseError parseError;
         const QJsonObject root = QJsonDocument::fromJson(payload, &parseError).object();
         if (networkError != QNetworkReply::NoError || parseError.error != QJsonParseError::NoError
                 || root.value(QStringLiteral("code")).toInt(-1) != 0) {
-            m_errorMessage = tr("消息请求失败或登录已过期");
+            m_errorMessage = networkChanged ? tr("网络已切换，请下拉重试")
+                             : timedOut ? tr("消息请求超时，请下拉重试")
+                                        : tr("消息请求失败或登录已过期");
+            qWarning() << "native inbox: request failed" << requestCategory
+                       << "timeout" << timedOut
+                       << "networkChanged" << networkChanged
+                       << "error" << networkError;
             emit stateChanged();
             return;
         }
@@ -164,10 +189,10 @@ void InboxModel::request(bool reset) {
             if (item.text.isEmpty()) item.text = itemObject.value(QStringLiteral("target_reply_content")).toString();
 
             QString timestampName;
-            if (m_category == QStringLiteral("at")) {
+            if (requestCategory == QStringLiteral("at")) {
                 item.category = tr("@ 了你");
                 timestampName = QStringLiteral("at_time");
-            } else if (m_category == QStringLiteral("like")) {
+            } else if (requestCategory == QStringLiteral("like")) {
                 item.category = tr("赞了你的内容");
                 timestampName = QStringLiteral("like_time");
             } else {
@@ -205,7 +230,7 @@ void InboxModel::request(bool reset) {
         const bool isEnd = isEndValue.isBool() ? isEndValue.toBool() : isEndValue.toInt() != 0;
         m_hasMore = !isEnd && !m_cursorId.isEmpty();
         if (m_items.isEmpty()) m_errorMessage = tr("当前分类暂无消息");
-        qInfo() << "native inbox:" << m_category << "added" << nextItems.size()
+        qInfo() << "native inbox:" << requestCategory << "added" << nextItems.size()
                 << "shown" << m_items.size() << "hasMore" << m_hasMore;
         emit stateChanged();
     });

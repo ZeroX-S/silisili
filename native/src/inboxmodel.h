@@ -2,10 +2,12 @@
 
 #include <QAbstractListModel>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QSet>
 #include <QVector>
 
 class AccountService;
+class QNetworkReply;
 
 class InboxModel : public QAbstractListModel {
     Q_OBJECT
@@ -59,10 +61,12 @@ private:
 
     AccountService *m_account;
     QNetworkAccessManager m_network;
+    QPointer<QNetworkReply> m_activeReply;
     QVector<Item> m_items;
     QSet<QString> m_seen;
     bool m_loading;
     bool m_hasMore;
+    int m_generation;
     QString m_category;
     QString m_cursorId;
     QString m_cursorTime;

@@ -95,28 +95,37 @@ QString mpvApiVersionText() {
     return QStringLiteral("%1.%2").arg(version >> 16).arg(version & 0xffff);
 }
 
-bool directDroidMediaHardwareAvailable() {
+DirectVideoCapabilities directDroidMediaCapabilities() {
+    static bool probed = false;
+    static DirectVideoCapabilities cached;
+    if (probed) return cached;
+    probed = true;
 #ifdef SILISILI_NATIVE_HAVE_DROIDMEDIA
-    static int cached = -1;
-    if (cached >= 0) return cached == 1;
     if (!droid_media_init()) {
-        cached = 0;
         qWarning() << "native hardware video: droidmedia initialization failed"
                    << "fallback" << "software";
-        return false;
+        return cached;
     }
     const struct Candidate {
         const char *mime;
+        int codecId;
         int width;
         int height;
         int framesPerSecond;
     } candidates[] = {
-        {"video/avc", 1920, 1080, 60},
-        {"video/avc", 1920, 1080, 30},
-        {"video/hevc", 1920, 1080, 30},
-        {"video/x-vnd.on2.vp9", 1920, 1080, 30}
+        {"video/avc", 7, 4096, 2304, 60},
+        {"video/avc", 7, 4096, 2304, 30},
+        {"video/avc", 7, 3840, 2160, 60},
+        {"video/avc", 7, 3840, 2160, 30},
+        {"video/avc", 7, 1920, 1080, 60},
+        {"video/avc", 7, 1920, 1080, 30},
+        {"video/hevc", 12, 4096, 2304, 60},
+        {"video/hevc", 12, 4096, 2304, 30},
+        {"video/hevc", 12, 3840, 2160, 60},
+        {"video/hevc", 12, 3840, 2160, 30},
+        {"video/hevc", 12, 1920, 1080, 60},
+        {"video/hevc", 12, 1920, 1080, 30}
     };
-    bool available = false;
     for (const Candidate &candidate : candidates) {
         DroidMediaCodecMetaData metadata;
         std::memset(&metadata, 0, sizeof(metadata));
@@ -131,17 +140,41 @@ bool directDroidMediaHardwareAvailable() {
                 << candidate.width << "x" << candidate.height
                 << "fps" << candidate.framesPerSecond
                 << "hardware" << supported;
-        available = available || supported;
+        if (!supported) continue;
+        const bool highCadence = candidate.framesPerSecond > 30;
+        int *maximumWidth = candidate.codecId == 7
+                ? (highCadence ? &cached.avc60MaximumWidth
+                               : &cached.avc30MaximumWidth)
+                : (highCadence ? &cached.hevc60MaximumWidth
+                               : &cached.hevc30MaximumWidth);
+        int *maximumHeight = candidate.codecId == 7
+                ? (highCadence ? &cached.avc60MaximumHeight
+                               : &cached.avc30MaximumHeight)
+                : (highCadence ? &cached.hevc60MaximumHeight
+                               : &cached.hevc30MaximumHeight);
+        const qint64 candidatePixels = static_cast<qint64>(candidate.width)
+                * candidate.height;
+        const qint64 currentPixels = static_cast<qint64>(*maximumWidth)
+                * *maximumHeight;
+        if (candidatePixels > currentPixels) {
+            *maximumWidth = candidate.width;
+            *maximumHeight = candidate.height;
+        }
     }
-    cached = available ? 1 : 0;
     qInfo() << "native hardware video: direct droidmedia route"
-            << (available ? "available" : "unavailable")
-            << "fallback" << (available ? "capability-driven" : "software")
+            << (cached.available() ? "available" : "unavailable")
+            << "fallback" << (cached.available() ? "capability-driven" : "software")
+            << "avc30Maximum" << cached.avc30MaximumWidth << "x"
+            << cached.avc30MaximumHeight
+            << "avc60Maximum" << cached.avc60MaximumWidth << "x"
+            << cached.avc60MaximumHeight
+            << "hevc30Maximum" << cached.hevc30MaximumWidth << "x"
+            << cached.hevc30MaximumHeight
+            << "hevc60Maximum" << cached.hevc60MaximumWidth << "x"
+            << cached.hevc60MaximumHeight
             << "source" << "RooTheater-SailfishOS architecture";
-    return available;
-#else
-    return false;
 #endif
+    return cached;
 }
 
 bool amberBarcodeModuleAvailable() {
@@ -226,11 +259,13 @@ int main(int argc, char *argv[]) {
                                         "MpvVideoMirrorItem");
 
     const QString configMigrationState = ConfigMigration::migrateStableConfig();
-    const bool nativeHardwareDecodeAvailable = directDroidMediaHardwareAvailable();
+    const DirectVideoCapabilities directVideoCapabilities =
+            directDroidMediaCapabilities();
+    const bool nativeHardwareDecodeAvailable = directVideoCapabilities.available();
     AccountService accountService;
     SearchModel searchModel(&accountService);
     HomeFeedModel homeFeed(&accountService);
-    PlaybackResolver playbackResolver(&accountService);
+    PlaybackResolver playbackResolver(&accountService, directVideoCapabilities);
     MpvVideoItem playbackVideo;
     PlaybackSession playbackSession(&playbackResolver, &accountService);
     DisplayFrameMonitor displayFrameMonitor(&playbackSession);
@@ -329,6 +364,10 @@ int main(int argc, char *argv[]) {
         qgetenv("SILISILI_NATIVE_TEST_CONTENT_MODE")).trimmed().toLower();
     const QString testMid = QString::fromLocal8Bit(
         qgetenv("SILISILI_NATIVE_TEST_MID")).trimmed();
+    bool testQualityReady = false;
+    const int testQuality = QString::fromLocal8Bit(
+        qgetenv("SILISILI_NATIVE_TEST_QUALITY")).trimmed()
+            .toInt(&testQualityReady);
     bool testStartPositionReady = false;
     const double testStartPosition = QString::fromLocal8Bit(
         qgetenv("SILISILI_NATIVE_TEST_START_POSITION")).trimmed()
@@ -342,6 +381,9 @@ int main(int argc, char *argv[]) {
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestContentMode"),
                                             testContentMode);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestMid"), testMid);
+    view->rootContext()->setContextProperty(QStringLiteral("nativeTestQuality"),
+                                            testQualityReady
+                                            ? qBound(1, testQuality, 127) : 0);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestStartPosition"),
                                             testStartPositionReady
                                             ? qMax(0.0, testStartPosition) : 0.0);
@@ -363,7 +405,12 @@ int main(int argc, char *argv[]) {
             || testPage == QStringLiteral("compact")
             || testPage == QStringLiteral("compact-continuity")
             || testPage == QStringLiteral("multipart-autonext");
-    if (testPage == QStringLiteral("comment-actions")) {
+    if (testPage == QStringLiteral("network-recovery")) {
+        // Isolate the deterministic network-transition regression from the
+        // unrelated account refresh so the one-shot failure always targets
+        // the home-feed request that the QML recovery probe observes.
+        homeFeed.refresh();
+    } else if (testPage == QStringLiteral("comment-actions")) {
         // The comment regression needs the authenticated /nav result so the
         // same login gates as production enable its controls. Keep unrelated
         // home-feed work out of the mutation test.

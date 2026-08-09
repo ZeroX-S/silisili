@@ -15,6 +15,7 @@ Page {
     property string videoCover
     property bool historyResumeRequested: false
     property real historyResumePosition: 0
+    property int initialPlaybackQuality: 80
     property bool historyResumeConsumed: false
     property bool deferAutoplayUntilPrefetched: false
     property bool inlineControlsVisible: true
@@ -51,6 +52,9 @@ Page {
     property bool inlinePlaybackReady: isCurrentVideo && !inlinePlayerLoading
                                         && inlinePlayerError.length === 0
                                         && playbackSession.duration > 0
+    property bool inlineTransportAvailable: isCurrentVideo
+                                            && inlinePlayerError.length === 0
+                                            && playbackSession.duration > 0
     property bool inlinePlaying: Qt.application.active && status === PageStatus.Active
                                  && isCurrentVideo && playbackSession.playing
     property bool wantsPlaybackSurface: (status === PageStatus.Active || retainedByDialog)
@@ -101,11 +105,12 @@ Page {
             playbackSession.playVideoAt(videoBvid, cid,
                                         title || videoDetail.title || videoTitle,
                                         videoDetail.cover || videoCover,
-                                        startPosition, 80)
+                                        startPosition, initialPlaybackQuality)
         } else {
             playbackSession.playVideo(videoBvid, cid,
                                       title || videoDetail.title || videoTitle,
-                                      videoDetail.cover || videoCover, 80)
+                                      videoDetail.cover || videoCover,
+                                      initialPlaybackQuality)
         }
         pendingDanmakuCid = cid
         // Danmaku is useful but can parse/create many overlay items. Keep it
@@ -376,7 +381,8 @@ Page {
     Component.onCompleted: {
         if (videoCid.length > 0 && !initialPlaybackRequested) {
             if (deferAutoplayUntilPrefetched) {
-                playbackSession.prepareVideo(videoBvid, videoCid, 80)
+                playbackSession.prepareVideo(videoBvid, videoCid,
+                                             initialPlaybackQuality)
                 console.log("native detail perf: waiting for visible-card media prepare",
                             videoBvid, videoCid)
             } else {
@@ -398,6 +404,20 @@ Page {
             initialPlaybackTimer.restart()
             resumeSupplementaryContent(compactRestorePending
                                        ? "compact-restore" : "page-active")
+        }
+    }
+    onInlineTransportAvailableChanged: console.log(
+        "native detail controls: transport available",
+        inlineTransportAvailable,
+        "loading", inlinePlayerLoading,
+        "duration", Math.round(playbackSession.duration))
+    onInlinePlayerLoadingChanged: {
+        if (!inlinePlayerLoading && inlineTransportAvailable) {
+            console.log("native detail controls: ready",
+                        "loading", false,
+                        "pauseVisible", inlinePauseButton.visible,
+                        "fullscreenVisible", inlineFullscreenButton.visible,
+                        "duration", Math.round(playbackSession.duration))
         }
     }
 
@@ -467,7 +487,10 @@ Page {
     }
     Timer {
         id: commentLoadTimer
-        interval: 650
+        // Keep initial metadata work away from the first decoded seconds. On
+        // the phone, comment and recommendation JSON completing together was
+        // enough to pull one 1080P60 presentation window below 45 FPS.
+        interval: 3000
         repeat: false
         onTriggered: {
             if (page.status === PageStatus.Active) {
@@ -504,7 +527,9 @@ Page {
     }
     Timer {
         id: relatedLoadTimer
-        interval: 1200
+        // Stagger this from comments and danmaku so GUI-thread model updates
+        // cannot all land in one frame-floor window.
+        interval: 7000
         repeat: false
         onTriggered: {
             if (page.status === PageStatus.Active) {
@@ -641,7 +666,8 @@ Page {
             id: inlineGestures
             anchors.fill: parent
             z: 20
-            controller: inlinePlaybackReady ? playbackSession : null
+            controller: isCurrentVideo && inlinePlayerError.length === 0
+                        ? playbackSession : null
             pressSpeedEnabled: inlinePlaybackReady
             onTapped: toggleInlineControls()
             onGestureStarted: {
@@ -658,7 +684,7 @@ Page {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: Theme.paddingSmall
-            visible: inlinePlaybackReady
+            visible: inlineTransportAvailable
             z: 25
 
             Rectangle {
@@ -691,8 +717,9 @@ Page {
             }
 
             IconButton {
+                id: inlinePauseButton
                 anchors.centerIn: parent
-                visible: !inlinePlayerLoading && inlinePlayerError.length === 0
+                visible: inlinePlayerError.length === 0
                 icon.source: isCurrentVideo
                              ? (playbackSession.paused || playbackSession.ended
                                 ? "image://theme/icon-l-play" : "image://theme/icon-l-pause")
@@ -717,8 +744,7 @@ Page {
                 anchors.rightMargin: Theme.paddingMedium
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Theme.paddingMedium
-                visible: isCurrentVideo && !inlinePlayerLoading
-                         && inlinePlayerError.length === 0
+                visible: isCurrentVideo && inlinePlayerError.length === 0
                 icon.source: "image://theme/icon-m-scale"
                 onClicked: openFullscreen()
                 onVisibleChanged: if (visible) fullscreenGeometryTimer.restart()
@@ -736,7 +762,7 @@ Page {
                 maximumValue: Math.max(1, playbackSession.duration)
                 value: playbackSession.position
                 valueText: formatTime(value) + " / " + formatTime(playbackSession.duration)
-                visible: inlinePlaybackReady
+                visible: inlineTransportAvailable
                 onPressed: inlineHideTimer.stop()
                 onReleased: {
                     var nextPosition = value
@@ -753,7 +779,8 @@ Page {
 
         BusyIndicator {
             anchors.centerIn: parent
-            z: 40
+            z: 28
+            enabled: false
             running: inlinePlayerLoading
             size: BusyIndicatorSize.Large
         }

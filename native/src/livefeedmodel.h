@@ -2,8 +2,11 @@
 
 #include <QAbstractListModel>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QSet>
 #include <QVector>
+
+class QNetworkReply;
 
 class LiveFeedModel : public QAbstractListModel {
     Q_OBJECT
@@ -50,6 +53,7 @@ private:
     QVector<Item> m_items;
     QSet<QString> m_seenRoomIds;
     QNetworkAccessManager m_network;
+    QPointer<QNetworkReply> m_activeReply;
     bool m_loading;
     bool m_hasMore;
     int m_page;

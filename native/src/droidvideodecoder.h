@@ -57,8 +57,8 @@ private:
     bool openInput(int generation);
     void demuxLoop(int generation);
     void presentLoop(int generation);
-    void queuePacket(const unsigned char *data, int size, long long ptsUs,
-                     bool keyFrame);
+    bool queuePacket(const unsigned char *data, int size, long long ptsUs,
+                     bool keyFrame, int seekSerial);
     void offerFrameToGui(_DroidMediaBuffer *buffer, int generation);
     void clearDecodedFrames();
     void postFailure(int generation, const QString &reason);
@@ -72,6 +72,7 @@ private:
     std::atomic<bool> m_stop;
     std::atomic<bool> m_paused;
     std::atomic<bool> m_failed;
+    std::atomic<bool> m_ultraHdSource;
     std::atomic<int> m_seekSerial;
     std::atomic<long long> m_seekTargetUs;
     std::atomic<long long> m_dropBeforeUs;
@@ -88,6 +89,8 @@ private:
     mutable std::mutex m_frameMutex;
     std::condition_variable m_frameReady;
     std::condition_variable m_frameSpace;
+    std::atomic<int> m_maxDecodedFrames;
+    std::atomic<bool> m_feedThrottleLogged;
 
     _DroidMediaBuffer *m_guiPendingFrame;
     mutable std::mutex m_guiMutex;

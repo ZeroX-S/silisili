@@ -11,6 +11,21 @@ class AccountService;
 class QNetworkReply;
 class QNetworkRequest;
 
+struct DirectVideoCapabilities {
+    DirectVideoCapabilities();
+    bool available() const;
+    bool supports(int codecId, int width, int height, int framesPerSecond) const;
+
+    int avc30MaximumWidth;
+    int avc30MaximumHeight;
+    int avc60MaximumWidth;
+    int avc60MaximumHeight;
+    int hevc30MaximumWidth;
+    int hevc30MaximumHeight;
+    int hevc60MaximumWidth;
+    int hevc60MaximumHeight;
+};
+
 class PlaybackResolver : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool loading READ loading NOTIFY changed)
@@ -23,7 +38,9 @@ class PlaybackResolver : public QObject {
     Q_PROPERTY(int revision READ revision NOTIFY changed)
 
 public:
-    explicit PlaybackResolver(AccountService *accountService, QObject *parent = 0);
+    explicit PlaybackResolver(AccountService *accountService,
+                              const DirectVideoCapabilities &directCapabilities,
+                              QObject *parent = 0);
 
     bool loading() const { return m_loading; }
     QString sourceUrl() const { return m_sourceUrl; }
@@ -40,6 +57,7 @@ public slots:
     void resolve(const QString &bvid, const QString &cid, int quality = 80);
     void resolvePgc(const QString &aid, const QString &bvid, const QString &cid,
                     const QString &epId, int quality = 80);
+    void setOperationalMaximumQuality(int quality, const QString &reason);
 
 signals:
     void changed();
@@ -72,6 +90,7 @@ private:
 
     QNetworkAccessManager m_network;
     AccountService *m_accountService;
+    DirectVideoCapabilities m_directCapabilities;
     bool m_loading;
     QString m_sourceUrl;
     QString m_audioUrl;
@@ -79,6 +98,7 @@ private:
     QVariantList m_qualities;
     QString m_qualityCatalogKey;
     int m_selectedQuality;
+    int m_operationalMaximumQuality;
     QString m_selectedQualityLabel;
     int m_revision;
     quint64 m_requestSerial;

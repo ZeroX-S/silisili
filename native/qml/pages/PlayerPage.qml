@@ -289,8 +289,7 @@ Page {
 
     IconButton {
         anchors.centerIn: parent
-        visible: controlsVisible && !playbackSession.loading
-                 && playbackSession.errorMessage.length === 0
+        visible: controlsVisible && playbackSession.errorMessage.length === 0
         z: 30
         icon.source: playbackSession.paused || playbackSession.ended
                      ? "image://theme/icon-l-play" : "image://theme/icon-l-pause"
@@ -434,7 +433,8 @@ Page {
 
     BusyIndicator {
         anchors.centerIn: parent
-        z: 40
+        z: 25
+        enabled: false
         running: playbackSession.loading && playbackSession.errorMessage.length === 0
         size: BusyIndicatorSize.Large
     }

@@ -239,7 +239,7 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
       m_textureSharingLogged(false),
       m_fullResolutionPresentation(false),
       m_hardwareDecodeActive(false), m_hardwareFallbackForCurrentLoad(false),
-      m_hardwarePresentationCadenceLogged(false),
+      m_hardwareFirstFramePending(false), m_hardwarePresentationCadenceLogged(false),
       m_foregroundRestoreStage(0), m_progressClockTicks(0), m_loadSerial(0),
       m_loadCommandPending(false), m_pendingLoadStart(0.0), m_pendingLoadPause(false),
       m_requestedPaused(false), m_requestedPosition(0.0), m_requestedVolume(100.0),
@@ -270,6 +270,33 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
             return;
         if (qApp && qApp->applicationState() == Qt::ApplicationActive)
             update();
+    });
+    m_hardwareFirstFrameTimer.setSingleShot(true);
+    // UHD opt-in retains the short allocation-safety deadline. Ordinary
+    // 1080P hardware startup gets a wider deadline so a busy adaptation does
+    // not unnecessarily restart the same source in software.
+    m_hardwareFirstFrameTimer.setInterval(3500);
+    m_hardwareFirstFrameTimer.setTimerType(Qt::PreciseTimer);
+    connect(&m_hardwareFirstFrameTimer, &QTimer::timeout, this, [this]() {
+        if (!m_hardwareDecodeActive || !m_hardwareFirstFramePending) return;
+        m_hardwareFirstFramePending = false;
+        const int stalledLoadSerial = m_loadSerial;
+        const int stalledWidth = m_videoWidth;
+        const int stalledHeight = m_videoHeight;
+        const double stalledFps = m_sourceFrameRate;
+        qWarning() << "native hardware video: first-frame watchdog expired"
+                   << "loadSerial" << stalledLoadSerial
+                   << "geometry" << stalledWidth << "x" << stalledHeight
+                   << "sourceFps" << stalledFps
+                   << "deadlineMs" << m_hardwareFirstFrameTimer.interval();
+        if (static_cast<long long>(stalledWidth) * stalledHeight
+                <= 1920LL * 1080LL) {
+            fallbackToSoftwareDecode(QStringLiteral("first-frame-timeout"));
+            return;
+        }
+        stopHardwareDecode();
+        emit hardwareFirstFrameTimedOut(stalledLoadSerial, stalledWidth,
+                                        stalledHeight, stalledFps);
     });
     m_foregroundRestoreTimer.setSingleShot(true);
     connect(&m_foregroundRestoreTimer, &QTimer::timeout, this, [this]() {
@@ -915,6 +942,8 @@ void MpvVideoItem::stopHardwareDecode() {
     const bool wasActive = m_hardwareDecodeActive;
     m_hardwareDecodeActive = false;
     m_hardwarePresentationTimer.stop();
+    m_hardwareFirstFrameTimer.stop();
+    m_hardwareFirstFramePending = false;
     m_hardwarePresentationCadenceLogged = false;
     if (m_hardwareDecoder) m_hardwareDecoder->stop();
     if (wasActive)
@@ -960,6 +989,17 @@ void MpvVideoItem::hardwareStreamReady(int generation, int width, int height,
             << "cpuPixelCopies" << 0;
     updateSourceFrameRateFromMpv(framesPerSecond);
     updateVideoGeometryFromMpv(width, height);
+    if (m_hardwareFirstFramePending) {
+        const bool ultraHd = static_cast<long long>(width) * height
+                > 1920LL * 1080LL;
+        m_hardwareFirstFrameTimer.setInterval(ultraHd ? 1200 : 3500);
+        m_hardwareFirstFrameTimer.start();
+        qInfo() << "native hardware video: first-frame watchdog armed"
+                << "loadSerial" << m_loadSerial
+                << "deadlineMs" << m_hardwareFirstFrameTimer.interval()
+                << "geometry" << width << "x" << height
+                << "sourceFps" << framesPerSecond;
+    }
     emit stateChanged();
 }
 
@@ -968,6 +1008,15 @@ void MpvVideoItem::hardwareDecodeFailed(int generation,
     if (!m_hardwareDecodeActive || !m_hardwareDecoder
             || generation != m_hardwareDecoder->generation())
         return;
+    if (reason == QStringLiteral("source-exceeds-device-buffer-budget")
+            || reason.startsWith(QStringLiteral("ultrahd-"))) {
+        qWarning() << "native hardware video: unsafe software fallback suppressed"
+                   << "reason" << reason
+                   << "action" << "stop-and-select-lower-quality";
+        stop();
+        updateErrorFromMpv(QStringLiteral("该超高清档位无法安全硬解，请切换到更低清晰度"));
+        return;
+    }
     fallbackToSoftwareDecode(reason);
 }
 
@@ -1340,6 +1389,8 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
     if (m_videoWidth != visibleWidth || m_videoHeight != visibleHeight)
         updateVideoGeometryFromMpv(visibleWidth, visibleHeight);
     if (!published) return;
+    m_hardwareFirstFramePending = false;
+    m_hardwareFirstFrameTimer.stop();
     if (firstPublishedFrame) {
         m_sharedTextureFrameTimer.start();
         qInfo() << "native hardware video: first shared-texture frame rendered"
@@ -1632,6 +1683,7 @@ void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &
     const bool hardwareStarted = videoEnabled && !forceSoftwareForThisLoad
             && startHardwareDecode(sourceUrl, startPosition);
     m_hardwareDecodeActive = hardwareStarted;
+    m_hardwareFirstFramePending = hardwareStarted;
     m_hardwarePresentationCadenceLogged = false;
     // The hardware path owns only the video elementary stream. libmpv remains
     // the audio/output clock, using the separate DASH audio URL when present or

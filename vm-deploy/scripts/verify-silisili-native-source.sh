@@ -7,6 +7,7 @@ NATIVE_ROOT="$PROJECT_ROOT/native"
 SPEC="$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native.spec"
 DESKTOP="$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native.desktop"
 PRIVILEGES="$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native.privileges"
+RELEASE_ASSET="$PROJECT_ROOT/packaging/apps/silisili-native/release-asset.sha256"
 
 fail() {
     printf 'native_source_verify=failed|reason=%s\n' "$1" >&2
@@ -16,6 +17,7 @@ fail() {
 test -f "$SPEC" || fail missing-spec
 test -f "$DESKTOP" || fail missing-desktop
 test -f "$PRIVILEGES" || fail missing-mapplauncherd-privileges
+test -f "$RELEASE_ASSET" || fail missing-release-asset-manifest
 test -f "$NATIVE_ROOT/CMakeLists.txt" || fail missing-cmake
 test -f "$NATIVE_ROOT/silisili-native.pro" || fail missing-qmake
 
@@ -28,6 +30,13 @@ qmake_version="$(awk '$1 == "VERSION" && $2 == "=" { print $3; exit }' \
 test -n "$spec_version" && test -n "$spec_release" || fail invalid-spec-version
 test "$spec_version" = "$cmake_version" || fail spec-cmake-version-drift
 test "$spec_version" = "$qmake_version" || fail spec-qmake-version-drift
+release_asset_sha="$(awk 'NF == 2 { print $1; exit }' "$RELEASE_ASSET")"
+release_asset_name="$(awk 'NF == 2 { print $2; exit }' "$RELEASE_ASSET")"
+test "$release_asset_name" = \
+    "silisili-native-devel-${spec_version}-${spec_release}.aarch64.rpm" \
+    || fail release-asset-version-drift
+printf '%s\n' "$release_asset_sha" | grep -Eq '^[0-9a-f]{64}$' \
+    || fail invalid-release-asset-sha256
 
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
@@ -95,7 +104,7 @@ if grep -Eq 'SILISILI_NATIVE_(TEST|FORCE_ORIENTATION)' "$DESKTOP"; then
     fail test-hook-enabled-in-desktop
 fi
 
-printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|system_pip=notification-configurable|visual_model=unused\n' \
+printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|system_pip=notification-configurable|release_asset=declared|visual_model=unused\n' \
     "$spec_version" "$spec_release" \
     "$(wc -l <"$temporary/source-files" | tr -d ' ')" \
     "$(sed -n 's|.*<file[^>]*>\([^<]*\)</file>.*|\1|p' "$qrc" | wc -l | tr -d ' ')"

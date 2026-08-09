@@ -12,6 +12,7 @@
 namespace {
 const int kDefaultSoftwareQuality = 80;
 const int kMaximumApiQuality = 127;
+const int kMaximumStablePhoneQuality = 116;
 
 int normalizedSoftwareQuality(int requestedQuality) {
     return requestedQuality > 0
@@ -114,6 +115,8 @@ void PlaybackSession::attachPlayer(QObject *playerObject) {
                    this, &PlaybackSession::positionChanged);
         disconnect(m_player, &MpvVideoItem::firstFramePresented,
                    this, &PlaybackSession::firstFramePresented);
+        disconnect(m_player, &MpvVideoItem::hardwareFirstFrameTimedOut,
+                   this, &PlaybackSession::hardwareFirstFrameTimedOut);
         disconnect(m_player, &MpvVideoItem::sharedTextureFrameChanged,
                    this, &PlaybackSession::sharedTextureFrameChanged);
     }
@@ -123,6 +126,8 @@ void PlaybackSession::attachPlayer(QObject *playerObject) {
             this, &PlaybackSession::positionChanged);
     connect(m_player, &MpvVideoItem::firstFramePresented,
             this, &PlaybackSession::firstFramePresented);
+    connect(m_player, &MpvVideoItem::hardwareFirstFrameTimedOut,
+            this, &PlaybackSession::hardwareFirstFrameTimedOut);
     connect(m_player, &MpvVideoItem::sharedTextureFrameChanged,
             this, &PlaybackSession::sharedTextureFrameChanged);
     useHost(m_surfaceHost ? m_surfaceHost.data() : m_fallbackHost.data());
@@ -433,7 +438,15 @@ void PlaybackSession::requestQuality(int quality) {
 }
 
 void PlaybackSession::setPaused(bool pausedValue) {
+    qInfo() << "native transport: pause requested"
+            << pausedValue
+            << "loading" << loading()
+            << "pendingIntent" << (!m_firstFrameReady);
     if (pausedValue) reportPlaybackProgress("pause", true);
+    // A quality/source request can still be resolving when the user presses
+    // pause. Preserve that intent for the incoming load instead of applying it
+    // only to the outgoing source.
+    if (m_active && !m_firstFrameReady) m_pendingPaused = pausedValue;
     if (m_active && m_player) m_player->setPaused(pausedValue);
 }
 void PlaybackSession::togglePaused() {
@@ -446,6 +459,7 @@ void PlaybackSession::seek(double nextPosition) {
     qInfo() << "native transport: direct software seek"
             << "target" << nextPosition
             << "decoderSwitch" << false;
+    if (!m_firstFrameReady) m_pendingPosition = nextPosition;
     m_player->seek(nextPosition);
 }
 void PlaybackSession::setVolume(double volumeValue) {
@@ -609,9 +623,20 @@ void PlaybackSession::firstFramePresented(int loadSerial, double framePosition) 
         emit videoPrepared(m_preparedBvid, m_preparedCid, m_preparedQuality, true);
         return;
     }
+    // A hardware first-frame failure restarts the same source internally in
+    // software and advances MpvVideoItem's serial once. Reject genuinely stale
+    // frames, but adopt a newer serial belonging to that current source so the
+    // loading latch cannot wait forever on the retired hardware serial.
     if (!m_active || m_firstFrameReady
-            || (m_awaitedLoadSerial > 0 && loadSerial != m_awaitedLoadSerial))
+            || (m_awaitedLoadSerial > 0 && loadSerial < m_awaitedLoadSerial))
         return;
+    if (m_awaitedLoadSerial > 0 && loadSerial > m_awaitedLoadSerial) {
+        qInfo() << "native player: internal fallback load serial adopted"
+                << "previous" << m_awaitedLoadSerial
+                << "current" << loadSerial
+                << "sameSession" << true;
+        m_awaitedLoadSerial = loadSerial;
+    }
     if (m_dropFirstFrameEdgeForTest) {
         m_dropFirstFrameEdgeForTest = false;
         qInfo() << "native software video: first-frame edge intentionally dropped for regression"
@@ -632,6 +657,40 @@ void PlaybackSession::firstFramePresented(int loadSerial, double framePosition) 
     emit surfaceChanged();
 }
 
+void PlaybackSession::hardwareFirstFrameTimedOut(int loadSerial, int width,
+                                                 int height,
+                                                 double framesPerSecond) {
+    if (!m_active || !m_player || !m_resolver
+            || (m_awaitedLoadSerial > 0 && loadSerial != m_awaitedLoadSerial))
+        return;
+    const int failedQuality = selectedQuality();
+    if (failedQuality <= kMaximumStablePhoneQuality) return;
+    const double retainedPosition = position();
+    const bool retainedPaused = paused();
+    qWarning() << "native player: UHD first-frame timeout recovery"
+               << "failedQuality" << failedQuality
+               << "geometry" << width << "x" << height
+               << "sourceFps" << framesPerSecond
+               << "retryQuality" << kMaximumStablePhoneQuality
+               << "position" << retainedPosition
+               << "sameSession" << true;
+    if (!retainedPaused) m_player->setPaused(true);
+    m_player->beginSourceTransition();
+    m_firstFrameReady = false;
+    m_pendingPosition = retainedPosition;
+    m_pendingPaused = retainedPaused;
+    m_awaitedLoadSerial = m_player->loadSerial() + 1;
+    m_resolver->setOperationalMaximumQuality(
+                kMaximumStablePhoneQuality,
+                QStringLiteral("uhd-first-frame-timeout"));
+    if (m_pgc)
+        m_resolver->resolvePgc(m_aid, m_bvid, m_cid, m_epId,
+                               failedQuality);
+    else
+        m_resolver->resolve(m_bvid, m_cid, failedQuality);
+    emit changed();
+}
+
 void PlaybackSession::sharedTextureFrameChanged(int frameSerial) {
     if (frameSerial <= 0 || !m_active || m_firstFrameReady) return;
     reconcileFirstFrameReady("shared-texture-level-signal");
@@ -640,13 +699,21 @@ void PlaybackSession::sharedTextureFrameChanged(int frameSerial) {
 bool PlaybackSession::hasCurrentPresentedFrame() const {
     if (!m_player || m_player->presentedFrameSerial() <= 0) return false;
     return m_awaitedLoadSerial <= 0
-            || m_player->presentedLoadSerial() == m_awaitedLoadSerial;
+            || m_player->presentedLoadSerial() >= m_awaitedLoadSerial;
 }
 
 bool PlaybackSession::reconcileFirstFrameReady(const char *reason) {
     if (!m_active || m_firstFrameReady || !hasCurrentPresentedFrame()
             || !errorMessage().isEmpty())
         return false;
+    if (m_awaitedLoadSerial > 0
+            && m_player->presentedLoadSerial() > m_awaitedLoadSerial) {
+        qInfo() << "native player: internal fallback load serial reconciled"
+                << "previous" << m_awaitedLoadSerial
+                << "current" << m_player->presentedLoadSerial()
+                << "sameSession" << true;
+        m_awaitedLoadSerial = m_player->presentedLoadSerial();
+    }
     m_firstFrameReady = true;
     confirmInitialResume(position(), reason);
     const qint64 requestElapsedMs = m_startupElapsed.isValid()

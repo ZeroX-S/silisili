@@ -1,10 +1,10 @@
 #include "danmakumodel.h"
+#include "networkutils.h"
 
 #include <QDebug>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QStringList>
-#include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QVariantMap>
@@ -94,9 +94,7 @@ void DanmakuModel::requestSegment(int segmentIndex) {
 
     qInfo() << "native danmaku: requesting cid" << m_cid << "segment" << segmentIndex;
     QNetworkReply *reply = m_network.get(request);
-    QTimer::singleShot(12000, reply, [reply]() {
-        if (reply->isRunning()) reply->abort();
-    });
+    NetworkUtils::setReplyTimeout(reply, 12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply, revision, segmentIndex]() {
         const QByteArray payload = reply->readAll();
         const QNetworkReply::NetworkError networkError = reply->error();
@@ -139,9 +137,7 @@ void DanmakuModel::loadLegacyXml() {
     request.setRawHeader("Referer", "https://www.bilibili.com/");
     request.setRawHeader("Accept-Encoding", "identity");
     QNetworkReply *reply = m_network.get(request);
-    QTimer::singleShot(12000, reply, [reply]() {
-        if (reply->isRunning()) reply->abort();
-    });
+    NetworkUtils::setReplyTimeout(reply, 12000);
     connect(reply, &QNetworkReply::finished, this, [this, reply, revision]() {
         const QByteArray payload = reply->readAll();
         const QNetworkReply::NetworkError networkError = reply->error();
