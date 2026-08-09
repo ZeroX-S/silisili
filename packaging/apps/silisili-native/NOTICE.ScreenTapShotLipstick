@@ -1,0 +1,13 @@
+Background PiP integration notice
+=================================
+
+The independent Lipstick notification-surface setup, explicit Wayland input
+region, and empty opaque-region behavior in SiliSili's SystemPipController were
+adapted from the mechanisms demonstrated by screentapshot-lipstick:
+
+  https://github.com/CODeRUS/screentapshot-lipstick
+  reference commit: b086b0a05caa752b97fbc79c4ae42f52d7308426
+
+The referenced project declares the WTFPL license. SiliSili does not use its
+whole-output recorder protocol; background video is presented from SiliSili's
+existing application-owned shared video texture and decoder.

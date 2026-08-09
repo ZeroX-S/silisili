@@ -1,0 +1,9 @@
+The direct Sailfish OS hardware-video architecture in this package was adapted
+from RooTheater-SailfishOS:
+
+  https://github.com/RootGPT-YouTube/RooTheater-SailfishOS
+
+RooTheater copyright (C) 2026 RootGPT, licensed under GPL-3.0-or-later.
+SiliSili's modified implementation keeps its separate DASH audio/libmpv clock,
+renders decoded gralloc buffers into the existing application-owned shared
+Cover texture, and uses in-place decoder flush for seeking.

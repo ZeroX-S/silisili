@@ -1,0 +1,147 @@
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index d8b0061..f4518bd 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -79,6 +79,76 @@ static inline int64_t v4l2_get_pts(V4L2Buffer *avbuf)
+     return av_rescale_q(v4l2_pts, v4l2_timebase, v4l2_get_timebase(avbuf));
+ }
+ 
++/*
++ * Sailfish OS 5.0 ships the pre-2014 V4L2 UAPI. Its pixel-format structs
++ * expose colorspace but not ycbcr_enc, quantization or xfer_func. Qualcomm's
++ * matching downstream Venus driver cannot return those optional fields, so
++ * derive the conservative FFmpeg metadata from the field that is present.
++ */
++#define SILISILI_V4L2_LEGACY_COLOR_FIELDS 1
++#if SILISILI_V4L2_LEGACY_COLOR_FIELDS
++static enum v4l2_colorspace v4l2_get_legacy_colorspace(V4L2Buffer *buf)
++{
++    return V4L2_TYPE_IS_MULTIPLANAR(buf->buf.type) ?
++        buf->context->format.fmt.pix_mp.colorspace :
++        buf->context->format.fmt.pix.colorspace;
++}
++
++static enum AVColorPrimaries v4l2_get_color_primaries(V4L2Buffer *buf)
++{
++    switch (v4l2_get_legacy_colorspace(buf)) {
++    case V4L2_COLORSPACE_REC709:        return AVCOL_PRI_BT709;
++    case V4L2_COLORSPACE_470_SYSTEM_M:  return AVCOL_PRI_BT470M;
++    case V4L2_COLORSPACE_470_SYSTEM_BG: return AVCOL_PRI_BT470BG;
++    case V4L2_COLORSPACE_SMPTE170M:     return AVCOL_PRI_SMPTE170M;
++    case V4L2_COLORSPACE_SMPTE240M:     return AVCOL_PRI_SMPTE240M;
++    default:                            return AVCOL_PRI_UNSPECIFIED;
++    }
++}
++
++static enum AVColorRange v4l2_get_color_range(V4L2Buffer *buf)
++{
++    switch (v4l2_get_legacy_colorspace(buf)) {
++    case V4L2_COLORSPACE_JPEG:
++    case V4L2_COLORSPACE_SRGB:
++        return AVCOL_RANGE_JPEG;
++    case V4L2_COLORSPACE_REC709:
++    case V4L2_COLORSPACE_470_SYSTEM_M:
++    case V4L2_COLORSPACE_470_SYSTEM_BG:
++    case V4L2_COLORSPACE_SMPTE170M:
++    case V4L2_COLORSPACE_SMPTE240M:
++        return AVCOL_RANGE_MPEG;
++    default:
++        return AVCOL_RANGE_UNSPECIFIED;
++    }
++}
++
++static enum AVColorSpace v4l2_get_color_space(V4L2Buffer *buf)
++{
++    switch (v4l2_get_legacy_colorspace(buf)) {
++    case V4L2_COLORSPACE_SRGB:          return AVCOL_SPC_RGB;
++    case V4L2_COLORSPACE_REC709:        return AVCOL_SPC_BT709;
++    case V4L2_COLORSPACE_470_SYSTEM_M:  return AVCOL_SPC_FCC;
++    case V4L2_COLORSPACE_470_SYSTEM_BG: return AVCOL_SPC_BT470BG;
++    case V4L2_COLORSPACE_SMPTE170M:     return AVCOL_SPC_SMPTE170M;
++    case V4L2_COLORSPACE_SMPTE240M:     return AVCOL_SPC_SMPTE240M;
++    default:                            return AVCOL_SPC_UNSPECIFIED;
++    }
++}
++
++static enum AVColorTransferCharacteristic v4l2_get_color_trc(V4L2Buffer *buf)
++{
++    switch (v4l2_get_legacy_colorspace(buf)) {
++    case V4L2_COLORSPACE_REC709:        return AVCOL_TRC_BT709;
++    case V4L2_COLORSPACE_SRGB:
++    case V4L2_COLORSPACE_JPEG:          return AVCOL_TRC_IEC61966_2_1;
++    case V4L2_COLORSPACE_470_SYSTEM_M:  return AVCOL_TRC_GAMMA22;
++    case V4L2_COLORSPACE_470_SYSTEM_BG: return AVCOL_TRC_GAMMA28;
++    case V4L2_COLORSPACE_SMPTE170M:     return AVCOL_TRC_SMPTE170M;
++    case V4L2_COLORSPACE_SMPTE240M:     return AVCOL_TRC_SMPTE240M;
++    default:                            return AVCOL_TRC_UNSPECIFIED;
++    }
++}
++#else
+ static enum AVColorPrimaries v4l2_get_color_primaries(V4L2Buffer *buf)
+ {
+     enum v4l2_ycbcr_encoding ycbcr;
+@@ -219,6 +289,7 @@ static enum AVColorTransferCharacteristic v4l2_get_color_trc(V4L2Buffer *buf)
+ 
+     return AVCOL_TRC_UNSPECIFIED;
+ }
++#endif
+ 
+ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
+ {
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index 68e0400..7726983 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -63,6 +63,23 @@ static inline unsigned int v4l2_get_height(struct v4l2_format *fmt)
+     return V4L2_TYPE_IS_MULTIPLANAR(fmt->type) ? fmt->fmt.pix_mp.height : fmt->fmt.pix.height;
+ }
+ 
++/*
++ * Qualcomm's downstream Venus driver on the Sailfish 5.1 bonito port
++ * implements VIDIOC_S_FMT but returns ENOTTY for VIDIOC_TRY_FMT. FFmpeg's
++ * probe otherwise rejects a fully usable decoder before opening it.
++ */
++static int v4l2_try_format(V4L2Context *ctx, struct v4l2_format *format)
++{
++    int ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_TRY_FMT, format);
++
++    if (ret < 0 && errno == ENOTTY) {
++        av_log(logger(ctx), AV_LOG_WARNING,
++               "VIDIOC_TRY_FMT unsupported; using VIDIOC_S_FMT compatibility path\n");
++        ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_S_FMT, format);
++    }
++
++    return ret;
++}
++
+ static AVRational v4l2_get_sar(V4L2Context *ctx)
+ {
+     struct AVRational sar = { 0, 1 };
+@@ -474,9 +491,17 @@ static inline int v4l2_try_raw_format(V4L2Context* ctx, enum AVPixelFormat pixfm
+     else
+         fmt->fmt.pix.pixelformat = v4l2_fmt;
+ 
++    if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
++        fmt->fmt.pix_mp.width = ctx->width;
++        fmt->fmt.pix_mp.height = ctx->height;
++    } else {
++        fmt->fmt.pix.width = ctx->width;
++        fmt->fmt.pix.height = ctx->height;
++    }
++
+     fmt->type = ctx->type;
+ 
+-    ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_TRY_FMT, fmt);
++    ret = v4l2_try_format(ctx, fmt);
+     if (ret)
+         return AVERROR(EINVAL);
+ 
+@@ -683,7 +708,7 @@ int ff_v4l2_context_get_format(V4L2Context* ctx, int probe)
+     fmt.update_v4l2 = 1;
+     v4l2_save_to_context(ctx, &fmt);
+ 
+-    return ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_TRY_FMT, &ctx->format);
++    return v4l2_try_format(ctx, &ctx->format);
+ }
+ 
+ int ff_v4l2_context_set_format(V4L2Context* ctx)

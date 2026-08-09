@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=SiliSili
+Comment=Native Sailfish OS client
+Exec=/usr/bin/silisili-native
+Icon=silisili-native-devel
+Terminal=false
+Categories=AudioVideo;Video;
+X-Nemo-Application-Type=generic
+X-Desktop-File-Install-Version=0.58
+
+[X-Sailjail]
+Sandboxing=Disabled

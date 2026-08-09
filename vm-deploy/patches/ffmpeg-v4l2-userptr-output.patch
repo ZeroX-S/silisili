@@ -1,0 +1,194 @@
+diff --git a/libavcodec/v4l2_context.h b/libavcodec/v4l2_context.h
+index 9c32f4a..bcf3fc0 100644
+--- a/libavcodec/v4l2_context.h
++++ b/libavcodec/v4l2_context.h
+@@ -46,6 +46,12 @@ typedef struct V4L2Context {
+      * Readonly after init.
+      */
+     enum v4l2_buf_type type;
++
++    /* SILISILI_V4L2_USERPTR_OUTPUT
++     * Buffer memory selected for this queue. Qualcomm's downstream Venus
++     * decoder requires USERPTR for its compressed output queue.
++     */
++    enum v4l2_memory memory;
+ 
+     /**
+      * AVPixelFormat corresponding to this buffer context.
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index 68e0400..c828803 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -372,7 +372,7 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
+ 
+ dequeue:
+         memset(&buf, 0, sizeof(buf));
+-        buf.memory = V4L2_MEMORY_MMAP;
++        buf.memory = ctx->memory;
+         buf.type = ctx->type;
+         if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
+             memset(planes, 0, sizeof(planes));
+@@ -439,7 +439,7 @@ static int v4l2_release_buffers(V4L2Context* ctx)
+ {
+     struct v4l2_requestbuffers req = {
+-        .memory = V4L2_MEMORY_MMAP,
++        .memory = ctx->memory,
+         .type = ctx->type,
+         .count = 0, /* 0 -> unmaps buffers from the driver */
+     };
+@@ -450,9 +450,14 @@ static int v4l2_release_buffers(V4L2Context* ctx)
+ 
+         for (j = 0; j < buffer->num_planes; j++) {
+             struct V4L2Plane_info *p = &buffer->plane_info[j];
+-            if (p->mm_addr && p->length)
+-                if (munmap(p->mm_addr, p->length) < 0)
++            if (p->mm_addr && p->length) {
++                if (ctx->memory == V4L2_MEMORY_USERPTR) {
++                    av_freep(&p->mm_addr);
++                } else if (munmap(p->mm_addr, p->length) < 0) {
+                     av_log(logger(ctx), AV_LOG_ERROR, "%s unmap plane (%s))\n", ctx->name, av_err2str(AVERROR(errno)));
++                }
++            }
+         }
+     }
+ 
+@@ -720,14 +725,28 @@ int ff_v4l2_context_init(V4L2Context* ctx)
+     if (ret)
+         av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_G_FMT failed\n", ctx->name);
+ 
++    ctx->memory = V4L2_MEMORY_MMAP;
+     memset(&req, 0, sizeof(req));
+     req.count = ctx->num_buffers;
+-    req.memory = V4L2_MEMORY_MMAP;
++    req.memory = ctx->memory;
+     req.type = ctx->type;
+     ret = ioctl(s->fd, VIDIOC_REQBUFS, &req);
++    if (ret < 0 && errno == EINVAL && V4L2_TYPE_IS_OUTPUT(ctx->type)) {
++        ctx->memory = V4L2_MEMORY_USERPTR;
++        memset(&req, 0, sizeof(req));
++        req.count = ctx->num_buffers;
++        req.memory = ctx->memory;
++        req.type = ctx->type;
++        ret = ioctl(s->fd, VIDIOC_REQBUFS, &req);
++        if (!ret)
++            av_log(logger(ctx), AV_LOG_INFO,
++                   "%s uses V4L2_MEMORY_USERPTR compatibility path\n",
++                   ctx->name);
++    }
+     if (ret < 0) {
+-        av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_REQBUFS failed: %s\n", ctx->name, strerror(errno));
++        av_log(logger(ctx), AV_LOG_ERROR,
++               "%s VIDIOC_REQBUFS failed for memory %d: %s\n",
++               ctx->name, ctx->memory, strerror(errno));
+         return AVERROR(errno);
+     }
+ 
+diff --git a/libavcodec/v4l2_buffers.c b/libavcodec/v4l2_buffers.c
+index d8b0061..955a69c 100644
+--- a/libavcodec/v4l2_buffers.c
++++ b/libavcodec/v4l2_buffers.c
+@@ -29,6 +29,7 @@
+ #include <poll.h>
+ #include "libavcodec/avcodec.h"
++#include "libavutil/mem.h"
+ #include "libavutil/pixdesc.h"
+ #include "v4l2_context.h"
+ #include "v4l2_buffers.h"
+@@ -495,7 +496,7 @@ int ff_v4l2_buffer_initialize(V4L2Buffer* avbuf, int index)
+     V4L2Context *ctx = avbuf->context;
+     int ret, i;
+ 
+-    avbuf->buf.memory = V4L2_MEMORY_MMAP;
++    avbuf->buf.memory = ctx->memory;
+     avbuf->buf.type = ctx->type;
+     avbuf->buf.index = index;
+ 
+@@ -504,9 +505,39 @@ int ff_v4l2_buffer_initialize(V4L2Buffer* avbuf, int index)
+         avbuf->buf.m.planes = avbuf->planes;
+     }
+ 
++    if (ctx->memory == V4L2_MEMORY_USERPTR) {
++        if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
++            avbuf->num_planes = ctx->format.fmt.pix_mp.num_planes;
++            if (avbuf->num_planes < 1)
++                avbuf->num_planes = 1;
++        } else {
++            avbuf->num_planes = 1;
++        }
++
++        for (i = 0; i < avbuf->num_planes; i++) {
++            size_t length = V4L2_TYPE_IS_MULTIPLANAR(ctx->type) ?
++                ctx->format.fmt.pix_mp.plane_fmt[i].sizeimage :
++                ctx->format.fmt.pix.sizeimage;
++            if (!length)
++                return AVERROR(EINVAL);
++            avbuf->plane_info[i].bytesperline =
++                V4L2_TYPE_IS_MULTIPLANAR(ctx->type) ?
++                ctx->format.fmt.pix_mp.plane_fmt[i].bytesperline :
++                ctx->format.fmt.pix.bytesperline;
++            avbuf->plane_info[i].length = length;
++            avbuf->plane_info[i].mm_addr = av_mallocz(length);
++            if (!avbuf->plane_info[i].mm_addr)
++                return AVERROR(ENOMEM);
++            if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
++                avbuf->planes[i].m.userptr =
++                    (unsigned long)avbuf->plane_info[i].mm_addr;
++                avbuf->planes[i].length = length;
++            } else {
++                avbuf->buf.m.userptr =
++                    (unsigned long)avbuf->plane_info[i].mm_addr;
++                avbuf->buf.length = length;
++            }
++        }
++        avbuf->buf.length = V4L2_TYPE_IS_MULTIPLANAR(ctx->type) ?
++                            avbuf->num_planes : avbuf->buf.length;
++        avbuf->status = V4L2BUF_AVAILABLE;
++        return V4L2_TYPE_IS_OUTPUT(ctx->type) ? 0 :
++               ff_v4l2_buffer_enqueue(avbuf);
++    }
++
+     ret = ioctl(buf_to_m2mctx(avbuf)->fd, VIDIOC_QUERYBUF, &avbuf->buf);
+     if (ret < 0)
+         return AVERROR(errno);
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index c8fca9f..9a46d8c 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -154,6 +154,20 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     if (s->draining)
+         goto dequeue;
+ 
++    /* SILISILI_V4L2_PRESTART_QUEUES
++     * Qualcomm's downstream msm_vidc commits buffers from the first queue at
++     * STREAMON even though the hardware session is created only when the
++     * second queue starts. Start an empty OUTPUT queue, then CAPTURE (which
++     * creates the session), before submitting the first compressed packet.
++     */
++    ret = v4l2_try_start(avctx);
++    if (ret) {
++        av_log(avctx, AV_LOG_ERROR,
++               "V4L2 queue prestart failed before first packet: %s\n",
++               av_err2str(ret));
++        goto fail;
++    }
++
+     ret = ff_v4l2_context_enqueue_packet(output, &s->buf_pkt);
+     if (ret < 0 && ret != AVERROR(EAGAIN))
+         goto fail;
+@@ -162,16 +176,6 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     if (ret != AVERROR(EAGAIN))
+         av_packet_unref(&s->buf_pkt);
+ 
+-    if (!s->draining) {
+-        ret = v4l2_try_start(avctx);
+-        if (ret) {
+-            /* cant recover */
+-            if (ret != AVERROR(ENOMEM))
+-                ret = 0;
+-            goto fail;
+-        }
+-    }
+-
+ dequeue:
+     return ff_v4l2_context_dequeue_frame(capture, frame, -1);
+ fail:

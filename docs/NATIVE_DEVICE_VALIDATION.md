@@ -1,0 +1,681 @@
+# Native Sailfish OS device validation
+
+Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target:
+`SailfishOS-5.1.0.11-aarch64`.
+
+Latest installed development package:
+
+- NEVRA: `silisili-native-devel-1.1.0-1.16.aarch64`
+- RPM SHA-256: `66f42ca9527cf30cc18dd6fee9dfec7937542a5880a77de427c9dd7e4063af4b`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.16.aarch64.rpm`
+- Build/install date: `2026-08-09`
+- stable package state during this validation: absent
+
+## Latest 1.16 complete quality catalog and exact media selection
+
+All checks below used physical touchscreen events plus application, resolver,
+decoder and package markers. No screenshot interpretation or visual model was
+used.
+
+- `PlaybackResolver` now separates discovery from playback. One asynchronous
+  `qn=127` request reads only the account/content-entitled
+  `accept_quality`/description catalog; its media URLs are never published.
+  The media request uses the exact selected `qn`, so a menu row cannot silently
+  play a higher or lower representation.
+- The tested VOD advertised five real profiles in descending order:
+  `116,80,64,32,16` (`1080P60`, `1080P`, `720P`, `480P`, `360P`). The catalog
+  is merged by content identity and survives later lower-qn responses, rather
+  than replacing the menu with a truncated response.
+- The in-player bottom sheet shows at most four rows and uses a clipped
+  `SilicaListView` with bounded flicking and a scroll decorator. On the real
+  2160×1080 landscape player, the five-row content was 750 units high inside a
+  620-unit viewport. A physical swipe moved it from `contentY=0` to the bounded
+  end at `contentY=130` and emitted both movement start/end markers.
+- A single-process physical-touch regression started with exact DASH quality
+  80 at 1920×1080, selected row 64 and resolved exact DASH quality 64 at
+  1280×720, reopened the sheet with all five ids still present and selected 80
+  again. The final marker was
+  `native_quality_switch_116=ready`, with one PID/start time, retained playback
+  position, zero hardware fallback, clean `rpm -V`, and
+  `visual_model=unused`.
+- The regression also caught and closed two false-success paths during
+  development: the original capability request could label a quality-80 row
+  while publishing quality 116, and the old 720P progressive path could return
+  actual quality 16. Exact-qn DASH is now used for every advertised row;
+  progressive media is retained only as the bounded compatibility fallback
+  after a DASH request fails.
+
+## Latest 1.10 direct Android OMX hardware decoding
+
+The direct video architecture was adapted from
+[`RootGPT-YouTube/RooTheater-SailfishOS`](https://github.com/RootGPT-YouTube/RooTheater-SailfishOS):
+FFmpeg demuxes the video elementary stream, `droidmedia` selects an Android
+codec with `DROID_MEDIA_CODEC_HW_ONLY`, and decoded gralloc buffers enter an
+external-OES texture through `EGLImage`. SiliSili then samples that texture into
+its application-owned double-buffered `GL_TEXTURE_2D` framebuffer, so the same
+frame remains available to detail, full-screen, compact-player and Sailfish
+Cover scene graphs without a CPU pixel copy. libmpv retains the separate DASH
+audio stream and master playback clock.
+
+All 1.10 checks below used package/process/decoder/texture/presentation markers;
+no screenshot interpretation or visual model was used.
+
+- The installed RPM passed `rpm -V`; its app-scoped minimedia compatibility
+  unit was enabled and active, and the final service PID was `13816`.
+- The device capability probe reported hardware support for 8/8 requested
+  profiles: H.264 720p/1080p at 30/60, HEVC 1080p at 30/60, and VP9 1080p at
+  30/60. The real VOD gate then created an Android OMX H.264 decoder with
+  `HW_ONLY`, mapped `libdroidmedia` in the application, produced gralloc-backed
+  shared textures with zero CPU pixel copies, and did not enter software
+  fallback.
+- The direct 1080p source averaged `28.3956` decoded frames/s, consistent with
+  its real 30 FPS source cadence. A 16 ms presentation-only timer re-presents
+  the current GPU texture at the 60 Hz Qt/Lipstick cadence without decoding or
+  copying another source frame. The continuous 65-second gate measured 63
+  one-second display windows, minimum `54.0806` FPS and zero windows below the
+  required 45 FPS floor.
+- EGL render fences retain gralloc buffers until the external-OES sample has
+  completed. The validated run reported no fence backlog and no per-frame
+  `glFinish`; a bounded emergency drain remains for EGL stacks with broken
+  fence signaling.
+- Hardware seek flushed the live OMX codec and repositioned FFmpeg in place.
+  The shared-frame checkpoint advanced from 61 to 121 after the exact seek,
+  with zero decoder recreation and zero media reload. Holding 2× and restoring
+  1× speed both passed against the libmpv master clock.
+- Cover used the same active texture and decoder. Inactive Cover presentation
+  advanced from frame serial 82 to 112, preserved aspect ratio, and returned to
+  the foreground without reload, hidden seek, decoder replacement or fallback.
+- The deterministic two-part VOD gate performed exactly two loads and two OMX
+  starts. Before P2 loaded, P1's non-zero shared-texture serial was withdrawn;
+  P2 then published a hardware frame in the same application process and on the
+  retained playback surface. This closes both automatic multi-P continuation
+  and the stale-previous-frame regression for the direct hardware route.
+- Capability, codec creation, asynchronous OMX failure, EGLImage/shader failure
+  and fence failure all converge on the existing complete libmpv/FFmpeg
+  software route at the current position. On this device, stopping the
+  app-scoped minimedia unit did not create a valid negative-injection test
+  because Android's codec service remained available and OMX continued to
+  start; the final audit therefore does not misreport that experiment as a
+  software-fallback device pass.
+- Source engineering verification passed with CMake/qmake parity, 49 native
+  source/header entries, 39 QRC resources, production desktop metadata and a
+  clean `git diff --check` result.
+
+## Latest 1.06 native-resolution, About and release-engineering validation
+
+All checks used application/model/rendering markers and device process/package
+state. No visual model or screenshot interpretation was used.
+
+- The reported `高清 1080P` representation was verified as a real 1920×1080
+  source. The old full-screen path first rendered it into an 800×450 shared
+  framebuffer and then let Qt enlarge that intermediate texture, which was the
+  direct cause of the visibly soft full-screen image.
+- Full-screen now promotes the retained shared renderer to a centered,
+  aspect-fitted 1920×1080 host only after orientation settles. The source,
+  framebuffer texture and actual video viewport all reported 1920×1080; the
+  inline detail, compact player and Cover stay on the bounded framebuffer and
+  continue to share one decoder, source and playback clock.
+- libmpv swap timing is fed from the real Qt/Lipstick window flip rather than
+  the offscreen render. The inactive half of the double-buffered shared texture
+  is submitted with `glFlush`, avoiding the old per-frame `glFinish` stall
+  without publishing the framebuffer currently being written.
+- On the final RPM, the short clarity gate reported one media load, no decoder
+  reload and nine stable windows with no frame below 45 FPS. The independent
+  64-second journal capture recorded 63 one-second display-swap windows,
+  minimum 56.4356 FPS, zero windows below 45 FPS, zero media reloads, no QML or
+  crash marker, and a clean `rpm -V` result.
+- The About page now identifies `silisili-native-devel` version `1.1.0-1.06`,
+  Sailfish OS `5.1.0.11`, `arm64`, Qt `5.6.3` and libmpv API `2.2`, and explains
+  playback architecture, compatibility policy, package isolation, licensing
+  and the project source link. Its direct device gate completed with no QML
+  errors and a clean package verification.
+- The PGC consistency regression switched between bangumi and cinema eight
+  times. Each category performed one initial commit, all eight return cycles
+  retained its original signature, empty-cursor pagination remained zero and
+  rapid-switch stale replies were ignored.
+- Release review now checks spec/CMake/qmake version agreement, all 47 active
+  native source/header entries, all 39 QRC resources, the production desktop
+  entry, and the deliberate exclusion of the failed system-level PiP path.
+  The Sailfish 5.1 qmake configure gate also passed with the account-library,
+  image-network and display-monitor sources plus GLESv2 present.
+- The review additionally fixed region-category response races: a new category
+  now cancels the previous request, clears mismatched rows immediately and
+  rejects late replies by generation. Region and related-video requests now
+  have bounded 12-second timeouts instead of leaving loading state unbounded.
+- Final cleanup launched the installed application through its ordinary Home
+  path with every `SILISILI_NATIVE_TEST_*` and forced-orientation variable
+  absent. Account startup completed, the process stayed alive, the QML/runtime
+  error scan was empty, and `rpm -V` remained clean.
+
+## Latest 0.73 content, startup and long-playback validation
+
+The final 0.73 aarch64 RPM was checksum-verified before installation. Both
+`silisili-native-devel` and the retained stable package passed `rpm -V`. All
+checks below used application/model/decoder markers and device state; no visual
+model or screenshot interpretation was used.
+
+- Account-library direct routes loaded History 20, Favorites 1,
+  Subscriptions 14, Anime 20, Cinema 0 (valid empty account result), and Watch
+  later 58. All six independent launches completed without request timeout or
+  QML error. The blocking missing `../components` import and the early account
+  session/user-id race were fixed.
+- A non-video dynamic card opened `DynamicDetailPage` with four real images;
+  the comment model did not open implicitly. Its first visible avatar loaded
+  from the primary `i0.hdslb.com` candidate with retry index 0.
+- UP-space profile data now comes from `/x/web-interface/card`: the old public
+  profile endpoint returned `-401` on-device, while the replacement returned
+  code 0 with both name and avatar. The final slow-scroll gate loaded 20 videos
+  and 12 dynamics initially, then reached three video/dynamic pages and 36
+  dynamics. The avatar loaded on the primary CDN and no QML undefined-field
+  errors remained.
+- The deterministic 1080P60 VOD resolved through WBI/DASH, used the Sailfish
+  droidmedia hardware plugin, and reached its first decoded frame 8.652 seconds
+  after direct page creation (6.381 seconds after the playback request). API
+  resolution took about 0.29 seconds and proxy response headers about 0.27
+  seconds; the remaining interval was hardware-decoder cold start.
+- Inline, full-player and compact hosts retain the selected cover plus loading
+  state until the first decoded frame, so cold hardware startup does not expose
+  an old frame or black surface. Audio remains gated until that same frame.
+- The forced-landscape compact player reported `907x510`, aspect 1.7778 and
+  `landscapeWindow true`. A continuous 60-second hardware-frame gate recorded
+  60 one-second windows, minimum 55.8276 fps, zero windows below 45 fps, no
+  software fallback, no hidden seek, and no QML/runtime error.
+- The local video proxy now closes only after upstream data and client socket
+  buffers drain. Normal hardware playback no longer performs periodic hidden
+  `QMediaPlayer::setPosition()` corrections, which previously could flush the
+  decoded surface while audio continued.
+- A fresh normal-orientation Cover round trip resumed at 60.6362 fps with the
+  same PID/start time. Decoder-start, first-frame and DASH-resolve counts did
+  not increase, and the post-foreground interval contained no reload, hidden
+  seek or software fallback.
+
+## Latest 0.72 responsive landscape and movable in-app player validation
+
+Built and installed on the Pixel 3a XL through the Sailfish debug shell as
+`outputs/silisili-native-devel-1.1.0-0.72.aarch64.rpm`. The final RPM is an
+aarch64 package with installed payload size 28,981,648 bytes. Its digest, NEVRA
+and RPM digests were checked before installation; both the development and
+stable packages passed `rpm -V` after the tests.
+
+Changes covered in this validation pass:
+
+- Pages now report shared responsive metrics and follow device orientation in
+  production. A development-only environment override and initial-page route
+  allow deterministic real-device regression tests without changing the normal
+  Home startup path.
+- Navigation and account/library actions use two columns in landscape. Video
+  and PGC detail pages use a landscape split with the player on the left and
+  details on the right. Full VOD controls use a single compact action row in
+  landscape; comment pages cap and center their readable width.
+- The old fixed compact strip is replaced by a 16:9 application-internal
+  floating player. It can be dragged in both axes, is clamped inside the app,
+  remembers relative placement across geometry changes, and retains in-window
+  pause, close and tap-to-return actions.
+- Compact playback reuses the existing `PlaybackSession` and video output.
+  Dragging does not activate the return action, while an ordinary tap restores
+  the original detail page without issuing another playback request.
+
+Non-visual real-device evidence:
+
+- The direct Navigation route settled at `2160x1080`, reported `columns 2`,
+  retained one process/start time and produced no QML/type/reference errors.
+- The direct Video Detail route settled at `2160x1080`, reported `columns 2`,
+  and divided the page into a 1382-pixel player region and a 778-pixel detail
+  region. Both regions were non-zero and the process remained stable.
+- The compact route resolved the test VOD to a 36-second duration and moved to
+  an in-app Navigation page. Its floating player reported an initial
+  `702x395` rectangle at `(358,1573)`.
+- A real `/dev/input` touch swipe moved that same floating player to
+  `(82,1149)`. The app remained topmost with the same PID and process start
+  time, and no QML error was logged.
+- A subsequent real touch at `(433,1346)` activated the floating player and
+  restored the existing detail page. Playback-request count stayed 1 before
+  and after activation, ruling out a reload-based return path.
+- The test VOD first selected the Sailfish QtMultimedia/GStreamer device
+  adaptation, then its first-frame timeout triggered the existing synchronized
+  mpv software fallback. The responsive layout, application-internal surface
+  ownership and drag/return checks passed across that fallback; no visual-frame
+  claim is made by this semantic-only validation.
+- The final clean launch omitted all test environment variables, reported
+  orientation `device`, opened Home in portrait at `1080x2160`, remained the
+  topmost process and left `silisili-sailfish-1.0.0-7.aarch64` unchanged.
+
+No screenshot or visual model was used for the 0.72 validation.
+
+## Latest 0.71 dynamics, author space, repost and typed-comment validation
+
+Built and installed on the Pixel 3a XL through the Sailfish debug shell as
+`outputs/silisili-native-devel-1.1.0-0.71.aarch64.rpm`. The RPM payload hash,
+NEVRA and installed files were checked before and after installation; the stable
+package remained `silisili-sailfish-1.0.0-7.aarch64`.
+
+Changes covered in this validation pass:
+
+- More content now exposes independent `视频动态` and `图文与转发` entries.
+  The video route requests the video feed, while the non-video route advances
+  through the all-dynamics cursor and filters out archive/video cards.
+- A section-generation guard clears the previous model immediately and ignores
+  late replies from the old section, preventing video cards from leaking into
+  the non-video list after a fast route switch.
+- Dynamic lists and author spaces use cursor/offset pagination plus several
+  bounded near-bottom triggers. Loading therefore depends on list position and
+  request state instead of swipe velocity.
+- Author-space parsing now covers archive, draw/opus, article, PGC, common and
+  forward cards. Reposts expose their original source text/media/images and
+  engagement counts rather than appearing as empty cards.
+- Dynamic cards carry the Bilibili comment resource type. Commentable non-video
+  and author-space dynamic cards open typed comments from the whole card, with
+  the small comment action retained as an additional target.
+
+Non-visual real-device evidence:
+
+- Video dynamics loaded from 20 to 40 items under deliberate slow scrolling.
+- Switching sections produced
+  `stale reply ignored section "video" generation 2 current 4`; the non-video
+  model then loaded independently from 12 to 20 items. One intervening server
+  page contained only video items (`added 0 shown 12`) and pagination correctly
+  continued to the next cursor instead of treating that page as end-of-feed.
+- Opening a non-video card loaded typed comments with resource type 11:
+  20 comments shown from a 79-comment thread.
+- The selected author space advanced its dynamics 12, 24, 36, 48 and 60 items
+  using 1.1-second scroll gestures with a pause between gestures. An author
+  dynamic opened its type-1 comment thread successfully.
+- A separate authenticated author-space API sample contained 12 dynamics,
+  including 7 reposts; all 7 reposts supplied original-source data and all 12
+  cards supplied comment resources. The selected UI test author happened to
+  have zero reposts in the sampled pages, so this API probe verifies availability
+  of real repost source data without making a false visual claim.
+- The final 0.71 process remained alive with the same start time, had no QML,
+  type/reference, segmentation or `ANOM_ABEND` errors, and both development and
+  stable packages passed `rpm -V`.
+
+Search note: the authenticated fuzzy-search implementation was validated on the
+same device before 0.71 and was not changed by the 0.71 dynamics work. Partial
+query `SailfishOS` and typo query `SailfihOS` each returned 20 results; anonymous
+requests returned HTTP 412, confirming that the native search request must keep
+the account Cookie header. A fresh 0.71 UI-entry rerun was inconclusive because
+the coordinate-only PulleyMenu automation did not reopen the search page; it did
+not produce a search error or application crash, so it is not recorded as a
+fresh 0.71 search pass.
+
+## Latest 0.30 quality picker, Cover idle state and surface hand-off
+
+Built and installed on the Pixel 3a XL through the Sailfish debug shell as
+`outputs/silisili-native-devel-1.1.0-0.30.aarch64.rpm`.
+
+- RPM SHA-256: `c2276402f2eaf27e2c73e736461a452a5beabb68093df4044656d4a7d013f7fd`
+- Install gate passed with markers `__SILISILI_RPM_UPGRADE_PASS__` and `__SILISILI_INSTALL_PASS__`.
+- Installed development package: `silisili-native-devel-1.1.0-0.30.aarch64`.
+- Stable validation package retained: `silisili-sailfish-1.0.0-7.aarch64`.
+
+Changes covered in this validation pass:
+
+- VOD and live full-player quality selection now uses `QualityPickerPanel`, a bounded in-page bottom panel, instead of
+  pushing `QualityDialog.qml` as a full page that covers the entire video.
+- The Cover empty state now shows a small SiliSili card/status hint instead of a plain empty surface.
+- `PlaybackSession::useHost()` now routes host changes through the shared mpv item's `claimSurface()` /
+  `releaseSurface()` hand-off and requests a refresh after active host changes, reducing the repeated compact/fullscreen
+  black-FBO failure mode.
+- Test/deploy scripts were restored to the reliable Python debug-shell transport and a one-pass regression batch was
+  added for install, Home pagination, playback, fullscreen, quality, and surface cycling checks.
+
+Device validation:
+
+- 0.30 launched through Sailjail with the existing native account session:
+  `native account: loaded native session ... cookieCount 7` and `nav parsed loggedIn true`.
+- Recommended Home loaded real content, then the one-pass batch scrolled the default recommendation feed through pages
+  2, 3, 4 and 5: shown counts increased from 28 to 140. Visual evidence:
+  [0.30 infinite recommendation feed](screenshots/5x-test/native-batch-02-home-infinite.png).
+- Opening a recommendation resolved >720p DASH playback on device:
+  `native player: DASH source resolved, quality 116 label "高清 1080P60" video 1920 x 1080 ... choices 5`.
+  The same batch loaded danmaku (`items 96`) and the comments page model loaded 20 visible comments from a 441-comment
+  thread.
+- The batch completed with marker `__SILISILI_NATIVE_BATCH_PASS__`. Its coordinate-only fullscreen quality screenshot
+  was later found to have tapped the comment publisher instead of the quality control, so that screenshot is not used as
+  evidence for the picker.
+- A focused quality-picker test then entered real fullscreen landscape playback and opened the new bounded picker with
+  the video still visible behind it. Visual evidence:
+  [0.30 fullscreen controls](screenshots/5x-test/native-quality-05-landscape-controls.png) and
+  [0.30 bounded quality picker](screenshots/5x-test/native-quality-09-panel-tap-245-850.png).
+- Fullscreen orientation followed the 16:9 video into landscape during the focused test. The player frame remained
+  visible after entering fullscreen and after the quality panel was opened.
+
+Testing notes:
+
+- On this device, landscape screenshots are 1920x1080 while the direct-touch coordinates may still be reported in the
+  portrait 1080x1920 coordinate space. The validated quality button tap used the converted coordinate `245,850`.
+- The Sailfish screenshot affordance can temporarily bring the screenshot preview/editor to the foreground; focused
+  tests should avoid taking an intermediate screenshot before subsequent touch actions.
+
+## Latest 0.25 launcher, comments preview, VOD hold speed and live back swipe
+
+Built and installed on `2026-08-04` as `outputs/silisili-native-devel-1.1.0-0.25.aarch64.rpm`.
+
+- RPM SHA-256: `9a15d2592f3e3177379cd52da3afff4bfbe4c5958fb15b6bc321432568d1fed1`
+- Install gate passed with marker `__SILISILI_INSTALL_PASS__`.
+- Installed development package: `silisili-native-devel-1.1.0-0.25.aarch64`.
+- Stable validation package retained: `silisili-sailfish-1.0.0-7.aarch64`.
+
+Changes covered in this validation pass:
+
+- Desktop launcher name is `SiliSili`; the installed desktop file still uses the native development app id
+  `cn.silisili.native.desktop`, keeping it distinct from the stable package.
+- The launcher icon was regenerated from `/Users/zerox/Downloads/ICON2高清改222.png` as an 86x86 RGBA Sailfish icon
+  and installed as `/usr/share/icons/hicolor/86x86/apps/silisili-native-devel.png`.
+- Home title now uses `SiliSili` consistently.
+- Video detail comment preview now shows up to seven loaded main comments and labels the area as a preview with a
+  clear "view all" path, instead of implying that only three comments exist.
+- VOD player gestures now support press-and-hold 2x speed in the video area and restore 1x on release.
+- Live player keeps brightness/volume/tap controls but disables horizontal seek handling; live streams are still
+  returned from by a left-edge swipe/back gesture instead of trying to scrub a non-DVR timeline.
+
+Device validation:
+
+- Clean Sailjail launch loaded the existing native account session from
+  `/home/defaultuser/.config/cn.silisili.native/account_session.json` and parsed the account nav response as logged in
+  without printing cookie values.
+- Recommended Home feed loaded 28 real items after launch.
+- Home screenshot after 0.25 install: [0.25 Home](screenshots/5x-test/native-0.25-home.png).
+- Opening a recommended VOD resolved `高清 1080P+`, created one persistent mpv instance, loaded a 1920x1080 stream and
+  loaded the first comments page with seven shown items in the model.
+- Press-and-hold speed test passed with log sequence: `native player: speed 2`,
+  `native gesture: speed hold 2.0`, `native player: speed 1`, `native gesture: speed restored`.
+- Live list opened from the Home `直播` tile and a real live room loaded through the native live player:
+  `native live: source resolved, quality 250 choices 2`, `native player: video geometry 1280 x 720 aspect 1.77778`.
+  Visual evidence: [0.25 live player](screenshots/5x-test/native-0.25-live-player-direct.png).
+- A horizontal/edge swipe from the live player returned to the live room list, releasing the live host and stopping the
+  stream without any `native gesture: seek` log. Visual evidence:
+  [0.25 after live swipe back](screenshots/5x-test/native-0.25-after-live-swipe-back.png).
+
+## Latest 0.24 launcher and playback gesture base
+
+Built and installed on `2026-08-04` as `outputs/silisili-native-devel-1.1.0-0.24.aarch64.rpm`.
+
+- RPM SHA-256: `9b3240dd2b6919a06118c62c68f508f334c87b9606d871e133d6dcbf48b252ae`
+- Install gate passed with marker `__SILISILI_INSTALL_PASS__`.
+- Installed development package: `silisili-native-devel-1.1.0-0.24.aarch64`.
+- Stable validation package retained: `silisili-sailfish-1.0.0-7.aarch64`.
+
+0.24 introduced the native mpv speed bridge, the shared `PlayerGestureArea` long-press scaffolding, `SwipeBackArea`
+for full VOD/live player pages, live `seekEnabled: false`, the refreshed launcher icon crop, and the shorter launcher
+name. 0.25 supersedes it with the in-app title/comment-preview cleanup and the device gesture validation above.
+
+## Latest 0.23 login persistence and Sailjail migration
+
+Built and installed on `2026-08-04` as `outputs/silisili-native-devel-1.1.0-0.23.aarch64.rpm`.
+
+- RPM SHA-256: `49fdbde60f3e505ee265af3860c9eba4ea6da54735e706fa7237c9d0bc534065`
+- Install gate passed with marker `__SILISILI_INSTALL_PASS__`.
+- Installed development package: `silisili-native-devel-1.1.0-0.23.aarch64`.
+- Stable validation package retained: `silisili-sailfish-1.0.0-7.aarch64`.
+
+The login persistence failure had two related causes:
+
+- QR/native sessions must be stored under Sailjail's whitelisted private config directory,
+  `/home/defaultuser/.config/cn.silisili.native`, not the earlier development path
+  `/home/defaultuser/.config/silisili-native`.
+- The stable app's original config under `/home/defaultuser/.config/silisili/silisili_config.json` is not visible to
+  the app process after Sailjail starts, so the RPM now seeds a private `stable_config_snapshot.json` into
+  `/home/defaultuser/.config/cn.silisili.native` during `%post` when no native session already exists.
+
+Device validation avoided printing cookie values. The seeded snapshot contained exactly one each of the expected
+cookie keys (`SESSDATA`, `bili_jct`, `DedeUserID`). On first launch after seeding, the app wrote
+`/home/defaultuser/.config/cn.silisili.native/account_session.json`, size `503` bytes, with the same key counts.
+A second clean Sailjail launch then loaded the native session directly and completed the account status request:
+
+- log marker: `native account: loaded native session from "/home/defaultuser/.config/cn.silisili.native/account_session.json" cookieCount 7`
+- log marker: `native account: nav parsed loggedIn true cookieCount 7`
+
+This closes the "does not keep login information" regression for the current 5.1 test device. If the stable cookie
+itself expires, the native app will still need QR login again, but the new QR session is saved in the whitelisted
+native directory and should survive launcher/Cover/restart cycles.
+
+## Built 0.21 high-quality playback attempt, pending device install
+
+Built on `2026-08-04` as `outputs/silisili-native-devel-1.1.0-0.21.aarch64.rpm`.
+
+- RPM SHA-256: `5cb6c37841ad33f52b9a7a70c8e08cfd41ca14ec0b05e7860d686b4b0e228657`
+- Release purpose: prefer 1080P60 (`qn=116`) VOD/PGC requests, enable DASH/fourk playurl parameters, pass the DASH
+  audio track to mpv, and automatically fall back to the old 720P progressive path when the account or selected video
+  does not expose an actual >720P DASH video stream.
+
+Local API probing without a valid logged-in account showed why the fallback is required: a public test video reported
+1080P/1080P60 in `accept_quality`, but the actual DASH video list only exposed 480P/360P tracks; the old progressive
+request still returned 720P. Therefore 0.21 intentionally treats "no actual >720P DASH track" as a fallback condition
+instead of playing a lower-resolution DASH stream.
+
+Device install was not completed in this record because the Pixel debug endpoint became unreachable from the VM
+(`192.168.2.15` stopped responding to ping/telnet). The VM-hosted RPM service at `10.211.55.7:18087` was reachable
+from the device before the disconnect, and a manual phone-side download test verified the 0.21 SHA-256. Install and
+playback-log validation should resume after the debug connection is restored.
+
+## Latest 0.20 live crash and stale-lock recovery
+
+Built and installed through the Sailfish SDK/phone path. `rpm -V silisili-native-devel` passed after install, the
+installed development package was `silisili-native-devel-1.1.0-0.20.aarch64`, and the stable validation package
+remained installed as `silisili-sailfish-1.0.0-7.aarch64`.
+
+This package fixes the live-entry crash class reported after opening live playback:
+
+- the live player no longer creates and destroys a page-local mpv/QQuickFramebufferObject instance;
+- live playback reuses the process-lifetime `playbackVideo` item, stops any VOD `PlaybackSession` first, and claims a
+  direct live host surface;
+- stale live play-url network replies are ignored through latest-wins request serials;
+- `PlaybackSession::stop()` now clears pending surface-release/foreground-refresh timers and host references before
+  live claims the global video item;
+- the process single-instance `QLockFile` now uses stale-lock recovery instead of treating every leftover lock as a
+  permanent "already running" state.
+
+Device validation performed on the 5.1 Pixel 3a XL:
+
+- Sailjail launch succeeded, the default recommended feed parsed 30 real items, and the application stayed in the
+  foreground.
+- Home → Live opened the real live list once during manual coordinate testing:
+  [0.20 live feed](screenshots/5x-test/0.20-live-feed.png).
+- A deliberate SIGKILL left `/tmp/silisili-native-defaultuser.lock` in place. Starting again without deleting the lock
+  succeeded: first PID `48656`, relaunched PID `48799`, topmost PID `(48799,)`, with marker
+  `__SILISILI_STALE_LOCK_PASS__`.
+
+The automated touch coordinates for entering a specific live room were not reliable after the Home/navigation layout
+changes, so this record does not claim a fresh 0.20 live-room playback screenshot. Manual follow-up should still
+recheck room entry, playback frame, quality dialog, and back/foreground transitions, but the crash-after-live
+single-instance lock failure is closed by the forced-stale-lock test.
+
+## Latest 0.19 portrait full-player control layout
+
+Built and installed through the same Sailfish SDK/phone path as the previous packages. The RPM checksum was verified
+before install, `rpm -V silisili-native-devel` passed after install, and the stable validation package remained
+installed as `silisili-sailfish-1.0.0-7.aarch64`.
+
+This package refines the 0.18 full-player control reflow for narrow portrait layouts: the portrait-only branch now
+keeps the seek slider on a native-margin row, groups seek backward/seek forward/orientation controls on an icon row,
+puts the quality `ValueButton` on its own full-width row, and groups danmaku toggle/settings into a final two-button
+row. This avoids making the quality label and danmaku toggle compete for one half-width row in portrait fullscreen.
+
+Device smoke validation after installing 0.19:
+
+- Sailjail launch succeeded and the default recommended feed parsed 30 real items.
+- Opening the first recommendation started real VOD playback with one persistent mpv instance.
+- Playback resolved quality 64, loaded a 1280×720 stream, and loaded danmaku segments for CID `40485454388`
+  (`561`, then `473`, then `363` items in the captured log tail).
+
+Visual evidence for this smoke pass: [0.19 detail playback before full-player entry](screenshots/5x-test/0.19-fullscreen-controls-fast-rightbottom.png).
+The automated coordinate path did not reliably hit the hidden inline fullscreen button before the inline controls
+auto-hide, so this record does not claim a fresh 0.19 full-player screenshot. The immediately preceding 0.18 package
+did capture the full-player control surface after entering fullscreen:
+[0.18 full-player controls](screenshots/5x-test/0.18-portrait-fullscreen-controls-2.png). A manual 0.19 fullscreen
+capture is still the next verification step for the portrait-only branch.
+
+## Latest 0.17 compact-player return target
+
+Validated through the Sailjail app path after installing the checksum-verified RPM. A VOD detail page started real
+inline playback, the "all comments" page moved the shared playback surface into the in-app compact player, and tapping
+the compact player returned to the original video detail page instead of opening the full-page player.
+
+The log showed the surface moving from the compact host back to the inline detail host:
+
+- compact host: `foreground surface refresh reload false host 295.111 x 166`
+- restored inline host: `foreground surface refresh reload false host 1080 x 607.5`
+
+Visual evidence: [comments page with compact player](screenshots/5x-test/0.17-after-comment-tap-second.png) and
+[compact tap restored the detail page](screenshots/5x-test/0.17-compact-tap-restores-detail.png). The restored capture
+is at video EOF (`9:29 / 9:29`), so the black video area is the ended inline-player state, not a full-page navigation.
+
+## Latest 0.16 home navigation cleanup
+
+Validated through the Sailjail app path after installing the checksum-verified RPM. The Home page no longer shows the
+duplicated in-page "More functions" menu; secondary navigation remains available from the native pull-down "More
+content" item. The default recommended feed still loaded real content: `home feed parsed "recommended" 30 items`.
+
+Visual evidence: [0.16 Home without duplicated inline More menu](screenshots/5x-test/0.16-home-no-inline-more.png).
+
+## Latest 0.15 foreground-restore black-screen fix
+
+Validated through the Sailjail app path on the Pixel 3a XL test device after the 0.14 lightweight nudge still resumed
+with a black video surface during manual testing. The 0.15 package restores the reliable foreground recovery path:
+foreground activation first refreshes the QML/Wayland video surface, then a delayed refresh reloads the current mpv
+source at the preserved playback position and pause state.
+
+The foreground/Cover round trip kept the same application PID and one process:
+
+- foreground PID before restore: `65132`
+- foreground PID after restore: `65132`
+- process count after restore: `1`
+- log markers: `foreground surface refresh reload false`, `foreground surface refresh reload true`,
+  `foreground video reload requested at 127.136 paused false`, then `load command submitted serial 2` and `file loaded`
+
+The restored inline player showed a live decoded video frame instead of the audio-only black surface:
+[before Cover restore](screenshots/5x-test/0.15-video-before-bg.png) and
+[after Cover restore](screenshots/5x-test/0.15-video-after-bg-restore.png). This path intentionally preserves the
+small foreground-resume pause caused by reloading the current source; it is currently preferred over the smoother 0.14
+nudge because it avoids the black-screen regression on device.
+
+## Latest 0.14 foreground-restore smoothing
+
+Validated through the Sailjail app path. The 0.13 black-screen fix was smoothed in 0.14: foreground restore now does
+a surface refresh followed by a lightweight current-position mpv nudge instead of reloading the network source.
+
+Manual follow-up testing found that this lighter path can still return from Cover/background with an audio-only black
+video surface on the device. 0.14 is therefore retained as a failed smoothing experiment, not the current recommended
+package.
+
+The foreground/Cover round trip kept the same application PID and one process:
+
+- foreground PID before restore: `49809`
+- foreground PID after restore: `49809`
+- process count after restore: `1`
+- log markers: `foreground surface refresh nudge false`, `foreground surface refresh nudge true`,
+  `foreground video nudge requested at 178.013 paused false`
+- no second load was submitted after restore; the log stayed at `load command submitted serial 1`
+
+The restored inline player continued showing video content/progress without reverting to the prior audio-only black
+surface: [0.14 after Cover restore](screenshots/5x-test/0.14-video-after-bg-restore.png). The captured frame is a
+black-background text/title segment from the current video, not the earlier blank render-surface failure.
+
+## 0.13 foreground-restore regression
+
+Validated through the Sailjail app path (`/usr/bin/sailjail -p cn.silisili.native -- /usr/bin/silisili-native`), not a
+bare debug-only launch. The recommended feed loaded real content, a VOD detail page opened from the default
+recommendation list, mpv created one persistent client instance, and the inline player reached a real decoded frame:
+[before Cover restore](screenshots/5x-test/0.13-video-before-bg.png).
+
+The foreground/Cover round trip kept the same application PID and one process:
+
+- foreground PID before restore: `32765`
+- foreground PID after restore: `32765`
+- process count after restore: `1`
+- log markers: `foreground surface refresh`, `foreground video refresh requested`,
+  `foreground video reload requested at 581.158 paused false`, then `load command submitted serial 2` and `file loaded`
+
+The restored inline player showed live video instead of a black frame, with the passive progress line aligned from the
+left edge of the player: [after Cover restore](screenshots/5x-test/0.13-video-after-bg-restore.png). Fullscreen entry
+also showed the seek slider centered after reducing the reserved back-swipe corridor:
+[fullscreen progress layout](screenshots/5x-test/0.13-fullscreen-progress.png). That fullscreen capture is at EOF
+(`15:16 / 15:16`), so the black video area there is the ended state, not the foreground-restore black-screen bug.
+
+Final installed development package in this record:
+
+- NEVRA: `silisili-native-devel-1.1.0-0.7.aarch64`
+- RPM SHA-256: `a97c1b3cdcdf5d28fb5766d4e0e60c8cccdb006724713a0abb36c2bc3bc1573a`
+- RPM build time: `1785699348` (`2026-08-03 03:35:48 +0800`)
+- the clean full-build RPM, HTTP-served payload and exact downloaded phone payload had the same SHA-256
+- `rpm -V silisili-native-devel` completed cleanly
+- stable package retained: `silisili-sailfish-1.0.0-7.aarch64`
+- stable configuration SHA-256 before/after native launches:
+  `06cfd2fed5f36d558b98e1de43b598cc59f64b0098bf125e726dee97313bdb97`
+
+The previous checksum-closed 0.6 package and its screenshots remain below as historical regression evidence. The
+new inline/fullscreen/PGC/live closure screenshots cited in their final-package rows were captured after installing
+the checksum-closed 0.7 RPM; earlier 0.7 Home, comment and Cover images remain explicitly identified as staged evidence.
+
+## Verified gates
+
+| Gate | Evidence |
+|---|---|
+| Package identity and coexistence | Mac/HTTP/phone SHA-256 matched `a97c1b3c…1573a`; exact 0.7 NEVRA and `rpm -V` passed, while stable `silisili-sailfish-1.0.0-7.aarch64` and its configuration checksum remained unchanged |
+| Application single instance | Final 0.7 deliberate second launch passed the `QLockFile` gate: one exact application process, start time and shared VOD backend remained |
+| Default recommendation feed and direct navigation | The 0.5 launch log parsed 28 real recommended items. Staged 0.7 retained recommendation as the selected default in a compact four-item row for live, recommended, popular and PGC content: [home with real recommendation content](screenshots/5x-test/native-home-final-0.7.png). Secondary search, region, dynamic, messages and account actions open from a native `ContextMenu`: [menu](screenshots/5x-test/native-home-more-menu-final-0.7.png), [search](screenshots/5x-test/native-home-more-search-final-0.7.png), [region](screenshots/5x-test/native-home-more-region-final-0.7.png) |
+| Fixed inline video while detail content scrolls | The final package kept the live VOD frame fixed while metadata/comments remained independently scrollable: [passive inline playback](screenshots/5x-test/native-inline-passive-final-0.7.png). Earlier ordinary and PGC fixed-player evidence remains available in [ordinary detail](screenshots/5x-test/native-video-sticky-player.png) and [PGC detail](screenshots/5x-test/native-pgc-sticky-player.png) |
+| Inline progress, controls and gestures | Final 0.7 shows the thin passive progress line with controls hidden and the native `Slider`/fullscreen control when shown: [passive state](screenshots/5x-test/native-inline-passive-final-0.7.png), [controls](screenshots/5x-test/native-inline-controls-final-0.7.png). Horizontal seek, left-side brightness and right-side volume all passed on the final VOD |
+| Comment preview and complete entry | Staged 0.7 deliberately limits the detail preview to three main comments while showing the full total and reply links: [three-row preview and all-comments entry](screenshots/5x-test/native-comments-preview-all-entry-final-0.7.png). The dedicated page still exposes the complete list: [all-comments page](screenshots/5x-test/native-all-comments-final-0.7.png). The earlier verified page contained 21 main comments of 9549 total with complete reply links |
+| Comment cursor pagination | [continued comment list](screenshots/5x-test/native-pgc-comments-paginated.png); device log: page 0 added 21, page 2 added 20, page 3 added 19, shown 60, total 9549 |
+| Complete reply thread | [native reply-thread page](screenshots/5x-test/native-comment-reply-thread.png) |
+| Full-page shared playback | [full player at 2:37/6:59 and 720P](screenshots/5x-test/native-fullscreen-danmaku.png) |
+| Aspect-aware fullscreen and transient controls | Final 0.7 resolved a 16:9 VOD to the 2160×1080 landscape page, continued real playback and hid controls automatically: [playing with controls hidden](screenshots/5x-test/native-fullscreen-playing-controls-hidden-final-0.7.png). The reserved PageStack corridor returned to the portrait detail page: [portrait return](screenshots/5x-test/native-fullscreen-page-return-final-0.7.png). Earlier 0.5 and dense-danmaku captures remain historical rotation evidence |
+| Fullscreen state preservation | [0.5 paused fullscreen at the preserved 4:52 position](screenshots/5x-test/native-fullscreen-paused-state-preserved-0.5b.png); renderer-recreation log twice recorded `load command submitted at 292.233 paused true`, then playback resumed from that point and controls hid normally |
+| In-app compact playback | [home compact player with live frame and 213/419 progress](screenshots/5x-test/native-in-app-compact.png) |
+| System Cover playback control | Final 0.7 passed three foreground/Cover round trips with the same PID, process start time, shared VOD backend and media load count. The Cover remains deliberately static art/title/progress/quality with native pause/stop actions: [0.7 Cover](screenshots/5x-test/native-single-session-persistent-cover-1-0.7.png). The checksum-closed 0.6 advance/pause/resume/stop captures remain the historical long-form behavior proof |
+| Native quality selection | Final 0.7 opened the quality Dialog inside the 2160×1080 full player; the Dialog stayed 2160×1080 landscape and displayed both 720P and 360P choices: [landscape quality Dialog](screenshots/5x-test/native-landscape-quality-final-0.7.png). Earlier device evidence retains the [portrait VOD quality Dialog](screenshots/5x-test/native-player-quality-dialog.png) and [360P result](screenshots/5x-test/native-player-quality-switched.png). The danmaku-settings Dialog shares the orientation-inheritance implementation but was not separately captured in this final gate |
+| Player gestures | Final 0.7 passed horizontal seek, left-side brightness and right-side volume on inline VOD; PGC and live repeated all three gesture paths. Earlier numeric VOD logs recorded seek 34, brightness 44, volume 100 and volume 59 |
+| Live feed | Final 0.7 loaded real live rooms: [live feed](screenshots/5x-test/native-live-feed-final-0.7.png) |
+| Live playback | Final 0.7 played a real 1920×1080 stream and passed DVR seek, brightness and volume gestures: [live player](screenshots/5x-test/native-live-player-final-0.7.png) |
+| Live quality selection | [native quality Dialog](screenshots/5x-test/native-live-quality-dialog.png) |
+| PGC feed and detail | Final 0.7 loaded 12 real PGC feed items: [PGC feed](screenshots/5x-test/native-pgc-feed-final-0.7.png). Earlier season-detail evidence retains the complete episode entry |
+| PGC inline playback and danmaku | Final 0.7 played a real PGC episode and passed seek, brightness and volume gestures: [PGC inline passive playback](screenshots/5x-test/native-pgc-inline-passive-final-0.7.png). Earlier device logs resolved quality 64 with two choices and loaded 2774 danmaku items |
+| PGC full-page shared playback | [PGC episode in the common full-page player](screenshots/5x-test/native-pgc-fullscreen.png); the same session retained 720P, progress and timed danmaku and loaded 621 items for the captured episode |
+| Mixed dynamic feed | [repost video and nine-image native cards](screenshots/5x-test/native-dynamic-expanded.png) and [continued image cards](screenshots/5x-test/native-dynamic-paginated.png); device log appended 26 → 46 items through the offset cursor |
+| Dynamic video hand-off | [video card opened in the fixed-player detail page](screenshots/5x-test/native-dynamic-video-detail.png) |
+| Message categories | [native category selector](screenshots/5x-test/native-inbox-categories.png), [five real mention messages](screenshots/5x-test/native-inbox-mentions.png), and a valid empty state for the current account's like feed |
+| Message cursor and detail | [reply cursor finished after 20 → 32 items](screenshots/5x-test/native-inbox-paginated.png) and [full native message detail](screenshots/5x-test/native-inbox-detail.png) |
+| QR login presentation | [system-rendered login QR and polling state](screenshots/5x-test/native-qr-login.png) |
+| Native account controls | [restored account with QR switch and logout controls](screenshots/5x-test/native-account-page.png) |
+| Player swipe-back corridor | Final VOD returned from the 2160×1080 full player to portrait detail through the reserved PageStack corridor: [final return](screenshots/5x-test/native-fullscreen-page-return-final-0.7.png). Earlier live inset-swipe evidence is retained separately |
+| System outer-edge minimize | [staged 0.7 system launcher after the physical outer-edge gesture](screenshots/5x-test/native-fullscreen-edge-return-0.7.png). This proves that the gesture minimized the application to the system launcher; it is not PageStack back-navigation evidence |
+| Runtime and display policy | Final 0.7 runtime error scan was clean. Immediately after pausing inline VOD, `mcetool` reported `Display state: on`, `Display never blank: disabled` and `Blank inhibit: disabled`; an independent check 40 seconds later reported `Display state: off` with both policies still disabled. Paused playback therefore passed automatic display blanking on the final package. The timed 0.6 regression remains the recorded proof that active foreground playback stays on and that end-of-file also releases the inhibit |
+
+## Final 0.7 implementation closure
+
+- `main.cpp` holds a process-lifetime `QLockFile` before constructing the QML view. The deliberate second-launch gate
+  passed with one exact process, start time and application-level VOD backend.
+- VOD requests now use latest-wins arbitration: a new video, episode or quality request aborts the active reply and
+  advances a request serial so a queued stale completion cannot publish an old URL. The implementation is included
+  in the checksum-closed artifact; synthetic delayed-network races remain an optional hardening test.
+- `PlaybackSession` now separates media-state `changed` notification from surface-only `surfaceChanged` notification.
+  Surface claims therefore no longer synchronously invalidate the `wantsPlaybackSurface` binding that initiated the
+  claim. Release remains delayed for 220 ms so an incoming full-player or returning detail host can claim the same
+  item without an intermediate fallback reparent. Final fullscreen entry/return and three Cover cycles passed; the
+  final runtime error scan found no binding-loop, ownership, VO-init, EGL or FBO failure.
+- The VOD `PlaybackSession` is shared by inline detail, full-page playback, compact playback and Cover. The live page
+  intentionally retains a separate `MpvVideoItem`; application single-instance, VOD backend single-instance and
+  renderer attachment counts must not be conflated in validation output.
+- The final package left both the global never-blank and blank-inhibit switches disabled after pausing inline VOD.
+  `mcetool` reported the display on immediately after pause and off on an independent check 40 seconds later, so
+  final 0.7 paused-playback automatic blanking passed. The earlier timed 0.6 foreground-playback and end-of-file
+  results remain the corresponding evidence for those states; background Cover timing remains a future power test.
+
+The comment-posting endpoint is implemented but was not invoked: validation must not create a public comment without
+user-supplied content and explicit intent. QR generation/polling and private credential persistence are implemented;
+the QR was not scanned and logout was not accepted, so no account credentials were changed during this validation.
+The current live room exposed only one quality, so live quality state-preservation remains a code-path review rather
+than a multi-quality device switch.
+The message tests were read-only. The current account returned no entries from the like feed; this verifies the
+category request and native empty state, but not rendering of a non-empty like item.
+
+The checksum-closed 0.6 player core exposes actual `playing` and `ended` state from mpv events. Display blanking and
+control auto-hide use `playing`, so pause, loading, errors, background/inactive pages and normal end-of-file all
+release the display inhibit. When Qt recreates the renderer during inline/fullscreen/compact transitions, the current
+confirmed or pending-seek position and the requested pause state are used instead of the original load values.
+
+The checksum-closed 0.6 Cover record remains the historical advance/pause/resume proof. Final 0.7 instead keeps the
+Cover static and preserves the shared VOD backend behind the application host; three repeated foreground/Cover cycles
+kept the same PID, start time, backend and load count, and the final runtime error scan was clean.

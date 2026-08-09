@@ -1,0 +1,12 @@
+[Unit]
+Description=SiliSili droidmedia compatibility service
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/silisili-native/silisili-native-minimedia-wrapper
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

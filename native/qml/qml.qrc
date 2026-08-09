@@ -1,0 +1,45 @@
+<RCC>
+    <qresource prefix="/qml">
+    <file>main.qml</file>
+    <file>SystemPipWindow.qml</file>
+    <file>components/DanmakuOverlay.qml</file>
+    <file>components/AvatarImage.qml</file>
+    <file>components/NavigationTile.qml</file>
+    <file>components/ResponsivePageMetrics.qml</file>
+    <file>components/CommentActionButton.qml</file>
+    <file>components/PlayerGestureArea.qml</file>
+    <file>components/QualityPickerPanel.qml</file>
+    <file>components/SwipeBackArea.qml</file>
+    <file>pages/AboutPage.qml</file>
+    <file>pages/HomePage.qml</file>
+    <file>pages/VideoPlaceholderPage.qml</file>
+    <file>pages/VideoDetailPage.qml</file>
+    <file>pages/AuthorSpacePage.qml</file>
+        <file>pages/PlayerPage.qml</file>
+        <file>pages/QualityDialog.qml</file>
+        <file>pages/CommentDialog.qml</file>
+        <file>pages/ReplyThreadPage.qml</file>
+        <file>pages/DanmakuSettingsDialog.qml</file>
+    <file>pages/LiveFeedPage.qml</file>
+    <file>pages/LivePlayerPage.qml</file>
+    <file>pages/SearchPage.qml</file>
+    <file>pages/NavigationPage.qml</file>
+    <file>pages/PlaybackPresentationPage.qml</file>
+    <file>pages/PgcFeedPage.qml</file>
+    <file>pages/PgcDetailPage.qml</file>
+    <file>pages/PgcEpisodePage.qml</file>
+    <file>pages/CommentsPage.qml</file>
+    <file>pages/MigrationStatusPage.qml</file>
+    <file>pages/RegionPage.qml</file>
+    <file>pages/AccountPage.qml</file>
+    <file>pages/AccountLibraryPage.qml</file>
+    <file>pages/QrLoginPage.qml</file>
+    <file>pages/QrLoginFallbackPage.qml</file>
+    <file>pages/LogoutDialog.qml</file>
+    <file>pages/DynamicPage.qml</file>
+    <file>pages/DynamicDetailPage.qml</file>
+    <file>pages/InboxPage.qml</file>
+    <file>pages/InboxDetailPage.qml</file>
+    <file>cover/CoverPage.qml</file>
+  </qresource>
+</RCC>
