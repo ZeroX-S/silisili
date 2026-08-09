@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.24` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.25` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -30,7 +30,7 @@
 
 ## 原生版界面
 
-以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.24` 的网络、超高清保护和硬解冻结恢复修复不改变这些界面。点击图片可查看原始分辨率。
+以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.25` 的网络、超高清保护、硬解冻结恢复和启播同步修复不改变这些界面。点击图片可查看原始分辨率。
 
 <p align="center">
   <a href="docs/screenshots/native-readme/home.png"><img src="docs/screenshots/native-readme/home.png" alt="原生首页" width="23%"></a>
@@ -82,6 +82,7 @@
 - 横竖屏与全屏自适应，保持视频原始比例，不把横屏直播或后续视频过度拉伸。
 - 一个进程级播放会话在详情页、全屏、应用内小窗、Cover 与系统小窗之间复用，切换界面时不重新加载或隐藏定位。
 - 硬解画面序列停止但音频时钟仍前进时，播放器会在约 3 秒后只重建同清晰度视频解码器；音频、进度、媒体加载和当前共享画面保持不变。
+- 从历史位置或清晰度切换位置启播时，音频先在目标处暂停；只有目标时钟和第一张真实视频纹理都确认后才同步放行，避免声音先播放、随后画面重新定位。
 
 ### Sailfish OS 集成
 
@@ -135,13 +136,13 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-当前 `1.1.0-1.24` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+当前 `1.1.0-1.25` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.24.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.25.aarch64.rpm
 ```
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
@@ -182,17 +183,18 @@ export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
 bash vm-deploy/scripts/build-silisili-native-rpm.sh
 ```
 
-产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.24.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.25.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
 
 旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
 
 ## 验证基线
 
-`1.1.0-1.24` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了网络恢复、进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记回归；测试不依赖截图内容推断。
+`1.1.0-1.25` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了历史位置启播、网络恢复、进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记回归；测试不依赖截图内容推断。
 
+- 历史位置 `14s` 连续启播三次，每次只有一个媒体加载；目标时钟和第一张真实纹理确认前音频保持暂停，没有先声后画后的二次定位，也没有误触发软件回退。媒体命令至首帧最大 `2350 ms`，完整请求至首帧最大 `2816 ms`。
 - Android OMX 硬解、gralloc/EGLImage 共享纹理，CPU 整帧拷贝为 `0`，未触发软件回退。
-- 注入“画面冻结、音频继续”后，同一 PID 内只把视频解码 generation 从 1 重建为 2；音频重载为 0、媒体加载仍为 1、旧纹理保留，恢复后 30fps 片源实测 `30.09 fps`。
-- 1080P60 连续 60 秒的 63 个稳定显示窗口最低 `55.944 fps`，硬解回调丢帧与队列压力均为 0。
+- 注入“画面冻结、音频继续”后，同一 PID 内只把视频解码 generation 从 1 重建为 2；音频重载为 0、媒体加载仍为 1、旧纹理保留，恢复后 30fps 片源实测 `32.52 fps`。
+- 1080P60 连续 60 秒的 63 个稳定显示窗口最低 `56.436 fps`，硬解回调丢帧与队列压力均为 0。
 - 精确 DASH 清晰度切换保持同一进程、播放位置和完整清晰度目录。
 - Cover、前台与系统 PiP 使用同一解码器、同一媒体加载和同一播放时钟。
 - 系统 PiP 经过横竖方向、拖动与位置持久化、锁屏隐藏/解锁恢复、点按返回和连续两轮后台/恢复回归。

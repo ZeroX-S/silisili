@@ -154,6 +154,7 @@ private:
     void syncHardwareClock();
     void resetHardwareStallWatchdog();
     void restartHardwareDecodeAfterStall();
+    void releaseInitialPositionGate(double confirmedPosition);
     bool startHardwareDecode(const QString &videoUrl, double startPosition);
     void stopHardwareDecode();
     void fallbackToSoftwareDecode(const QString &reason);
@@ -207,6 +208,9 @@ private:
     bool m_loadCommandPending;
     double m_pendingLoadStart;
     bool m_pendingLoadPause;
+    bool m_initialPositionGatePending;
+    bool m_initialPositionConfirmed;
+    bool m_initialVideoFrameReady;
     bool m_requestedPaused;
     double m_requestedPosition;
     double m_requestedVolume;

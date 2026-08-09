@@ -7,9 +7,9 @@ set -eu
 # shared texture and media-load serial, and resume advancing frames without a
 # quality change, audio reload, screenshot or visual-model assertion.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.24.aarch64.rpm}
-expected_sha=${2:-7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6}
-expected_package=silisili-native-devel-1.1.0-1.24.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.25.aarch64.rpm}
+expected_sha=${2:-7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337}
+expected_package=silisili-native-devel-1.1.0-1.25.aarch64
 test_bvid=${SILISILI_STALL_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_STALL_TEST_CID:-37630051884}
 phase=preflight
@@ -239,7 +239,7 @@ poll=0
 while test "$poll" -lt 80; do
     production_events=$(events_for_pid "$production_pid")
     printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.24"' \
+        'native app: build identity "silisili-native-devel" "1.1.0" "1.25"' \
         >/dev/null && break
     sleep 0.25
     poll=$((poll + 1))

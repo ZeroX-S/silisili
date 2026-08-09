@@ -247,6 +247,8 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
       m_testHardwareStallInjected(false), m_testHardwareStallGeneration(0),
       m_foregroundRestoreStage(0), m_progressClockTicks(0), m_loadSerial(0),
       m_loadCommandPending(false), m_pendingLoadStart(0.0), m_pendingLoadPause(false),
+      m_initialPositionGatePending(false), m_initialPositionConfirmed(false),
+      m_initialVideoFrameReady(false),
       m_requestedPaused(false), m_requestedPosition(0.0), m_requestedVolume(100.0),
       m_requestedBrightness(0.0), m_requestedSpeed(1.0), m_paused(false), m_loading(false), m_playing(false),
       m_ended(false), m_playbackStarted(false), m_sourceFileStartedForPresentation(false),
@@ -893,6 +895,7 @@ void MpvVideoItem::renderSharedTextureFrame() {
                 << "frameSerial" << m_sharedTextureFrameSerial;
     }
     if (m_sharedTextureFrameSerial == 1) {
+        m_initialVideoFrameReady = true;
         m_sharedTextureFrameTimer.start();
         qInfo() << "native player: first persistent shared-texture frame rendered"
                 << framebufferSize.width() << "x" << framebufferSize.height()
@@ -901,6 +904,7 @@ void MpvVideoItem::renderSharedTextureFrame() {
                 << "item" << frameWidth << "x" << frameHeight
                 << "videoAspect" << videoAspectRatio();
         emit firstFramePresented(m_loadSerial, position());
+        releaseInitialPositionGate(m_position);
     } else if ((m_sharedTextureFrameSerial - 1) % 60 == 0) {
         const qint64 elapsedMs = m_sharedTextureFrameTimer.elapsed();
         const double averageFps = elapsedMs > 0
@@ -1506,11 +1510,27 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
 
     if (m_videoWidth != visibleWidth || m_videoHeight != visibleHeight)
         updateVideoGeometryFromMpv(visibleWidth, visibleHeight);
+    const bool firstDecodedHardwareFrame = m_hardwareFirstFramePending;
+    if (firstDecodedHardwareFrame) {
+        // A non-zero history position keeps presentation gated until the
+        // audio clock confirms the same target. The hardware frame has still
+        // been decoded and copied into the application-owned shared FBO, so it
+        // is not a decoder startup failure. Stop the codec watchdog here and
+        // let the initial-position gate publish the retained framebuffer.
+        m_hardwareFirstFramePending = false;
+        m_hardwareFirstFrameTimer.stop();
+        qInfo() << "native hardware video: first decoded texture ready"
+                << framebufferSize.width() << "x" << framebufferSize.height()
+                << "loadSerial" << m_loadSerial
+                << "generation" << generation
+                << "published" << published
+                << "initialPositionGate" << m_initialPositionGatePending
+                << "cpuPixelCopies" << 0;
+    }
     if (!published) return;
     resetHardwareStallWatchdog();
-    m_hardwareFirstFramePending = false;
-    m_hardwareFirstFrameTimer.stop();
     if (firstPublishedFrame) {
+        m_initialVideoFrameReady = true;
         m_sharedTextureFrameTimer.start();
         qInfo() << "native hardware video: first shared-texture frame rendered"
                 << framebufferSize.width() << "x" << framebufferSize.height()
@@ -1519,6 +1539,7 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
                 << "generation" << generation
                 << "cpuPixelCopies" << 0;
         emit firstFramePresented(m_loadSerial, position());
+        releaseInitialPositionGate(m_position);
     } else if ((m_sharedTextureFrameSerial - 1) % 60 == 0) {
         const qint64 elapsedMs = m_sharedTextureFrameTimer.elapsed();
         qInfo() << "native hardware video: shared-texture frame checkpoint"
@@ -1799,6 +1820,9 @@ void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &
     withdrawPresentedFrame("load-request");
     resetVideoGeometry("load-request");
     if (startPosition < 0.0) startPosition = 0.0;
+    m_initialPositionGatePending = startPosition > 0.0;
+    m_initialPositionConfirmed = !m_initialPositionGatePending;
+    m_initialVideoFrameReady = false;
     const bool hardwareStarted = videoEnabled && !forceSoftwareForThisLoad
             && startHardwareDecode(sourceUrl, startPosition);
     m_hardwareDecodeActive = hardwareStarted;
@@ -1825,10 +1849,11 @@ void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &
     m_playing = false;
     m_ended = false;
     m_playbackStarted = false;
-    // A non-zero initial position is an actual asynchronous seek issued after
-    // FILE_LOADED. Do not present the decoder's temporary time-zero frame as
-    // the new source frame while that seek is still pending.
-    m_seekPending = startPosition > 0.0;
+    // A non-zero initial position is applied as a paused per-file start option.
+    // Do not present a frame or release audio until the new file confirms the
+    // same clock position; a bounded exact seek remains only as compatibility
+    // fallback for older libmpv builds.
+    m_seekPending = m_initialPositionGatePending;
     m_buffering = false;
     m_speed = 1.0;
     m_errorMessage.clear();
@@ -1861,6 +1886,9 @@ void MpvVideoItem::beginSourceTransition() {
     m_audioUrl.clear();
     m_loadCommandPending = false;
     m_backend->loadPending = false;
+    m_initialPositionGatePending = false;
+    m_initialPositionConfirmed = false;
+    m_initialVideoFrameReady = false;
     m_requestedPosition = 0.0;
     m_pendingLoadStart = 0.0;
     m_position = 0.0;
@@ -1905,9 +1933,23 @@ void MpvVideoItem::setPaused(bool paused) {
     if (paused) resetFrameFloorWindow();
     if (m_backend && (m_backend->mpv || ensureMpv())) {
         int value = paused ? 1 : 0;
-        mpv_set_property_async(m_backend->mpv, 0, "pause", MPV_FORMAT_FLAG, &value);
+        if (!m_initialPositionGatePending || paused) {
+            mpv_set_property_async(m_backend->mpv, 0, "pause",
+                                   MPV_FORMAT_FLAG, &value);
+        } else {
+            qInfo() << "native player: unpause deferred until initial position gate"
+                    << "target" << m_requestedPosition
+                    << "loadSerial" << m_loadSerial;
+        }
     }
-    if (m_hardwareDecoder) m_hardwareDecoder->setPaused(paused);
+    if (m_hardwareDecoder) {
+        // A pause request made while the initial target is loading is the
+        // desired post-start state. Keep the private decoder moving until it
+        // has produced the target texture; releaseInitialPositionGate() then
+        // applies the requested pause without ever starting audio.
+        const bool pauseDecoderNow = paused && !m_initialPositionGatePending;
+        m_hardwareDecoder->setPaused(pauseDecoderNow);
+    }
     syncProgressClock();
     syncHardwareClock();
     if (changed) emit stateChanged();
@@ -2081,6 +2123,9 @@ void MpvVideoItem::stop() {
     m_playing = false;
     m_ended = false;
     m_playbackStarted = false;
+    m_initialPositionGatePending = false;
+    m_initialPositionConfirmed = false;
+    m_initialVideoFrameReady = false;
     m_seekPending = false;
     m_buffering = false;
     m_speed = 1.0;
@@ -2153,10 +2198,21 @@ void MpvVideoItem::submitPendingLoad() {
     }
 
     const QByteArray source = m_sourceUrl.toUtf8();
-    const QByteArray options = m_audioUrl.isEmpty()
-        ? QByteArray()
-        : QStringLiteral("referrer=\"https://www.bilibili.com\",network-timeout=5,audio-file=\"%1\"")
-          .arg(m_audioUrl).toUtf8();
+    QStringList fileOptions;
+    fileOptions.append(QStringLiteral("referrer=\"https://www.bilibili.com\""));
+    fileOptions.append(QStringLiteral("network-timeout=5"));
+    if (m_pendingLoadStart > 0.0) {
+        // Position the audio demuxer before it is allowed to run. Previously
+        // audio started at zero and FILE_LOADED issued a second exact seek,
+        // producing audible playback followed by a visible/time jump.
+        fileOptions.append(QStringLiteral("start=%1").arg(
+                               m_pendingLoadStart, 0, 'f', 3));
+    }
+    if (m_initialPositionGatePending || m_pendingLoadPause)
+        fileOptions.append(QStringLiteral("pause=yes"));
+    if (!m_audioUrl.isEmpty())
+        fileOptions.append(QStringLiteral("audio-file=\"%1\"").arg(m_audioUrl));
+    const QByteArray options = fileOptions.join(QStringLiteral(",")).toUtf8();
     m_backend->loadPending = true;
     m_backend->pendingStart = m_pendingLoadStart;
     m_backend->pendingPause = m_pendingLoadPause;
@@ -2177,6 +2233,8 @@ void MpvVideoItem::submitPendingLoad() {
             << "from GUI event loop at" << m_backend->pendingStart
             << "paused" << m_backend->pendingPause
             << "dashAudio" << !m_audioUrl.isEmpty()
+            << "startOption" << (m_backend->pendingStart > 0.0)
+            << "audioStartGated" << m_initialPositionGatePending
             << "videoEnabled" << m_videoEnabled;
 }
 
@@ -2225,14 +2283,36 @@ void MpvVideoItem::drainMpvEvents() {
             const bool pausedAfterLoad = m_backend->loadPending
                                          ? m_backend->pendingPause : m_requestedPaused;
             m_backend->loadPending = false;
-            if (startPosition > 0.0) {
-                const QByteArray position = QByteArray::number(startPosition, 'f', 3);
-                const char *seekCommand[] = {"seek", position.constData(), "absolute+exact", 0};
-                mpv_command_async(mpv, 0, seekCommand);
+            if (m_initialPositionGatePending && startPosition > 0.0) {
+                double loadedPosition = -1.0;
+                const bool startApplied = mpv_get_property(
+                            mpv, "time-pos", MPV_FORMAT_DOUBLE,
+                            &loadedPosition) >= 0
+                        && qAbs(startPosition - loadedPosition) < 0.75;
+                if (startApplied) {
+                    updatePositionFromMpv(loadedPosition);
+                } else {
+                    // Older libmpv builds may ignore the per-file start
+                    // option. They remain paused, so this bounded exact seek
+                    // cannot leak time-zero audio before target confirmation.
+                    const QByteArray position = QByteArray::number(
+                                startPosition, 'f', 3);
+                    const char *seekCommand[] = {
+                        "seek", position.constData(), "absolute+exact", 0
+                    };
+                    mpv_command_async(mpv, 0, seekCommand);
+                    qInfo() << "native player: initial position fallback seek"
+                            << "target" << startPosition
+                            << "loadedPosition" << loadedPosition
+                            << "audioHeld" << true
+                            << "loadSerial" << m_loadSerial;
+                }
+            } else {
+                int paused = pausedAfterLoad ? 1 : 0;
+                mpv_set_property_async(mpv, 0, "pause",
+                                       MPV_FORMAT_FLAG, &paused);
+                updateLoadingFromMpv(false);
             }
-            int paused = pausedAfterLoad ? 1 : 0;
-            mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &paused);
-            updateLoadingFromMpv(false);
         } else if (event->event_id == MPV_EVENT_LOG_MESSAGE) {
             mpv_event_log_message *message = static_cast<mpv_event_log_message *>(event->data);
             if (!message || !message->text) continue;
@@ -2355,22 +2435,54 @@ void MpvVideoItem::drainMpvEvents() {
 }
 
 void MpvVideoItem::updatePositionFromMpv(double position) {
-    const bool confirmedSeek = m_seekPending && qAbs(m_requestedPosition - position) < 0.75;
+    // During loadfile replacement, time-pos can briefly report the superseded
+    // source. An initial target is valid only after FILE_LOADED clears the
+    // backend load latch; ordinary in-place seeks keep their existing path.
+    const bool newFileReady = !m_initialPositionGatePending
+            || (m_backend && !m_backend->loadPending);
+    const bool confirmedSeek = m_seekPending && newFileReady
+            && qAbs(m_requestedPosition - position) < 0.75;
     const bool changed = qAbs(m_position - position) >= 0.05 || confirmedSeek;
     m_position = position;
     resetProgressAnchor();
     syncHardwareClock();
     if (confirmedSeek) {
         m_seekPending = false;
+        if (m_initialPositionGatePending)
+            m_initialPositionConfirmed = true;
         qInfo() << "native player: requested position frame gate confirmed"
                 << "target" << m_requestedPosition
                 << "actual" << position
                 << "loadSerial" << m_loadSerial;
         if (enableSourceFramePresentation("requested-position-confirmed"))
             sharedTextureRenderUpdate(this);
+        releaseInitialPositionGate(position);
     }
     if (changed && (!m_progressClockTimer.isActive() || confirmedSeek))
         emit positionChanged();
+}
+
+void MpvVideoItem::releaseInitialPositionGate(double confirmedPosition) {
+    if (!m_initialPositionGatePending || !m_initialPositionConfirmed
+            || !m_initialVideoFrameReady)
+        return;
+    m_initialPositionGatePending = false;
+    const bool remainPaused = m_requestedPaused;
+    updateLoadingFromMpv(false);
+    if (m_backend && m_backend->mpv) {
+        int paused = remainPaused ? 1 : 0;
+        mpv_set_property_async(m_backend->mpv, 0, "pause",
+                               MPV_FORMAT_FLAG, &paused);
+    }
+    if (m_hardwareDecoder)
+        m_hardwareDecoder->setPaused(remainPaused);
+    qInfo() << "native player: initial position gate released"
+            << "target" << m_requestedPosition
+            << "actual" << confirmedPosition
+            << "audioReleased" << !remainPaused
+            << "audioFromConfirmedTarget" << true
+            << "firstVideoFrameReady" << true
+            << "loadSerial" << m_loadSerial;
 }
 
 void MpvVideoItem::updateDurationFromMpv(double duration) {
@@ -2472,6 +2584,9 @@ void MpvVideoItem::updateEndFileFromMpv(bool ended) {
     m_playing = false;
     m_ended = ended;
     m_playbackStarted = false;
+    m_initialPositionGatePending = false;
+    m_initialPositionConfirmed = false;
+    m_initialVideoFrameReady = false;
     m_seekPending = false;
     m_buffering = false;
     resetProgressAnchor();
@@ -2488,6 +2603,9 @@ void MpvVideoItem::updateErrorFromMpv(const QString &message) {
     m_playing = false;
     m_ended = false;
     m_playbackStarted = false;
+    m_initialPositionGatePending = false;
+    m_initialPositionConfirmed = false;
+    m_initialVideoFrameReady = false;
     m_seekPending = false;
     m_buffering = false;
     resetProgressAnchor();
@@ -2507,7 +2625,14 @@ void MpvVideoItem::updateVideoGeometryFromMpv(int width, int height) {
 }
 
 bool MpvVideoItem::enableSourceFramePresentation(const char *reason) {
-    if (!m_backend || !m_playbackStarted || !m_sourceFileStartedForPresentation
+    // A paused non-zero start intentionally withholds MPV playback restart
+    // until the first picture is ready. Once the new file has confirmed its
+    // target, allow that verified paused frame to become visible so releasing
+    // audio does not depend on an event that itself requires audio to run.
+    const bool confirmedInitialFrame = m_initialPositionGatePending
+            && m_initialPositionConfirmed;
+    if (!m_backend || (!m_playbackStarted && !confirmedInitialFrame)
+            || !m_sourceFileStartedForPresentation
             || m_seekPending || videoAspectRatio() <= 0.0)
         return false;
 
@@ -2543,6 +2668,7 @@ bool MpvVideoItem::enableSourceFramePresentation(const char *reason) {
             << "videoAspect" << videoAspectRatio();
     if (publishedPendingFrame) {
         m_sharedTextureFrameSerial = 1;
+        m_initialVideoFrameReady = true;
         m_sharedTextureFrameTimer.start();
         recordPresentedFrameForFloor();
         qInfo() << "native player: first persistent shared-texture frame rendered"
@@ -2553,6 +2679,7 @@ bool MpvVideoItem::enableSourceFramePresentation(const char *reason) {
                 << "videoAspect" << videoAspectRatio()
                 << "retainedBeforeGeometry" << true;
         emit firstFramePresented(m_loadSerial, position());
+        releaseInitialPositionGate(m_position);
         update();
         emit sharedTextureFrameChanged(m_sharedTextureFrameSerial);
         return true;

@@ -5,13 +5,52 @@ Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.24.aarch64`
-- RPM SHA-256: `7c8cf3bf3ba0df5b45388a467add9689f50345bcc25f90413eb56fb4689de5a6`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.24.aarch64.rpm`
+- NEVRA: `silisili-native-devel-1.1.0-1.25.aarch64`
+- RPM SHA-256: `7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.25.aarch64.rpm`
 - Build/install date: `2026-08-10`
 - stable package state during this validation: absent
 
-## Latest 1.24 mid-play hardware-frame stall recovery
+## Latest 1.25 initial-position startup synchronization
+
+All checks used libmpv position, droidmedia texture, load-serial, playback,
+process and package markers. No screenshot interpretation or visual model was
+used.
+
+- The previous path started libmpv audio at time zero, then issued an
+  `absolute+exact` seek only after `FILE_LOADED`. On a real 14-second history
+  resume, droidmedia had decoded the target window but presentation stayed
+  gated; the 3500 ms first-frame watchdog then incorrectly forced a second
+  software media load. The first visible frame arrived about 7.5 seconds after
+  the original media load while audio had already been running.
+- A non-zero initial position is now carried by the per-file `start` option
+  with playback paused. A stale `time-pos` from the replaced source cannot
+  satisfy the gate. Older libmpv builds retain a bounded exact-seek fallback,
+  but audio remains held throughout that compatibility path.
+- The gate now requires two independent conditions before audio is released:
+  the new file has confirmed the requested position, and a real
+  application-owned video texture is ready. The first frame is therefore
+  reported at the requested 14-second position instead of after audio has
+  advanced. A successfully decoded hardware texture also cancels the codec
+  watchdog even if publication is still waiting for clock alignment.
+- Three consecutive history-resume launches each used one media load, logged
+  `audio_before_target=0`, retained the hardware route and produced no
+  first-frame timeout or software fallback. Media-command-to-first-frame times
+  were `2147`, `1955` and `2350 ms`; request-to-first-frame maximum was
+  `2816 ms`.
+- The deterministic mid-play stall gate still recovered generation 1 to 2 in
+  the same PID with audio reloads at 0, media loads at 1 and the existing
+  texture retained. Post-recovery unique source cadence measured `32.52 fps`
+  for the 30 FPS test representation.
+- The follow-up 1080P60/UHD gate held 63 stable one-second windows for 60
+  seconds with a minimum `56.436 fps`, accepted physical pause/resume, kept
+  queue pressure at zero, and safely resolved both 4K and 8K requests to the
+  verified 1920x1080 representation. The final package passed `rpm -V` and the
+  production launcher was restored.
+- Final RPM SHA-256:
+  `7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337`.
+
+## Historical 1.24 mid-play hardware-frame stall recovery
 
 All checks used deterministic decoder-frame suppression plus resolver, audio
 clock, decoder generation, shared-texture serial, process, memory and package

@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.24
+Release:        1.25
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -100,6 +100,15 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.25
+- Apply a non-zero initial/history position as a paused per-file start option,
+  and release audio only after the new file confirms the target clock and the
+  first real video texture. This removes audible time-zero playback, initial
+  audio-only output and the later visible seek.
+- Treat a successfully decoded application-owned hardware texture as codec
+  startup progress even while presentation waits for audio-position alignment,
+  preventing the first-frame watchdog from forcing a redundant software load.
+
 * Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.24
 - Keep droidmedia frame callbacks nonblocking by dropping an excess incoming
   output under GUI pressure, preventing Binder transaction buildup from

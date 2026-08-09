@@ -18,12 +18,12 @@ pid=$1
 starttime=$(awk '{print $22}' "/proc/$pid/stat")
 package=$(rpm -q --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}' \
     silisili-native-devel)
-test "$package" = silisili-native-devel-1.1.0-1.24.aarch64
+test "$package" = silisili-native-devel-1.1.0-1.25.aarch64
 test -z "$(rpm -V silisili-native-devel 2>/dev/null || true)"
 
 events=$(journalctl -b "_PID=$pid" --no-pager -o cat 2>/dev/null || true)
 printf '%s\n' "$events" | grep -Fq \
-    'native app: build identity "silisili-native-devel" "1.1.0" "1.24"'
+    'native app: build identity "silisili-native-devel" "1.1.0" "1.25"'
 printf '%s\n' "$events" | grep -Fq 'native layout: application ready forced'
 printf '%s\n' "$events" | grep -Fq 'home feed parsed "recommended" page 1'
 test -z "$(printf '%s\n' "$events" | grep -E \
