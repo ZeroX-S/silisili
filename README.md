@@ -2,82 +2,224 @@
   <img src="resources/icon/icon.png" alt="silisili" width="144" height="144">
 </p>
 
-# silisili
-
-`silisili` 是 [wiliwili 1.6.0](https://github.com/xfangfang/wiliwili) 的 Sailfish OS 移植修改版，面向手机触控操作重新适配。首个公开版本为 `v1.0`。
-
-本项目采用 Vibe Coding 开发，并依据 GPL-3.0-or-later 开源。
-
-## 实机界面
+<h1 align="center">silisili</h1>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="silisili 首页" width="30%">
-  <img src="docs/screenshots/about.png" alt="silisili 关于页面" width="30%">
-  <img src="docs/screenshots/launcher.png" alt="Sailfish OS 启动器图标" width="30%">
+  为 Sailfish OS 重新实现的原生哔哩哔哩客户端
 </p>
 
-## 功能
+`silisili` 使用 Qt Quick、Sailfish Silica 和原生 C++ 数据模型重新实现手机端界面与播放链路。当前原生版不再是把电视端 UI 缩放到手机屏幕：页面栈、菜单、对话框、Cover、横竖屏布局、触控手势和后台呈现均按 Sailfish OS 的交互方式设计。
 
-- 参考 Bilibili 移动端的信息结构，提供首页、动态、搜索、个人页、播放、评论和推荐。
-- 使用 Sailfish 页面栈与返回逻辑，提供固定底部主导航，不包含“打开 App”等网页推广控件。
-- 所有文字和数字输入均接入 Sailfish Maliit 输入法，并提供触控返回和确认按钮。
-- 横屏视频进入横屏全屏，竖屏视频保持竖屏；播放器保持媒体比例，不拉伸画面。
-- 支持播放器触控手势、评论分页、下拉刷新和前台播放保持亮屏。
-- 首次启动时，仅在新配置不存在的情况下，将 `~/.config/wiliwili` 私密复制到 `~/.config/silisili`。
+> [!IMPORTANT]
+> 当前原生包仍是开发版本，并非哔哩哔哩官方客户端。接口、清晰度和账号内容会受到登录状态、账号权益、地区与上游服务变化影响。
+
+## 项目状态
+
+仓库目前保留两条可并行安装的产品线。后续开发以原生版为主，旧版仅用于行为对照和回退。
+
+| | 原生开发版 | 旧版稳定包 |
+| --- | --- | --- |
+| 当前版本 | `1.1.0-1.18` | `1.0.0-7`（`v1.0`） |
+| 软件包 | `silisili-native-devel` | `silisili-sailfish` |
+| 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
+| Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
+| 界面技术 | Sailfish Silica 原生页面 | wiliwili/Borealis 手机适配 |
+| 安装关系 | 与旧版并行安装 | 独立保留 |
+
+原生包使用自己的配置目录。首次安装且原生会话不存在时，只读导入旧版配置快照；不会覆盖或删除旧版配置。
+
+## 原生版界面
+
+以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上当前安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。点击图片可查看原始分辨率。
+
+<p align="center">
+  <a href="docs/screenshots/native-readme/home.png"><img src="docs/screenshots/native-readme/home.png" alt="原生首页" width="23%"></a>
+  <a href="docs/screenshots/native-readme/video-detail.png"><img src="docs/screenshots/native-readme/video-detail.png" alt="视频详情与内联播放" width="23%"></a>
+  <a href="docs/screenshots/native-readme/dynamic.png"><img src="docs/screenshots/native-readme/dynamic.png" alt="视频动态页面" width="23%"></a>
+  <a href="docs/screenshots/native-readme/live-feed.png"><img src="docs/screenshots/native-readme/live-feed.png" alt="原生直播列表" width="23%"></a>
+</p>
+
+<p align="center"><sub>首页推荐 · 1080P 视频详情与内联播放 · 视频动态 · 直播列表</sub></p>
+
+<p align="center">
+  <a href="docs/screenshots/native-readme/cover-playing.png"><img src="docs/screenshots/native-readme/cover-playing.png" alt="播放中的视频 Cover" width="23%"></a>
+  <a href="docs/screenshots/native-readme/cover-idle.png"><img src="docs/screenshots/native-readme/cover-idle.png" alt="未播放时的斜纹 Cover" width="23%"></a>
+  <a href="docs/screenshots/native-readme/system-pip.png"><img src="docs/screenshots/native-readme/system-pip.png" alt="系统界面上的播放小窗" width="23%"></a>
+  <a href="docs/screenshots/native-readme/about.png"><img src="docs/screenshots/native-readme/about.png" alt="原生关于页面" width="23%"></a>
+</p>
+
+<p align="center"><sub>播放中的实时视频 Cover · 未播放时的斜纹 Cover · 系统播放小窗 · 版本与兼容性说明</sub></p>
+
+<p align="center">
+  <a href="docs/screenshots/native-readme/quality-picker-landscape.png"><img src="docs/screenshots/native-readme/quality-picker-landscape.png" alt="横屏播放器清晰度选择" width="94%"></a>
+</p>
+
+<p align="center"><sub>横屏播放器与可滑动清晰度面板</sub></p>
+
+## 主要功能
+
+### 浏览与账户
+
+- 首页推荐、分区排行、番剧/影视、直播列表与连续分页。
+- 视频关键词、标题和 UP 主搜索，支持搜索历史与结果分页。
+- 将视频动态与图文、专栏、转发等非视频动态分开浏览，并可打开动态正文。
+- UP 主空间、头像、投稿和动态；图片请求带正确的来源信息并使用有界缓存，降低头像首次加载失败的概率。
+- 二维码登录。Sailfish OS 5.2+ 运行时优先使用 `Amber.Barcode 1.0`，5.1 优先使用 `QrShareImage 1.0`，组件不可用时自动尝试另一实现。
+- 二维码不会因轮询状态自行刷新；只有用户主动刷新或二维码 URL 确实改变时才重建。
+- 历史记录、收藏夹、订阅合集、追番、追剧和稍后再看。
+- 从历史记录进入视频时恢复到已记录位置，播放过程中持续上报进度。
+- 主评论、回复楼层、发布评论、回复、点赞与取消点赞。
+
+### 视频、番剧与直播
+
+- 普通视频、番剧/影视、直播和多 P 视频；当前分 P 播放完成后自动续播下一 P。
+- 展示接口实际返回的全部清晰度档位，并按选择的精确 `qn` 请求 DASH 媒体；清晰度面板可滑动，不会因切换到低清后丢失高画质选项。
+- 画质标签来自实际解析结果。1080P、1080P+ 和高帧率档位仍取决于账号权益及服务端是否返回对应视频轨道。
+- 弹幕分段加载、透明度、字号、速度和安全轨道布局。
+- 播放/暂停、精确跳转、倍速、音量、亮度、进度条与当前/总时长同步。
+- 横竖屏与全屏自适应，保持视频原始比例，不把横屏直播或后续视频过度拉伸。
+- 一个进程级播放会话在详情页、全屏、应用内小窗、Cover 与系统小窗之间复用，切换界面时不重新加载或隐藏定位。
+
+### Sailfish OS 集成
+
+- 使用 `ApplicationWindow`、`PageStack`、`SilicaListView`、`PullDownMenu`、`ContextMenu` 和原生 Dialog。
+- 支持 Sailfish 边缘返回、Maliit 输入法、设备方向传感器和前台播放保持亮屏。
+- 后台显示可在“Cover 播放”和“系统小窗播放”之间配置，两种模式不会同时绘制。
+- Cover 在播放时显示实时视频画面；未播放时显示轻量的品牌斜纹背景和状态信息。
+- 系统小窗使用 Lipstick notification 表面：可拖动、记忆位置、跟随设备方向，点按返回播放页；视频之外的透明区域保持点击穿透。
+- 锁屏、熄屏、停止播放或自然播放完成时自动隐藏系统小窗；关闭按钮停止播放并保留足够的触控区域。
+
+## 播放架构
+
+原生版把“解码”和“显示位置”分开。前台、Cover 与 PiP 只是在不同的 Sailfish 表面采样同一张应用共享纹理，不会为切换显示位置重建播放器。
+
+```text
+Bilibili playurl / DASH
+        │
+        ├─ FFmpeg 解复用 ─ droidmedia / Android OMX 硬解
+        │                        │
+        │                 gralloc + EGLImage
+        │                        │
+        └─ libmpv / FFmpeg 软解回退
+                                 │
+                      应用共享 OpenGL 视频纹理
+                                 │
+             ┌──────────┬────────┴────────┬──────────┐
+           详情页       全屏           Cover       系统 PiP
+```
+
+- 硬解路径使用 `droidmedia` 的 `HW_ONLY` 能力探测；音频、主时钟和播放状态仍由 libmpv 管理。
+- 解码后的 gralloc 帧通过 EGLImage 留在 GPU 内，不经过整帧 CPU 拷贝。
+- 硬解、EGL 输出或设备能力不可用时，会从当前位置降级到完整的 libmpv/FFmpeg 软件解码。
+- 快进在硬解路径中刷新现有解码器；切换画质、前后台或呈现表面不应只移动音频而留下旧帧。
+
+详细设计见 [原生架构说明](docs/NATIVE_SAILFISH_ARCHITECTURE.md)。
+
+## 兼容性
+
+当前 RPM 仅面向 AArch64 Sailfish OS 设备。
+
+| 环境 | 当前状态 |
+| --- | --- |
+| Sailfish OS `5.0.0.62` SDK | 原生包的最低编译、依赖与 ABI 基线；尚未声明 5.0 真机完整验证 |
+| Pixel 3a XL / Sailfish OS `5.1.0.11` | 当前完整实机开发和回归环境 |
+| Sailfish OS 5.2 | 已实现 `Amber.Barcode`/`QrShareImage` 运行时兼容；完整设备回归仍需按具体机型执行 |
+
+硬件解码依赖设备提供可用的 Android 媒体栈、`droidmedia` 与 libhybris EGL/GLES；硬解条件不满足时由播放器使用软件解码兼容路径。系统 PiP 另行依赖 Lipstick notification 表面和软件包声明的权限，不可用时应选择 Cover。
 
 ## 安装
 
-从 `v1.0` Release 下载同一个 AArch64 Sailfish RPM，可用于 Sailfish OS 5.0
-和 5.1：
+### 原生开发版
+
+当前 `1.1.0-1.18` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+
+```sh
+devel-su rpm -Uvh --replacepkgs \
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.18.aarch64.rpm
+```
+
+安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
+
+### 旧版稳定包
+
+旧版可从 [v1.0 Release](https://github.com/ZeroX-S/silisili/releases/tag/v1.0) 下载：
 
 ```text
 silisili-sailfish-1.0.0-7.aarch64.rpm
 SHA-256: db88e1f206c4ee519219df76b1a5be0125a5c2893709b90fb2b34227765e1ed5
 ```
 
-新包会替换旧的 `wiliwili-sailfish` 包，但保留旧配置目录作为迁移来源。应用运行路径为 `/usr/bin/silisili`，桌面 ID 为 `cn.silisili.app`。
-
-该包以 Sailfish OS `5.0.0.62` SDK 为最低编译基线，并在 Pixel 3a XL
-的 Sailfish OS `5.1.0.11` 上做实机验证。5.0 当前完成 SDK、依赖和 ABI
-兼容校验，不标注为 5.0 真机测试。
-
-`1.0.0-7` 不再把移动 Web 的 `vmin` 比例直接套到整套界面，而是按
-Android/iOS 原生客户端的视觉层级分别校准：正文约 16pt，辅助文字约
-12–14pt，底部导航约 12pt，可视图标约 24–28pt，触控目标约 48–56pt。
-设置侧栏、弹窗、播放器顶栏、进度条和清晰度菜单也按手机可用宽度重新
-排布，打开后不会越出屏幕。返回手势仅从系统边缘内侧的窄区起手，避免
-与直播和视频横向手势冲突。切换普通视频或直播清晰度时，会保持当前
-播放或暂停状态。
-不同分辨率和长宽比按物理短边重排；可信的 Wayland 屏幕毫米尺寸会用于
-有上下限的 DPI/物理尺寸修正，缺失或可疑数据则安全回退到分辨率短边。
-重复切换横屏后，窗口仍恢复为 1080×2160。
-
 ## 构建
 
-仓库已经收录完整依赖源码，包括本移植修改过的 Borealis 和 GLFW，不需要初始化 Git 子模块。常规 CMake 构建：
+### 1. 校验原生源码清单
+
+每次构建或提交前先运行：
 
 ```sh
-cmake -S . -B build -G Ninja \
-  -DPLATFORM_DESKTOP=ON \
-  -DINSTALL=ON \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr \
-  -DGLFW_BUILD_WAYLAND=ON \
-  -DGLFW_BUILD_X11=OFF \
-  -DUSE_GLES2=ON \
-  -DUSE_EGL=ON \
-  -DSILISILI_SAILFISH_MOBILE=ON
-cmake --build build
+bash vm-deploy/scripts/verify-silisili-native-source.sh
 ```
 
-工具链、RPM 复现条件和校验方式见 [BUILDING.md](BUILDING.md)。完整基线、依赖版本和补丁哈希见 [UPSTREAM.md](packaging/apps/silisili/UPSTREAM.md)。
-Sailfish OS 5.0 ABI 校验与 5.1 真机回归记录见
-[docs/SAILFISH_5X_VALIDATION.md](docs/SAILFISH_5X_VALIDATION.md)。
+校验会检查 RPM、CMake 与 qmake 版本是否一致、源码和 QRC 清单是否闭合、桌面入口是否为生产配置，以及 Cover/系统 PiP 配置是否仍被正确接入。
+
+### 2. 构建 AArch64 RPM
+
+构建脚本默认使用 `SailfishOS-5.0.0.62-aarch64` target 和 `SailfishOS-5.0.0.62-i486` tooling。除了 Sailfish SDK，还需要已经验证的私有 libmpv/FFmpeg 运行库、ARM32 minimedia ABI shim，以及一份包含对应运行库许可文件的旧原生 RPM：
+
+```sh
+export PROJECT_ROOT="$PWD"
+export BUILD_ROOT="$HOME/silisili-native-build"
+export OUTPUT_DIR="$HOME/silisili-native-artifacts"
+export SILISILI_MPV_PREFIX="/path/to/validated/silisili-runtime"
+export SILISILI_MINIMEDIA_SHIM="/path/to/libminimedia-audiosource-shim.so"
+export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
+
+bash vm-deploy/scripts/build-silisili-native-rpm.sh
+```
+
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.18.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+
+旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
+
+## 验证基线
+
+`1.1.0-1.18` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了基于进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记的回归；测试不依赖截图内容推断。
+
+- Android OMX 硬解、gralloc/EGLImage 共享纹理，CPU 整帧拷贝为 `0`，未触发软件回退。
+- 连续 60 秒显示帧率窗口不低于 45 fps。
+- 精确 DASH 清晰度切换保持同一进程、播放位置和完整清晰度目录。
+- Cover、前台与系统 PiP 使用同一解码器、同一媒体加载和同一播放时钟。
+- 系统 PiP 经过横竖方向、拖动与位置持久化、锁屏隐藏/解锁恢复、点按返回和连续两轮后台/恢复回归。
+- PiP 返回前台时没有重复加载、隐藏 seek 或中间重映射闪现；关闭按钮只显示主题关闭图标，不再覆盖半透明圆形背景。
+
+完整历史记录、边界和已知限制见 [真机验证记录](docs/NATIVE_DEVICE_VALIDATION.md)、[迁移矩阵](docs/NATIVE_MIGRATION_MATRIX.md) 与 [测试部署工具说明](docs/NATIVE_TESTING_TOOLS.md)。
+
+## 目录结构
+
+| 路径 | 内容 |
+| --- | --- |
+| `native/src/` | 原生 C++ 数据模型、API、播放会话、硬解和系统 PiP |
+| `native/qml/` | Sailfish Silica 页面、组件、Cover 与 PiP 窗口 |
+| `packaging/apps/silisili-native/` | 原生 RPM、桌面入口、权限、服务与上游署名 |
+| `vm-deploy/scripts/` | SDK 构建、源码校验、部署和设备回归工具 |
+| `docs/NATIVE_*.md` | 原生架构、迁移进度和真机验证记录 |
+| 仓库根目录的旧 C++ 源码 | `1.0.x` wiliwili/Borealis 移植，作为旧版保留 |
+
+## 已知边界
+
+- 原生包仍以 `-devel` 名称发布，接口和交互可能继续调整。
+- Sailfish OS 5.0 当前只有 SDK/ABI 验证；5.2 的完整真机矩阵尚未闭合。
+- 服务端可能按账号、地区、风控或版权限制返回不同的动态、评论、直播、番剧和清晰度结果。
+- 并非所有设备都有可用的 droidmedia 硬解或 Lipstick 系统 PiP 能力；软件回退和 Cover 是兼容路径。
 
 ## 上游与许可
 
-本项目派生自 `xfangfang/wiliwili`，上游作者的版权声明不会因 fork 改名而改变。应用代码继续依据 [GPL-3.0](LICENSE) 发布；Borealis、GLFW、mpv、FFmpeg 及其他依赖分别遵循其自身许可证。
+原生客户端建立在早期 [wiliwili](https://github.com/xfangfang/wiliwili) Sailfish 移植积累之上。应用代码继续依据 [GPL-3.0-or-later](LICENSE) 发布；Qt、Sailfish Silica、libmpv、FFmpeg、droidmedia、libhybris 及其他依赖分别遵循其自身许可证。
+
+直接硬解与共享纹理方案参考并改造自 [RooTheater-SailfishOS](https://github.com/RootGPT-YouTube/RooTheater-SailfishOS)，系统 PiP 的 Lipstick notification 表面和输入区域机制参考 [screentapshot-lipstick](https://github.com/CODeRUS/screentapshot-lipstick)。具体署名随 RPM 安装，并保存在：
+
+- [`NOTICE.RooTheater`](packaging/apps/silisili-native/NOTICE.RooTheater)
+- [`NOTICE.ScreenTapShotLipstick`](packaging/apps/silisili-native/NOTICE.ScreenTapShotLipstick)
 
 仓库不包含账号、Cookie、Token、服务凭据、DRM 绕过或专有解码器。
 
-`silisili` 是非官方客户端，与哔哩哔哩及其关联公司没有隶属或认可关系。Bilibili 名称及相关标识归其权利人所有。
+`silisili` 与哔哩哔哩及其关联公司没有隶属、认可或合作关系。Bilibili 名称及相关标识归其权利人所有。
