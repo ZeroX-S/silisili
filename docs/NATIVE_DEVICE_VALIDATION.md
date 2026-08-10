@@ -5,13 +5,127 @@ Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.25.aarch64`
-- RPM SHA-256: `7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.25.aarch64.rpm`
+- NEVRA: `silisili-native-devel-1.1.0-1.35.aarch64`
+- RPM SHA-256: `cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.35.aarch64.rpm`
 - Build/install date: `2026-08-10`
 - stable package state during this validation: absent
 
-## Latest 1.25 initial-position startup synchronization
+## Latest 1.35 unified VOD/live session and background presentation
+
+- `PlaybackSession` is now the common presentation owner for ordinary VOD,
+  PGC and live. It alone owns the persistent player, foreground surface,
+  shared texture, pause/stop state, Cover, system PiP and foreground recovery.
+- `PlaybackResolver` and `LiveResolver` remain separate source adapters. VOD
+  retains history, seek, speed, multi-part continuation and its `127` quality
+  ceiling; live retains server QN values, non-seekable/non-speed semantics and
+  cancels an outstanding room request when its session closes.
+- A live-to-VOD/PGC handoff now cancels the old live resolution before the
+  on-demand resolver is allowed to publish, retains the presentation surface,
+  and resets playback speed to 1x. Entering live also resets speed, so a prior
+  VOD 1.25x/2x setting cannot leak into the non-seekable stream.
+- A live page no longer pauses itself when Sailfish backgrounds the app and no
+  longer loads a URL directly. The selected background mode therefore mirrors
+  the same advancing live texture in Cover or system PiP without a second
+  decoder or media reload.
+
+Current 1.35 device results:
+
+- One live room ran for 60 seconds in one PID. Hardware frame serial advanced
+  from 61 to 1861 at `29.92 fps`; physical pause/resume worked, only one media
+  load was submitted and no software fallback occurred.
+- Live Cover advanced real shared-texture frames from 27 to 57. Returning to
+  foreground retained the same process, decoder and single load, without a
+  hidden seek or background pause.
+- Live system PiP logged `mediaKind=live`, advanced real frames and returned to
+  foreground with one load, no hidden seek, no background pause and no
+  fallback. The user-selected background mode was restored to Cover afterward.
+- Ordinary VOD Cover advanced frames from 91 to 121 with the same decoder and
+  zero reloads. Ordinary VOD system PiP passed two background/restore cycles
+  with zero low-frame windows, zero remap flashes and no fallback.
+- Two-part VOD auto-next used two hardware decoder generations in the same
+  process and withdrew the first part texture before part two was loaded and
+  presented.
+- Three history-position starts each presented the requested 14-second frame
+  from one load while audio stayed gated until confirmation. Maximum
+  media-load-to-frame latency was `2241 ms`; maximum full request-to-frame was
+  `2780 ms`. The functional isolation gate passes, but the full path remains
+  above the separate 2-second startup performance target.
+- The package remained clean under `rpm -V`; all evidence came from process,
+  decoder, load-serial, shared-texture and physical-input markers. No screenshot
+  interpretation or visual model was used.
+
+## 1.34 live, global texture sharing and regression closure
+
+All gates used application, decoder, shared-texture, process, package and
+physical-input markers. No screenshot interpretation or visual model was used.
+
+- The live-only repair preserves the 1.25 VOD paint path. A live load waits
+  for the process-lifetime renderer, normalizes wallclock-like FLV/HLS PTS to
+  the libmpv audio clock, and gives only live containers the larger audio
+  discovery probe. Normal DASH VOD continues through `loadSourceWithAudio()`
+  with the old probe budget and strict Qt share-group check.
+- Sailfish 5.1 did not create Qt's global share context from
+  `AA_ShareOpenGLContexts` before a cold direct page. Sharing the offscreen
+  renderer only with the main window fixed foreground live video but left the
+  separately rendered Cover outside that group. 1.34 seeds Qt's exported
+  process-wide global share context before either QQuick scene graph exists;
+  foreground, Cover and system PiP then all join the same group.
+- A cold direct live room ran for 60 seconds in one PID. Hardware frame serial
+  advanced from 61 to 1861 at `29.96 fps`, physical pause/resume worked, CMA
+  remained stable, the streaming timeline was normalized and no software
+  fallback occurred.
+- The ordinary Home first-card VOD used its prepared hardware frame in the
+  same process after a physical tap. The main scene graph reported texture
+  sharing true and did not enter first-frame fallback.
+- Cover reported texture sharing true and presented different live hardware
+  frames 98 and 128. Returning to foreground retained the decoder and media
+  load, with no seek recovery. System PiP then passed two complete
+  background/foreground cycles, two appearances, two restore guards, zero
+  remap flashes and no display window below 45 fps.
+- Three 14-second history resumes each used one media load with
+  `audio_before_target=0`; maximum media-command-to-frame latency was 1801 ms
+  and maximum full request-to-frame latency was 2375 ms. The functional gate
+  passes, while the latter remains above the separate 2-second performance
+  target and is not reported as closed.
+- The deterministic stalled-frame gate restarted only decoder generation 1 to
+  2 in the same PID. Audio reloads stayed 0, media loads stayed 1, the current
+  texture was retained and recovered source cadence was `33.09 fps`.
+- Exact seek did not recreate the decoder; 2x hold and 1x restoration did not
+  reload media. Two-part auto-next withdrew the first part's old texture
+  before publishing part two. The physical quality picker kept all five ids
+  `116,80,64,32,16` across 1080P -> 720P -> 1080P and retained position.
+- A 4K request safely used the verified 1920x1080/60 representation for 60
+  seconds with 63 windows and minimum `54.455 fps`; 8K used the same guard.
+  Neither attempted an unsafe UHD OMX allocation or software fallback.
+- During a real Home swipe Wi-Fi was disabled and restored. All 12 subsequent
+  physical swipes succeeded in the same PID, contentY reached 6398 and request
+  failures stayed 0. A separate 64-attempt recovery gate produced no offline
+  request storm and completed a fresh request in the same process.
+- Final production state is one PID (`18497` at cleanup), no
+  `SILISILI_NATIVE_TEST_*` environment variables, Cover background mode,
+  connected Wi-Fi, normal blanking policy and clean `rpm -V`.
+
+## Historical 1.26 live hardware timeline and non-seekable fallback
+
+- The captured 1.25 failure resolved a real FLV live source and started audio,
+  but its first video PTS was tens of thousands of seconds from zero. The
+  hardware packet limiter compared that raw timestamp with libmpv's zero-based
+  live clock, held every video packet, expired the first-frame watchdog, and
+  produced no shared texture.
+- Hardware live playback now anchors the first real container timestamp to
+  libmpv's current clock. Initial entry maps it to zero; a same-source decoder
+  restart maps it to the retained audio position without attempting an FLV
+  seek.
+- If hardware still fails, live software fallback restarts at the stream head
+  instead of applying an impossible non-zero initial-position gate to a
+  non-seekable source.
+- `SILISILI_NATIVE_TEST_PAGE=live-player` plus
+  `SILISILI_NATIVE_TEST_ROOM_ID` opens a current room directly. Optional
+  `SILISILI_NATIVE_TEST_CONTENT_MODE=quality-cycle` changes to one different
+  advertised quality and requires another real frame on the same player.
+
+## 1.25 initial-position startup synchronization
 
 All checks used libmpv position, droidmedia texture, load-serial, playback,
 process and package markers. No screenshot interpretation or visual model was

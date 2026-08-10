@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.25` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.35` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -30,7 +30,7 @@
 
 ## 原生版界面
 
-以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.25` 的网络、超高清保护、硬解冻结恢复和启播同步修复不改变这些界面。点击图片可查看原始分辨率。
+以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.35` 的网络、超高清保护、硬解冻结恢复、启播同步、直播时间戳、跨场景图共享和直播后台呈现修复不改变这些界面。点击图片可查看原始分辨率。
 
 <p align="center">
   <a href="docs/screenshots/native-readme/home.png"><img src="docs/screenshots/native-readme/home.png" alt="原生首页" width="23%"></a>
@@ -136,14 +136,17 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-当前 `1.1.0-1.25` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+当前 `1.1.0-1.35` 是开发分支基线，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.25.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.35.aarch64.rpm
 ```
+
+本轮真机回归使用的 AArch64 RPM SHA-256 为
+`cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e`。
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
 
@@ -183,24 +186,27 @@ export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
 bash vm-deploy/scripts/build-silisili-native-rpm.sh
 ```
 
-产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.25.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.35.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
 
 旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
 
 ## 验证基线
 
-`1.1.0-1.25` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成了历史位置启播、网络恢复、进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记回归；测试不依赖截图内容推断。
+`1.1.0-1.35` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上执行直播、直播 Cover/系统 PiP、普通点播、历史位置启播、网络恢复、进程、解码器、共享纹理、帧交换、Lipstick 表面和物理触控标记回归；测试不依赖截图内容推断。
 
-- 历史位置 `14s` 连续启播三次，每次只有一个媒体加载；目标时钟和第一张真实纹理确认前音频保持暂停，没有先声后画后的二次定位，也没有误触发软件回退。媒体命令至首帧最大 `2350 ms`，完整请求至首帧最大 `2816 ms`。
+- 冷启动直播连续运行 60 秒，硬解帧序号从 61 推进到 1861，真实 30fps 源测得 `29.92 fps`；物理暂停/继续正常、无软件回退。直播 FLV 时间戳和音频探测只作用于直播加载，不改变普通 VOD 请求。
+- `PlaybackSession` 统一持有一个进程级播放器、前台表面、Cover/系统 PiP 与恢复流程；普通视频、PGC 和直播仍分别保留各自解析、清晰度、历史/进度和可定位能力。直播不写点播历史、不允许 seek/倍速，点播不使用直播 QN。
+- 直播 Cover 实时帧从 27 推进到 57；直播系统 PiP 被识别为 `mediaKind=live`。两种后台模式都沿用同一解码器、只有一次媒体加载，返回前台没有隐藏 seek、后台暂停或软件回退。普通 VOD Cover 帧从 91 推进到 121，系统 PiP 连续两轮也没有低于 45fps 或重映射闪现。
+- 历史位置 `14s` 连续启播三次，每次只有一个媒体加载；目标时钟和第一张真实纹理确认前音频保持暂停，没有先声后画后的二次定位，也没有误触发软件回退。媒体命令至首帧最大 `2241 ms`，完整请求至首帧最大 `2780 ms`；后者仍高于项目的 2 秒性能目标，不作为已经解决的指标。
 - Android OMX 硬解、gralloc/EGLImage 共享纹理，CPU 整帧拷贝为 `0`，未触发软件回退。
-- 注入“画面冻结、音频继续”后，同一 PID 内只把视频解码 generation 从 1 重建为 2；音频重载为 0、媒体加载仍为 1、旧纹理保留，恢复后 30fps 片源实测 `32.52 fps`。
-- 1080P60 连续 60 秒的 63 个稳定显示窗口最低 `56.436 fps`，硬解回调丢帧与队列压力均为 0。
+- 注入“画面冻结、音频继续”后，同一 PID 内只把视频解码 generation 从 1 重建为 2；音频重载为 0、媒体加载仍为 1、旧纹理保留，恢复后 30fps 片源实测 `33.09 fps`。
+- 1080P60 连续 60 秒的 63 个稳定显示窗口最低 `54.455 fps`，硬解回调丢帧与队列压力均为 0。
 - 精确 DASH 清晰度切换保持同一进程、播放位置和完整清晰度目录。
 - Cover、前台与系统 PiP 使用同一解码器、同一媒体加载和同一播放时钟。
 - 系统 PiP 经过横竖方向、拖动与位置持久化、锁屏隐藏/解锁恢复、点按返回和连续两轮后台/恢复回归。
 - PiP 返回前台时没有重复加载、隐藏 seek 或中间重映射闪现；关闭按钮只显示主题关闭图标，不再覆盖半透明圆形背景。
 - 一次性网络切换回归在首个请求失效后立即退出 loading，同一 PID 的新请求成功；随后普通生产入口首页加载完成，`rpm -V` 和 QML 错误扫描均保持干净。
-- 首页正在滑动时物理关闭 Wi-Fi 后，应用保持同一 PID，后续 12 次触控滑动全部成功且没有离线请求风暴；恢复网络后首页能继续刷新。
+- 首页正在滑动时物理关闭 Wi-Fi 后，应用保持同一 PID，后续 12 次触控滑动全部成功、内容位置推进到 `6398` 且没有离线请求风暴；恢复网络后首页能继续刷新。独立 64 次快速分页恢复门也在同一 PID 完成。
 - 4K/8K 请求在当前未验证 UHD 的设备上都安全解析到真实 1920×1080/60 硬解；4K 请求从历史位置 `14s` 启播，加载状态正常结束，物理触控暂停/恢复均可用，没有 UHD OMX 分配、软件解码回退、帧队列堵塞或 CMA 耗尽。
 
 完整历史记录、边界和已知限制见 [真机验证记录](docs/NATIVE_DEVICE_VALIDATION.md)、[迁移矩阵](docs/NATIVE_MIGRATION_MATRIX.md) 与 [测试部署工具说明](docs/NATIVE_TESTING_TOOLS.md)。

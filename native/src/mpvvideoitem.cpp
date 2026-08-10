@@ -231,6 +231,7 @@ static QString activeV4l2Device() {
 MpvVideoItem::MpvVideoItem(QQuickItem *parent)
     : QQuickItem(parent), m_backend(new MpvVideoBackend),
       m_hardwareDecoder(new DroidVideoDecoder(this)),
+      m_liveStreamSource(false),
       m_sharedTextureRenderQueued(0), m_sharedTextureFrameSerial(0),
       m_lastCoverSwapFrameSerial(0), m_coverSwapCadenceFrames(0),
       m_frameFloorWindowFrames(0), m_frameFloorWindowCount(0),
@@ -355,6 +356,13 @@ double MpvVideoItem::position() const {
     if (m_duration > 0.0 && displayedPosition > m_duration)
         displayedPosition = m_duration;
     return displayedPosition;
+}
+
+bool MpvVideoItem::rendererReady() const {
+    if (!m_backend) return false;
+    QMutexLocker locker(&m_backend->mutex);
+    return m_backend->mpv && m_backend->renderContext
+            && m_backend->renderGlContext && m_backend->renderSurface;
 }
 
 void MpvVideoItem::prewarm() {
@@ -577,11 +585,19 @@ bool MpvVideoItem::ensureMpv() {
             << "interpolation" << mpvStringProperty(handle, "options/interpolation");
     QOpenGLContext *renderGlContext = new QOpenGLContext;
     QOpenGLContext *globalShareContext = QOpenGLContext::globalShareContext();
-    const QSurfaceFormat renderFormat = globalShareContext
-            ? globalShareContext->format() : QSurfaceFormat::defaultFormat();
+    // On Sailfish a direct initial live page can receive sceneGraphInitialized
+    // before Qt publishes globalShareContext(). The QQuickWindow context is
+    // already valid at that point, so use it as the explicit share parent.
+    // The established 1.25 VOD path still selects globalShareContext whenever
+    // it exists and is therefore unchanged.
+    QOpenGLContext *windowShareContext = window() ? window()->openglContext() : 0;
+    QOpenGLContext *shareContext = globalShareContext
+            ? globalShareContext : windowShareContext;
+    const QSurfaceFormat renderFormat = shareContext
+            ? shareContext->format() : QSurfaceFormat::defaultFormat();
     renderGlContext->setFormat(renderFormat);
-    if (globalShareContext)
-        renderGlContext->setShareContext(globalShareContext);
+    if (shareContext)
+        renderGlContext->setShareContext(shareContext);
     if (!renderGlContext->create()) {
         m_errorMessage = QStringLiteral("视频 OpenGL 上下文初始化失败");
         qWarning() << "native player: persistent offscreen OpenGL context creation failed";
@@ -625,7 +641,10 @@ bool MpvVideoItem::ensureMpv() {
     }
     renderGlContext->doneCurrent();
     qInfo() << "native player: persistent shared-texture render context initialized"
-            << "globalShare" << (globalShareContext != 0);
+            << "globalShare" << (globalShareContext != 0)
+            << "windowShareFallback"
+            << (!globalShareContext && windowShareContext != 0)
+            << "shareParent" << (shareContext != 0);
 
     mpv_observe_property(handle, 1, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(handle, 2, "duration", MPV_FORMAT_DOUBLE);
@@ -647,6 +666,7 @@ bool MpvVideoItem::ensureMpv() {
         m_backend->renderGlContext = renderGlContext;
         m_backend->renderSurface = renderSurface;
     }
+    emit rendererReadyChanged();
     mpv_render_context_set_update_callback(renderContext,
                                            &MpvVideoItem::sharedTextureRenderUpdate,
                                            this);
@@ -948,7 +968,8 @@ bool MpvVideoItem::startHardwareDecode(const QString &videoUrl,
                    << "fallback" << "software";
         return false;
     }
-    return m_hardwareDecoder->start(videoUrl, startPosition);
+    return m_hardwareDecoder->start(videoUrl, startPosition,
+                                    m_liveStreamSource);
 }
 
 void MpvVideoItem::stopHardwareDecode() {
@@ -1053,7 +1074,8 @@ void MpvVideoItem::restartHardwareDecodeAfterStall() {
     m_hardwareDecoder->stop();
 
     const bool restarted = m_hardwareDecoder->start(m_originalVideoUrl,
-                                                    retainedPosition);
+                                                    retainedPosition,
+                                                    m_liveStreamSource);
     m_hardwareDecodeActive = restarted;
     if (!restarted) {
         // Keep the existing complete compatibility path as the last resort.
@@ -1130,15 +1152,21 @@ void MpvVideoItem::fallbackToSoftwareDecode(const QString &reason) {
     if (!m_hardwareDecodeActive || m_originalVideoUrl.isEmpty()) return;
     const QString videoUrl = m_originalVideoUrl;
     const QString audioUrl = m_originalAudioUrl;
-    const double fallbackPosition = position();
+    // A live container is not seekable. Reopening it at libmpv's elapsed
+    // position adds a non-zero initial-position gate which can never be
+    // confirmed, permanently hiding an otherwise valid software frame.
+    const double fallbackPosition = m_liveStreamSource ? 0.0 : position();
     const bool fallbackPaused = m_requestedPaused || m_paused;
     qWarning() << "native hardware video: switching to software fallback"
                << "reason" << reason
                << "position" << fallbackPosition
+               << "liveStream" << m_liveStreamSource
+               << "seekSuppressed" << m_liveStreamSource
                << "paused" << fallbackPaused
                << "sameSource" << true;
     m_hardwareFallbackForCurrentLoad = true;
-    loadSourceWithAudio(videoUrl, audioUrl, fallbackPosition, fallbackPaused, true);
+    loadSourceInternal(videoUrl, audioUrl, fallbackPosition, fallbackPaused,
+                       true, m_liveStreamSource);
 }
 
 void MpvVideoItem::renderPendingHardwareFrame(int generation) {
@@ -1802,12 +1830,23 @@ QSGNode *MpvVideoMirrorItem::updatePaintNode(
 }
 
 void MpvVideoItem::loadSource(const QString &sourceUrl, double startPosition, bool pausedAfterLoad) {
-    loadSourceWithAudio(sourceUrl, QString(), startPosition, pausedAfterLoad, true);
+    loadSourceInternal(sourceUrl, QString(), startPosition, pausedAfterLoad,
+                       true, true);
 }
 
 void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &audioUrl,
                                        double startPosition, bool pausedAfterLoad,
                                        bool videoEnabled) {
+    loadSourceInternal(sourceUrl, audioUrl, startPosition, pausedAfterLoad,
+                       videoEnabled, false);
+}
+
+void MpvVideoItem::loadSourceInternal(const QString &sourceUrl,
+                                      const QString &audioUrl,
+                                      double startPosition,
+                                      bool pausedAfterLoad,
+                                      bool videoEnabled,
+                                      bool liveStreamSource) {
     if (sourceUrl.isEmpty() || !m_backend) return;
     if (!ensureMpv()) return;
     const bool forceSoftwareForThisLoad = m_hardwareFallbackForCurrentLoad;
@@ -1815,6 +1854,7 @@ void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &
     stopHardwareDecode();
     m_originalVideoUrl = sourceUrl;
     m_originalAudioUrl = audioUrl;
+    m_liveStreamSource = liveStreamSource;
     // A direct load (including a quality change) must never leave the last
     // source's texture attached while mpv opens the replacement stream.
     withdrawPresentedFrame("load-request");
@@ -1869,6 +1909,7 @@ void MpvVideoItem::loadSourceWithAudio(const QString &sourceUrl, const QString &
             << "hardware" << hardwareStarted
             << "video" << (hardwareStarted ? sourceUrl : m_sourceUrl)
             << "audioSeparate" << !audioUrl.isEmpty()
+            << "liveStream" << m_liveStreamSource
             << "fallbackForced" << forceSoftwareForThisLoad;
     emit stateChanged();
     emit positionChanged();
@@ -1884,6 +1925,7 @@ void MpvVideoItem::beginSourceTransition() {
     resetVideoGeometry("new-selection");
     m_sourceUrl.clear();
     m_audioUrl.clear();
+    m_liveStreamSource = false;
     m_loadCommandPending = false;
     m_backend->loadPending = false;
     m_initialPositionGatePending = false;
@@ -1917,7 +1959,8 @@ void MpvVideoItem::setPaused(bool paused) {
                 ? m_sourceUrl : m_originalVideoUrl;
         const QString replayAudio = m_originalVideoUrl.isEmpty()
                 ? m_audioUrl : m_originalAudioUrl;
-        loadSourceWithAudio(replayVideo, replayAudio, 0.0, false, true);
+        loadSourceInternal(replayVideo, replayAudio, 0.0, false, true,
+                           m_liveStreamSource);
         return;
     }
     const bool changed = m_paused != paused || (paused && m_playing);
@@ -2116,6 +2159,7 @@ void MpvVideoItem::stop() {
     m_audioUrl.clear();
     m_originalVideoUrl.clear();
     m_originalAudioUrl.clear();
+    m_liveStreamSource = false;
     stopHardwareDecode();
     m_loadCommandPending = false;
     if (m_backend) m_backend->loadPending = false;
@@ -2201,6 +2245,15 @@ void MpvVideoItem::submitPendingLoad() {
     QStringList fileOptions;
     fileOptions.append(QStringLiteral("referrer=\"https://www.bilibili.com\""));
     fileOptions.append(QStringLiteral("network-timeout=5"));
+    if (m_liveStreamSource) {
+        // The global low-latency probe budget is sized for Bilibili DASH MP4.
+        // FLV live streams can place the first AAC metadata/packet after the
+        // first 32 KiB; when the direct decoder owns video, libmpv would then
+        // see no selected stream and terminate the audio clock. Give only live
+        // container loads enough data to discover their audio track.
+        fileOptions.append(QStringLiteral("demuxer-lavf-analyzeduration=1"));
+        fileOptions.append(QStringLiteral("demuxer-lavf-probesize=1048576"));
+    }
     if (m_pendingLoadStart > 0.0) {
         // Position the audio demuxer before it is allowed to run. Previously
         // audio started at zero and FILE_LOADED issued a second exact seek,

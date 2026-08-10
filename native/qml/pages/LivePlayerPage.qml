@@ -9,19 +9,22 @@ Page {
     property string roomId
     property string roomTitle
     property string roomOwner
-    property int loadedRevision: 0
-    property bool resumePaused: false
+    property string roomCover
     property bool controlsVisible: true
-    property bool resumeAfterForeground: false
     property bool wasPlaying: false
     property int orientationMode: 0
     property var video: playbackVideo
+    property bool qualityRegression: false
+    property bool qualityRegressionRequested: false
+    property bool qualityRegressionComplete: false
+    property int qualityRegressionPreviousLoadSerial: 0
+    property bool liveStartRequested: false
 
-    property bool playerLoading: liveResolver.loading || video.loading
-    property string playerError: liveResolver.errorMessage.length > 0
-                                 ? liveResolver.errorMessage : video.errorMessage
-    property bool playerPlaying: loadedRevision > 0 && video.playing
-                                 && !liveResolver.loading && playerError.length === 0
+    property bool playerLoading: playbackSession.loading
+    property string playerError: playbackSession.errorMessage
+    property bool playerPlaying: playbackSession.active
+                                 && playbackSession.mediaKind === "live"
+                                 && playbackSession.playing
     property int automaticOrientations: video.videoAspectRatio > 1.05
                                         ? Orientation.Landscape | Orientation.LandscapeInverted
                                         : video.videoAspectRatio > 0
@@ -48,13 +51,21 @@ Page {
     }
 
     function requestQuality(quality) {
-        resumePaused = video.paused
-        liveResolver.resolve(roomId, quality)
+        playbackSession.requestQuality(quality)
+    }
+
+    function startLiveWhenRendererReady() {
+        if (liveStartRequested || !video.rendererReady)
+            return
+        liveStartRequested = true
+        console.log("native live: renderer ready before resolve")
+        playbackSession.playLive(roomId, roomTitle, roomCover, 250)
+        playbackSession.claimSurface(videoHost)
     }
 
     function openQualityDialog() {
-        qualityPanel.qualities = liveResolver.qualities
-        qualityPanel.selectedQuality = liveResolver.selectedQuality
+        qualityPanel.qualities = playbackSession.qualities
+        qualityPanel.selectedQuality = playbackSession.selectedQuality
         qualityPanel.open()
         showControls()
     }
@@ -105,44 +116,34 @@ Page {
         // that item while Sailfish/Qt still owned its render thread could leave
         // a crashed process and a stale single-instance lock. Reuse the
         // process-lifetime mpv item and stop any VOD session before live starts.
-        playbackSession.stop()
-        playbackVideo.stop()
-        playbackVideo.claimSurface(videoHost)
         wasPlaying = playerPlaying
-        liveResolver.resolve(roomId, 250)
+        startLiveWhenRendererReady()
     }
     Component.onDestruction: {
-        playbackVideo.stop()
-        playbackVideo.releaseSurface(videoHost)
+        // A delayed page teardown must never stop a VOD/PGC session that has
+        // already replaced this live room in the shared PlaybackSession.
+        if (playbackSession.mediaKind === "live")
+            playbackSession.stop()
     }
 
     Connections {
-        target: liveResolver
-        onChanged: {
-            if (liveResolver.revision !== loadedRevision && liveResolver.sourceUrl.length > 0) {
-                video.loadSource(liveResolver.sourceUrl, 0, resumePaused)
-                loadedRevision = liveResolver.revision
-            }
-            synchronizeControls()
-        }
+        target: playbackSession
+        onChanged: synchronizeControls()
     }
 
     Connections {
         target: video
+        onRendererReadyChanged: startLiveWhenRendererReady()
         onStateChanged: synchronizeControls()
-    }
-
-    Connections {
-        target: Qt.application
-        onStateChanged: {
-            if (Qt.application.state !== Qt.ApplicationActive) {
-                if (video.playing) {
-                    resumeAfterForeground = true
-                    video.setPaused(true)
-                }
-            } else if (resumeAfterForeground) {
-                resumeAfterForeground = false
-                video.setPaused(false)
+        onSharedTextureFrameChanged: {
+            if (qualityRegressionRequested && !qualityRegressionComplete
+                    && frameSerial > 0
+                    && video.loadSerial > qualityRegressionPreviousLoadSerial) {
+                qualityRegressionComplete = true
+                console.log("native live quality: cycle ready",
+                            "quality", playbackSession.selectedQuality,
+                            "loadSerial", video.loadSerial,
+                            "frameSerial", frameSerial)
             }
         }
     }
@@ -228,11 +229,17 @@ Page {
                      ? "image://theme/icon-l-play" : "image://theme/icon-l-pause"
         onClicked: {
             if (video.ended) {
-                resumePaused = false
-                liveResolver.resolve(roomId, liveResolver.selectedQuality > 0
-                                     ? liveResolver.selectedQuality : 250)
+                playbackSession.requestQuality(
+                            playbackSession.selectedQuality > 0
+                            ? playbackSession.selectedQuality : 250)
             } else {
-                video.togglePaused()
+                var requestedPause = !video.paused
+                playbackSession.togglePaused()
+                console.log("native live transport: pause requested",
+                            requestedPause,
+                            "actual", video.paused,
+                            "position", video.position,
+                            "frameSerial", video.presentedFrameSerial)
             }
             showControls()
         }
@@ -259,7 +266,7 @@ Page {
                 width: Math.min(page.width - orientationButton.width - 3 * Theme.paddingLarge,
                                 Theme.itemSizeHuge * 4)
                 label: qsTr("清晰度")
-                value: liveResolver.selectedQualityLabel
+                value: playbackSession.selectedQualityLabel
                 onClicked: openQualityDialog()
             }
 
@@ -333,6 +340,34 @@ Page {
         onTriggered: {
             if (playerPlaying)
                 controlsVisible = false
+        }
+    }
+    Timer {
+        // Development-only semantic regression: after the first real frame,
+        // request one different server-advertised live quality and require a
+        // second real frame on the same process-lifetime player. Production
+        // pages leave qualityRegression false and never run this timer.
+        interval: 250
+        repeat: true
+        running: qualityRegression && !qualityRegressionRequested
+        onTriggered: {
+            if (video.presentedFrameSerial <= 0 || playbackSession.loading
+                    || playbackSession.qualities.length < 2)
+                return
+            for (var index = playbackSession.qualities.length - 1; index >= 0; --index) {
+                var candidate = playbackSession.qualities[index].id
+                if (candidate !== playbackSession.selectedQuality) {
+                    qualityRegressionRequested = true
+                    qualityRegressionPreviousLoadSerial = video.loadSerial
+                    console.log("native live quality: cycle requested",
+                                "from", playbackSession.selectedQuality,
+                                "to", candidate,
+                                "loadSerial", video.loadSerial,
+                                "frameSerial", video.presentedFrameSerial)
+                    requestQuality(candidate)
+                    return
+                }
+            }
         }
     }
 }

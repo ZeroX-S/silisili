@@ -1,6 +1,7 @@
 #include "playbacksession.h"
 
 #include "accountservice.h"
+#include "liveresolver.h"
 #include "mpvvideoitem.h"
 #include "playbackresolver.h"
 
@@ -21,10 +22,12 @@ int normalizedSoftwareQuality(int requestedQuality) {
 }
 }
 
-PlaybackSession::PlaybackSession(PlaybackResolver *resolver,
+PlaybackSession::PlaybackSession(PlaybackResolver *vodResolver,
+                                 LiveResolver *liveResolver,
                                  AccountService *accountService, QObject *parent)
-    : QObject(parent), m_resolver(resolver), m_accountService(accountService),
-      m_active(false), m_pgc(false),
+    : QObject(parent), m_vodResolver(vodResolver), m_liveResolver(liveResolver),
+      m_accountService(accountService), m_active(false), m_mediaKind(NoMedia),
+      m_pgc(false),
       m_backgroundPlayback(true), m_resumeAfterForeground(false),
       m_firstFrameReady(true), m_preparingVideo(false),
       m_preparedVideoReady(false), m_finishedSmallWindowStopScheduled(false),
@@ -34,8 +37,12 @@ PlaybackSession::PlaybackSession(PlaybackResolver *resolver,
       m_surfaceTransition(false), m_initialResumePending(false),
       m_loadedRevision(0), m_awaitedLoadSerial(0), m_preparedLoadSerial(0),
       m_pendingPosition(0.0), m_requestedResumePosition(0.0),
-      m_pendingPaused(false), m_preparedQuality(0), m_lastHistoryProgress(-1) {
-    connect(m_resolver, &PlaybackResolver::changed, this, &PlaybackSession::resolverChanged);
+      m_pendingPaused(false), m_preparedQuality(0), m_loadedLiveRevision(0),
+      m_lastHistoryProgress(-1) {
+    connect(m_vodResolver, &PlaybackResolver::changed,
+            this, &PlaybackSession::resolverChanged);
+    connect(m_liveResolver, &LiveResolver::changed,
+            this, &PlaybackSession::liveResolverChanged);
     connect(qApp, &QGuiApplication::applicationStateChanged,
             this, &PlaybackSession::applicationStateChanged);
 
@@ -66,11 +73,21 @@ PlaybackSession::PlaybackSession(PlaybackResolver *resolver,
 }
 
 bool PlaybackSession::paused() const { return m_player ? m_player->paused() : true; }
+QString PlaybackSession::mediaKind() const {
+    switch (m_mediaKind) {
+    case VideoOnDemand: return QStringLiteral("video");
+    case PgcOnDemand: return QStringLiteral("pgc");
+    case LiveStream: return QStringLiteral("live");
+    case NoMedia: break;
+    }
+    return QStringLiteral("none");
+}
 bool PlaybackSession::loading() const {
     const bool awaitingFirstFrame = m_active && !m_firstFrameReady
             && !hasCurrentPresentedFrame()
             && errorMessage().isEmpty();
-    return (m_resolver && m_resolver->loading())
+    return (live() ? (m_liveResolver && m_liveResolver->loading())
+                   : (m_vodResolver && m_vodResolver->loading()))
             || (m_player && m_player->loading()) || awaitingFirstFrame;
 }
 bool PlaybackSession::playing() const {
@@ -92,17 +109,27 @@ double PlaybackSession::videoAspectRatio() const {
     return videoHeight() > 0 ? static_cast<double>(videoWidth()) / videoHeight() : 0.0;
 }
 QString PlaybackSession::errorMessage() const {
-    if (m_resolver && !m_resolver->errorMessage().isEmpty()) return m_resolver->errorMessage();
+    if (live()) {
+        if (m_liveResolver && !m_liveResolver->errorMessage().isEmpty())
+            return m_liveResolver->errorMessage();
+        return m_player ? m_player->errorMessage() : QString();
+    }
+    if (m_vodResolver && !m_vodResolver->errorMessage().isEmpty())
+        return m_vodResolver->errorMessage();
     return m_player ? m_player->errorMessage() : QString();
 }
 QVariantList PlaybackSession::qualities() const {
-    return m_resolver ? m_resolver->qualities() : QVariantList();
+    if (live()) return m_liveResolver ? m_liveResolver->qualities() : QVariantList();
+    return m_vodResolver ? m_vodResolver->qualities() : QVariantList();
 }
 int PlaybackSession::selectedQuality() const {
-    return m_resolver ? m_resolver->selectedQuality() : 0;
+    if (live()) return m_liveResolver ? m_liveResolver->selectedQuality() : 0;
+    return m_vodResolver ? m_vodResolver->selectedQuality() : 0;
 }
 QString PlaybackSession::selectedQualityLabel() const {
-    return m_resolver ? m_resolver->selectedQualityLabel() : QString();
+    if (live()) return m_liveResolver
+            ? m_liveResolver->selectedQualityLabel() : QString();
+    return m_vodResolver ? m_vodResolver->selectedQualityLabel() : QString();
 }
 
 void PlaybackSession::attachPlayer(QObject *playerObject) {
@@ -215,7 +242,7 @@ void PlaybackSession::setSurfaceHighResolution(QObject *hostObject, bool enabled
 }
 
 void PlaybackSession::prepareVideo(const QString &bvid, const QString &cid, int quality) {
-    if (m_active || !m_player || !m_resolver || bvid.isEmpty() || cid.isEmpty()) return;
+    if (m_active || !m_player || !m_vodResolver || bvid.isEmpty() || cid.isEmpty()) return;
     // Visible-card preparation is a foreground latency optimization.  A Home
     // model refresh can recreate delegate zero while a detail page remains in
     // the Cover; decoding that new row into the persistent player leaks its
@@ -245,8 +272,8 @@ void PlaybackSession::prepareVideo(const QString &bvid, const QString &cid, int 
     // Start one bounded metadata request for the first visible card, then join
     // it from resolve(). The same persistent mpv instance opens the media
     // paused and hidden; no second decoder or background audio is created.
-    m_resolver->prefetchVideo(bvid, cid, requestedQuality);
-    m_resolver->resolve(bvid, cid, requestedQuality);
+    m_vodResolver->prefetchVideo(bvid, cid, requestedQuality);
+    m_vodResolver->resolve(bvid, cid, requestedQuality);
     qInfo() << "native software video: first visible card prepare requested"
             << bvid << cid << "quality" << requestedQuality;
 }
@@ -266,7 +293,8 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
                                         const QString &title, const QString &cover,
                                         double startPosition, bool resumeRequested,
                                         int quality) {
-    if (bvid.isEmpty() || cid.isEmpty() || !m_resolver) return;
+    if (bvid.isEmpty() || cid.isEmpty() || !m_vodResolver) return;
+    leaveLiveSourceForOnDemand("video");
     const double requestedStartPosition = qMax(0.0, startPosition);
     const int requestedQuality = normalizedSoftwareQuality(quality);
     const bool wasActive = m_active;
@@ -284,6 +312,7 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
     m_cid = cid;
     m_epId.clear();
     m_pgc = false;
+    m_mediaKind = VideoOnDemand;
     m_active = true;
     if (!m_historyReportTimer.isActive()) m_historyReportTimer.start();
     if (!wasActive) emit surfaceChanged();
@@ -349,7 +378,7 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
     if (m_player) m_player->beginSourceTransition();
     m_pendingPosition = requestedStartPosition;
     m_pendingPaused = false;
-    m_resolver->resolve(bvid, cid, requestedQuality);
+    m_vodResolver->resolve(bvid, cid, requestedQuality);
     emit changed();
 }
 
@@ -372,7 +401,8 @@ void PlaybackSession::playPgcInternal(const QString &aid, const QString &bvid,
                                       const QString &title, const QString &cover,
                                       double startPosition, bool resumeRequested,
                                       int quality) {
-    if (cid.isEmpty() || (aid.isEmpty() && bvid.isEmpty()) || !m_resolver) return;
+    if (cid.isEmpty() || (aid.isEmpty() && bvid.isEmpty()) || !m_vodResolver) return;
+    leaveLiveSourceForOnDemand("pgc");
     const double requestedStartPosition = qMax(0.0, startPosition);
     const int requestedQuality = normalizedSoftwareQuality(quality);
     const bool wasActive = m_active;
@@ -385,6 +415,7 @@ void PlaybackSession::playPgcInternal(const QString &aid, const QString &bvid,
     m_cid = cid;
     m_epId = epId;
     m_pgc = true;
+    m_mediaKind = PgcOnDemand;
     m_active = true;
     if (!m_historyReportTimer.isActive()) m_historyReportTimer.start();
     if (!wasActive) emit surfaceChanged();
@@ -414,12 +445,25 @@ void PlaybackSession::playPgcInternal(const QString &aid, const QString &bvid,
     if (m_player) m_player->beginSourceTransition();
     m_pendingPosition = requestedStartPosition;
     m_pendingPaused = false;
-    m_resolver->resolvePgc(aid, bvid, cid, epId, requestedQuality);
+    m_vodResolver->resolvePgc(aid, bvid, cid, epId, requestedQuality);
     emit changed();
 }
 
 void PlaybackSession::requestQuality(int quality) {
-    if (!m_active || !m_resolver || m_bvid.isEmpty() || m_cid.isEmpty()) return;
+    if (!m_active) return;
+    if (live()) {
+        if (!m_liveResolver || m_liveRoomId.isEmpty()) return;
+        const int requestedQuality = quality > 0 ? quality : 250;
+        m_pendingPaused = paused();
+        qInfo() << "native live: quality switch requested"
+                << "from" << selectedQuality()
+                << "to" << requestedQuality
+                << "catalogChoices" << qualities().size()
+                << "nonSeekable" << true;
+        m_liveResolver->resolve(m_liveRoomId, requestedQuality);
+        return;
+    }
+    if (!m_vodResolver || m_bvid.isEmpty() || m_cid.isEmpty()) return;
     const int requestedQuality = normalizedSoftwareQuality(quality);
     qInfo() << "native player: quality switch requested"
             << "from" << selectedQuality()
@@ -432,9 +476,60 @@ void PlaybackSession::requestQuality(int quality) {
     m_pendingPosition = position();
     m_pendingPaused = paused();
     if (m_pgc)
-        m_resolver->resolvePgc(m_aid, m_bvid, m_cid, m_epId, requestedQuality);
+        m_vodResolver->resolvePgc(m_aid, m_bvid, m_cid, m_epId, requestedQuality);
     else
-        m_resolver->resolve(m_bvid, m_cid, requestedQuality);
+        m_vodResolver->resolve(m_bvid, m_cid, requestedQuality);
+}
+
+void PlaybackSession::playLive(const QString &roomId, const QString &title,
+                               const QString &cover, int quality) {
+    if (roomId.isEmpty() || !m_player || !m_liveResolver) return;
+
+    // A live room participates in the same presentation session as VOD, but
+    // its URL still belongs to LiveResolver. Clear any prepared/active VOD
+    // before exposing the live session so stale resolver data can never load
+    // into the process-lifetime player after this point.
+    stop();
+    m_mediaKind = LiveStream;
+    m_active = true;
+    m_pgc = false;
+    m_liveRoomId = roomId;
+    m_title = title.isEmpty() ? tr("直播间") : title;
+    m_cover = cover;
+    m_aid.clear();
+    m_bvid.clear();
+    m_cid.clear();
+    m_epId.clear();
+    m_firstFrameReady = true;
+    m_awaitedLoadSerial = 0;
+    m_pendingPaused = false;
+    if (m_player) {
+        // Speed belongs to seekable on-demand transport. A live room must not
+        // inherit 1.25x/2x from the VOD session that was just closed.
+        m_player->setSpeed(1.0);
+        m_player->setVisible(m_currentHost);
+    }
+    qInfo() << "native playback session: live activated"
+            << "roomId" << roomId
+            << "singleDecoder" << true
+            << "coverAndPipEligible" << true;
+    m_liveResolver->resolve(roomId, quality > 0 ? quality : 250);
+    emit changed();
+    emit surfaceChanged();
+}
+
+void PlaybackSession::leaveLiveSourceForOnDemand(const char *nextKind) {
+    if (!live()) return;
+    const QString previousRoomId = m_liveRoomId;
+    if (m_liveResolver) m_liveResolver->cancel();
+    m_liveRoomId.clear();
+    if (m_player) m_player->setSpeed(1.0);
+    qInfo() << "native playback session: live source left for on-demand"
+            << "roomId" << previousRoomId
+            << "nextKind" << nextKind
+            << "liveRequestCancelled" << true
+            << "speedReset" << true
+            << "surfaceRetained" << true;
 }
 
 void PlaybackSession::setPaused(bool pausedValue) {
@@ -454,6 +549,10 @@ void PlaybackSession::togglePaused() {
 }
 void PlaybackSession::seek(double nextPosition) {
     if (!m_active || !m_player) return;
+    if (live()) {
+        qInfo() << "native live transport: seek ignored" << "nonSeekable" << true;
+        return;
+    }
     if (nextPosition < 0.0) nextPosition = 0.0;
     if (duration() > 0.0 && nextPosition > duration()) nextPosition = duration();
     qInfo() << "native transport: direct software seek"
@@ -470,6 +569,7 @@ void PlaybackSession::setBrightness(double brightnessValue) {
 }
 void PlaybackSession::setSpeed(double speedValue) {
     if (!m_active || !m_player) return;
+    if (live()) return;
     m_player->setSpeed(qBound(0.25, speedValue, 4.0));
 }
 
@@ -501,8 +601,10 @@ void PlaybackSession::stop() {
     // and its synchronous stateChanged signal must not make an ended compact
     // window visible again for one empty frame before active becomes false.
     const bool wasActive = m_active;
+    const bool wasLive = live();
     if (wasActive) reportPlaybackProgress("stop", true);
     m_active = false;
+    m_mediaKind = NoMedia;
     m_firstFrameReady = true;
     m_finishedSmallWindowStopScheduled = false;
     m_surfaceTransition = false;
@@ -517,6 +619,7 @@ void PlaybackSession::stop() {
     }
     m_foregroundRefreshTimer.stop();
     m_historyReportTimer.stop();
+    if (wasLive && m_liveResolver) m_liveResolver->cancel();
     m_surfaceHost.clear();
     useHost(0);
     m_preparingVideo = false;
@@ -530,6 +633,7 @@ void PlaybackSession::stop() {
     m_resumeAfterForeground = false;
     m_initialResumePending = false;
     m_requestedResumePosition = 0.0;
+    m_liveRoomId.clear();
     if (!wasActive) emit changed();
 }
 
@@ -540,19 +644,20 @@ void PlaybackSession::setBackgroundPlayback(bool enabled) {
 }
 
 void PlaybackSession::resolverChanged() {
+    if (live()) return;
     if (!m_active && m_preparingVideo && m_player
-            && m_resolver->revision() != m_loadedRevision
-            && !m_resolver->sourceUrl().isEmpty()) {
+            && m_vodResolver->revision() != m_loadedRevision
+            && !m_vodResolver->sourceUrl().isEmpty()) {
         m_player->setVisible(false);
-        m_player->loadSourceWithAudio(m_resolver->sourceUrl(), m_resolver->audioUrl(),
+        m_player->loadSourceWithAudio(m_vodResolver->sourceUrl(), m_vodResolver->audioUrl(),
                                       0.0, true, true);
         m_preparedLoadSerial = m_player->loadSerial();
-        m_loadedRevision = m_resolver->revision();
+        m_loadedRevision = m_vodResolver->revision();
         qInfo() << "native software video: hidden paused first-card media prepare started"
                 << m_preparedBvid << m_preparedCid
                 << "quality" << m_preparedQuality;
-    } else if (!m_active && m_preparingVideo && !m_resolver->loading()
-               && !m_resolver->errorMessage().isEmpty()) {
+    } else if (!m_active && m_preparingVideo && !m_vodResolver->loading()
+               && !m_vodResolver->errorMessage().isEmpty()) {
         const QString failedBvid = m_preparedBvid;
         const QString failedCid = m_preparedCid;
         const int failedQuality = m_preparedQuality;
@@ -560,17 +665,40 @@ void PlaybackSession::resolverChanged() {
         m_preparedVideoReady = false;
         emit videoPrepared(failedBvid, failedCid, failedQuality, false);
     }
-    if (m_active && m_player && m_resolver->revision() != m_loadedRevision
-            && !m_resolver->sourceUrl().isEmpty()) {
+    if (m_active && m_player && m_vodResolver->revision() != m_loadedRevision
+            && !m_vodResolver->sourceUrl().isEmpty()) {
         m_player->setVisible(m_currentHost && m_active);
-        m_player->loadSourceWithAudio(m_resolver->sourceUrl(), m_resolver->audioUrl(),
+        m_player->loadSourceWithAudio(m_vodResolver->sourceUrl(), m_vodResolver->audioUrl(),
                                       m_pendingPosition, m_pendingPaused, true);
         m_awaitedLoadSerial = m_player->loadSerial();
-        m_loadedRevision = m_resolver->revision();
+        m_loadedRevision = m_vodResolver->revision();
         qInfo() << "native software video: direct start requested"
                 << "start" << m_pendingPosition
                 << "pausedAfterLoad" << m_pendingPaused
                 << "decoderSwitch" << false;
+    }
+    emit changed();
+}
+
+void PlaybackSession::liveResolverChanged() {
+    if (!m_active || !live() || !m_liveResolver || !m_player) return;
+    if (m_liveResolver->revision() != m_loadedLiveRevision
+            && !m_liveResolver->sourceUrl().isEmpty()) {
+        m_firstFrameReady = false;
+        m_startupElapsed.restart();
+        m_awaitedLoadSerial = m_player->loadSerial() + 1;
+        m_pendingPosition = 0.0;
+        m_player->beginSourceTransition();
+        m_player->setVisible(m_currentHost && m_active);
+        m_player->loadSource(m_liveResolver->sourceUrl(), 0.0, m_pendingPaused);
+        m_loadedLiveRevision = m_liveResolver->revision();
+        qInfo() << "native playback session: live source loaded"
+                << "roomId" << m_liveRoomId
+                << "quality" << m_liveResolver->selectedQuality()
+                << "loadSerial" << m_player->loadSerial()
+                << "nonSeekable" << true
+                << "surfaceRetained" << true;
+        emit surfaceChanged();
     }
     emit changed();
 }
@@ -660,7 +788,7 @@ void PlaybackSession::firstFramePresented(int loadSerial, double framePosition) 
 void PlaybackSession::hardwareFirstFrameTimedOut(int loadSerial, int width,
                                                  int height,
                                                  double framesPerSecond) {
-    if (!m_active || !m_player || !m_resolver
+    if (!m_active || live() || !m_player || !m_vodResolver
             || (m_awaitedLoadSerial > 0 && loadSerial != m_awaitedLoadSerial))
         return;
     const int failedQuality = selectedQuality();
@@ -680,14 +808,14 @@ void PlaybackSession::hardwareFirstFrameTimedOut(int loadSerial, int width,
     m_pendingPosition = retainedPosition;
     m_pendingPaused = retainedPaused;
     m_awaitedLoadSerial = m_player->loadSerial() + 1;
-    m_resolver->setOperationalMaximumQuality(
+    m_vodResolver->setOperationalMaximumQuality(
                 kMaximumStablePhoneQuality,
                 QStringLiteral("uhd-first-frame-timeout"));
     if (m_pgc)
-        m_resolver->resolvePgc(m_aid, m_bvid, m_cid, m_epId,
+        m_vodResolver->resolvePgc(m_aid, m_bvid, m_cid, m_epId,
                                failedQuality);
     else
-        m_resolver->resolve(m_bvid, m_cid, failedQuality);
+        m_vodResolver->resolve(m_bvid, m_cid, failedQuality);
     emit changed();
 }
 
@@ -745,7 +873,7 @@ void PlaybackSession::confirmInitialResume(double actualPosition, const char *ev
 }
 
 bool PlaybackSession::scheduleNextVideoPart() {
-    if (!m_active || m_pgc || !ended() || m_nextVideoPartScheduled
+    if (!m_active || live() || m_pgc || !ended() || m_nextVideoPartScheduled
             || m_videoPartsBvid != m_bvid || m_videoParts.isEmpty())
         return false;
 
@@ -795,7 +923,7 @@ bool PlaybackSession::scheduleNextVideoPart() {
 }
 
 bool PlaybackSession::reportPlaybackProgress(const char *reason, bool force) {
-    if (!m_active || !m_player || !m_accountService || m_aid.isEmpty()
+    if (!m_active || live() || !m_player || !m_accountService || m_aid.isEmpty()
             || m_cid.isEmpty())
         return false;
     if (!force && !playing()) return false;

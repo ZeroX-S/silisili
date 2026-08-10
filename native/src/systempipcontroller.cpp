@@ -557,6 +557,7 @@ void SystemPipController::updateVisibility() {
                 << "content" << m_overlayRect
                 << "singleDecoder" << true
                 << "mode" << m_backgroundPlaybackMode
+                << "mediaKind" << m_session->mediaKind()
                 << "position" << m_session->position();
     } else if (!shouldShow && m_view->isVisible()) {
         m_presentationTimer.stop();

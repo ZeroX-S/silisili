@@ -23,6 +23,7 @@ ApplicationWindow {
                  : nativeTestPage === "pgc-consistency" ? pgcConsistencyTestPage
                  : nativeTestPage === "dynamic" ? dynamicTestPage
                  : nativeTestPage === "author-space" ? authorSpaceTestPage
+                 : nativeTestPage === "live-player" ? livePlayerTestPage
                  : nativeTestPage === "video-detail" || nativeTestPage === "compact"
                    || nativeTestPage === "compact-continuity"
                    || nativeTestPage === "multipart-autonext"
@@ -66,6 +67,16 @@ ApplicationWindow {
         AuthorSpacePage {
             authorMid: nativeTestMid
             initialName: qsTr("UP 主空间回归")
+        }
+    }
+    Component {
+        id: livePlayerTestPage
+        LivePlayerPage {
+            roomId: nativeTestRoomId
+            roomTitle: qsTr("直播播放器回归")
+            roomOwner: qsTr("设备测试")
+            orientationMode: 2
+            qualityRegression: nativeTestContentMode === "quality-cycle"
         }
     }
     Component {

@@ -94,7 +94,9 @@ DroidVideoDecoder::DroidVideoDecoder(MpvVideoItem *owner)
     : m_owner(owner), m_generation(0), m_active(false), m_stop(true),
       m_paused(false), m_failed(false), m_ultraHdSource(false),
       m_seekSerial(0), m_seekTargetUs(0),
-      m_dropBeforeUs(0), m_format(0), m_bsf(0), m_videoStream(-1),
+      m_dropBeforeUs(0), m_normalizeStreamingTimeline(false),
+      m_inputTimestampOriginSet(false), m_inputTimestampOriginUs(0),
+      m_format(0), m_bsf(0), m_videoStream(-1),
       m_codec(0), m_bufferQueue(0), m_inFlightPackets(0),
       m_targetFrameReached(false), m_maxDecodedFrames(8),
       m_maxCodecPackets(8), m_callbackFrameDrops(0),
@@ -109,7 +111,8 @@ DroidVideoDecoder::~DroidVideoDecoder() {
     stop();
 }
 
-bool DroidVideoDecoder::start(const QString &url, double startPosition) {
+bool DroidVideoDecoder::start(const QString &url, double startPosition,
+                              bool normalizeStreamingTimeline) {
     stop();
     if (url.isEmpty() || !droid_media_init()) return false;
     m_url = url;
@@ -131,6 +134,9 @@ bool DroidVideoDecoder::start(const QString &url, double startPosition) {
     m_seekSerial.store(0);
     m_seekTargetUs.store(static_cast<long long>(qMax(0.0, startPosition) * 1000000.0));
     m_dropBeforeUs.store(qMax<long long>(0, m_seekTargetUs.load() - 100000));
+    m_normalizeStreamingTimeline.store(normalizeStreamingTimeline);
+    m_inputTimestampOriginSet.store(false);
+    m_inputTimestampOriginUs.store(0);
     m_startWallUs = steadyNowUs();
     m_firstVideoPtsUs = -1;
     {
@@ -150,6 +156,7 @@ bool DroidVideoDecoder::start(const QString &url, double startPosition) {
     qInfo() << "native hardware video: direct pipeline requested"
             << "generation" << nextGeneration
             << "start" << startPosition
+            << "streamingTimeline" << normalizeStreamingTimeline
             << "audioMaster" << "libmpv"
             << "decoder" << "droidmedia-omx";
     return true;
@@ -335,7 +342,7 @@ bool DroidVideoDecoder::openInput(int generation) {
     }
 
     const long long startUs = m_seekTargetUs.load();
-    if (startUs > 0) {
+    if (startUs > 0 && !m_normalizeStreamingTimeline.load()) {
         av_seek_frame(m_format, -1,
                       av_rescale_q(startUs, AVRational{1, 1000000}, AV_TIME_BASE_Q),
                       AVSEEK_FLAG_BACKWARD);
@@ -359,6 +366,9 @@ bool DroidVideoDecoder::openInput(int generation) {
             << "steadyPacketLimit" << m_maxDecodedFrames.load()
             << "compressedInputLeadLimitMs"
             << kMaximumCompressedInputLeadUs / 1000
+            << "timestampMode"
+            << (m_normalizeStreamingTimeline.load()
+                ? "streaming-normalized" : "media-time")
             << "binderCallbackBlocking" << false
             << "cpuPixelCopies" << 0;
     return true;
@@ -368,6 +378,29 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
                                     long long ptsUs, bool keyFrame,
                                     int seekSerial) {
     if (!m_codec || !data || size <= 0 || m_stop.load()) return false;
+
+    long long codecPtsUs = ptsUs;
+    if (m_normalizeStreamingTimeline.load() && ptsUs > 0) {
+        if (!m_inputTimestampOriginSet.load()) {
+            // FLV/HLS live sources frequently begin with a wall-clock-like
+            // timestamp many hours from zero. libmpv exposes the same stream
+            // as a zero-based playback clock, so feeding the raw value to the
+            // hardware pacing path makes every video packet appear hours
+            // ahead of audio. Anchor the first real packet to the requested
+            // live clock (zero for initial entry, retained audio position for
+            // an in-place decoder restart).
+            const long long targetUs = m_seekTargetUs.load();
+            const long long originUs = ptsUs - targetUs;
+            m_inputTimestampOriginUs.store(originUs);
+            m_inputTimestampOriginSet.store(true);
+            qInfo() << "native hardware video: streaming timestamp origin normalized"
+                    << "rawPtsUs" << ptsUs
+                    << "originUs" << originUs
+                    << "targetUs" << targetUs
+                    << "generation" << m_generation.load();
+        }
+        codecPtsUs = ptsUs - m_inputTimestampOriginUs.load();
+    }
 
     // Some droidmedia adaptations accept compressed input asynchronously
     // instead of blocking when OMX is full. Without an application-side
@@ -389,8 +422,8 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
             clockUs = m_seekTargetUs.load()
                     + qMax<long long>(0, steadyNowUs() - m_startWallUs);
         }
-        const long long leadUs = ptsUs - clockUs;
-        if (ptsUs <= 0 || leadUs <= kMaximumCompressedInputLeadUs) break;
+        const long long leadUs = codecPtsUs - clockUs;
+        if (codecPtsUs <= 0 || leadUs <= kMaximumCompressedInputLeadUs) break;
         bool expected = false;
         if (m_feedThrottleLogged.compare_exchange_strong(expected, true)) {
             qInfo() << "native hardware video: compressed input pacing active"
@@ -443,8 +476,8 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
     std::memset(&codecData, 0, sizeof(codecData));
     codecData.data.data = copy;
     codecData.data.size = size;
-    codecData.ts = ptsUs;
-    codecData.decoding_ts = ptsUs;
+    codecData.ts = codecPtsUs;
+    codecData.decoding_ts = codecPtsUs;
     codecData.sync = keyFrame;
     DroidMediaBufferCallbacks callbacks;
     std::memset(&callbacks, 0, sizeof(callbacks));
@@ -478,12 +511,18 @@ void DroidVideoDecoder::demuxLoop(int generation) {
             droid_media_codec_flush(m_codec);
             if (m_bsf) av_bsf_flush(m_bsf);
             const long long targetUs = m_seekTargetUs.load();
-            av_seek_frame(m_format, -1,
-                          av_rescale_q(targetUs, AVRational{1, 1000000}, AV_TIME_BASE_Q),
-                          AVSEEK_FLAG_BACKWARD);
+            if (!m_normalizeStreamingTimeline.load()) {
+                av_seek_frame(m_format, -1,
+                              av_rescale_q(targetUs, AVRational{1, 1000000}, AV_TIME_BASE_Q),
+                              AVSEEK_FLAG_BACKWARD);
+            } else {
+                m_inputTimestampOriginSet.store(false);
+                m_inputTimestampOriginUs.store(0);
+            }
             qInfo() << "native hardware video: in-place seek applied"
                     << "generation" << generation
                     << "targetUs" << targetUs
+                    << "streamingTimeline" << m_normalizeStreamingTimeline.load()
                     << "decoderRecreated" << false;
         }
         if (av_read_frame(m_format, packet) < 0) break;

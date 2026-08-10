@@ -34,6 +34,7 @@ class MpvVideoItem : public QQuickItem {
     Q_PROPERTY(bool fullResolutionPresentation READ fullResolutionPresentation
                WRITE setFullResolutionPresentation NOTIFY stateChanged)
     Q_PROPERTY(bool hardwareDecoding READ hardwareDecoding NOTIFY stateChanged)
+    Q_PROPERTY(bool rendererReady READ rendererReady NOTIFY rendererReadyChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY stateChanged)
 
 public:
@@ -61,6 +62,7 @@ public:
     int presentedFrameSerial() const { return m_sharedTextureFrameSerial; }
     bool fullResolutionPresentation() const { return m_fullResolutionPresentation; }
     bool hardwareDecoding() const { return m_hardwareDecodeActive; }
+    bool rendererReady() const;
     bool sharedTextureSnapshot(unsigned int &textureId, QSize &textureSize,
                                QOpenGLContext *&renderContext) const;
     QString errorMessage() const { return m_errorMessage; }
@@ -102,6 +104,7 @@ public slots:
 
 signals:
     void stateChanged();
+    void rendererReadyChanged();
     void positionChanged();
     // Emitted only after the new source has produced a real application-owned
     // texture. Device tests use this as the end of the startup latency gate.
@@ -155,6 +158,9 @@ private:
     void resetHardwareStallWatchdog();
     void restartHardwareDecodeAfterStall();
     void releaseInitialPositionGate(double confirmedPosition);
+    void loadSourceInternal(const QString &sourceUrl, const QString &audioUrl,
+                            double startPosition, bool pausedAfterLoad,
+                            bool videoEnabled, bool liveStreamSource);
     bool startHardwareDecode(const QString &videoUrl, double startPosition);
     void stopHardwareDecode();
     void fallbackToSoftwareDecode(const QString &reason);
@@ -170,6 +176,7 @@ private:
     QString m_audioUrl;
     QString m_originalVideoUrl;
     QString m_originalAudioUrl;
+    bool m_liveStreamSource;
     QAtomicInt m_sharedTextureRenderQueued;
     int m_sharedTextureFrameSerial;
     QElapsedTimer m_sharedTextureFrameTimer;

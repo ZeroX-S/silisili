@@ -9,12 +9,15 @@
 
 class MpvVideoItem;
 class PlaybackResolver;
+class LiveResolver;
 class AccountService;
 class QQuickItem;
 
 class PlaybackSession : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool active READ active NOTIFY changed)
+    Q_PROPERTY(bool live READ live NOTIFY changed)
+    Q_PROPERTY(QString mediaKind READ mediaKind NOTIFY changed)
     Q_PROPERTY(bool paused READ paused NOTIFY changed)
     Q_PROPERTY(bool loading READ loading NOTIFY changed)
     Q_PROPERTY(bool playing READ playing NOTIFY changed)
@@ -40,10 +43,22 @@ class PlaybackSession : public QObject {
     Q_PROPERTY(QString selectedQualityLabel READ selectedQualityLabel NOTIFY changed)
 
 public:
-    explicit PlaybackSession(PlaybackResolver *resolver, AccountService *accountService,
+    enum MediaKind {
+        NoMedia,
+        VideoOnDemand,
+        PgcOnDemand,
+        LiveStream
+    };
+    Q_ENUMS(MediaKind)
+
+    explicit PlaybackSession(PlaybackResolver *vodResolver,
+                             LiveResolver *liveResolver,
+                             AccountService *accountService,
                              QObject *parent = 0);
 
     bool active() const { return m_active; }
+    bool live() const { return m_mediaKind == LiveStream; }
+    QString mediaKind() const;
     bool paused() const;
     bool loading() const;
     bool playing() const;
@@ -86,6 +101,8 @@ public slots:
     void playPgcAt(const QString &aid, const QString &bvid, const QString &cid,
                    const QString &epId, const QString &title,
                    const QString &cover, double startPosition, int quality = 80);
+    void playLive(const QString &roomId, const QString &title,
+                  const QString &cover, int quality = 250);
     void setVideoParts(const QString &bvid, const QVariantList &parts);
     void setVideoAid(const QString &bvid, const QString &aid);
     void requestQuality(int quality);
@@ -107,6 +124,7 @@ signals:
 
 private slots:
     void resolverChanged();
+    void liveResolverChanged();
     void playerChanged();
     void firstFramePresented(int loadSerial, double position);
     void hardwareFirstFrameTimedOut(int loadSerial, int width, int height,
@@ -129,10 +147,12 @@ private:
                          const QString &cid, const QString &epId,
                          const QString &title, const QString &cover,
                          double startPosition, bool resumeRequested, int quality);
+    void leaveLiveSourceForOnDemand(const char *nextKind);
     bool scheduleNextVideoPart();
     bool reportPlaybackProgress(const char *reason, bool force = false);
 
-    PlaybackResolver *m_resolver;
+    PlaybackResolver *m_vodResolver;
+    LiveResolver *m_liveResolver;
     AccountService *m_accountService;
     QPointer<MpvVideoItem> m_player;
     QPointer<QQuickItem> m_fallbackHost;
@@ -145,6 +165,7 @@ private:
     QMetaObject::Connection m_heightConnection;
     QMetaObject::Connection m_destroyedConnection;
     bool m_active;
+    MediaKind m_mediaKind;
     bool m_pgc;
     bool m_backgroundPlayback;
     bool m_resumeAfterForeground;
@@ -168,6 +189,8 @@ private:
     QString m_videoPartsBvid;
     QString m_videoAidBvid;
     QString m_videoAid;
+    QString m_liveRoomId;
+    int m_loadedLiveRevision;
     QString m_lastHistoryBvid;
     QString m_lastHistoryCid;
     int m_lastHistoryProgress;

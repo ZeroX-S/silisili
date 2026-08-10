@@ -42,7 +42,8 @@ Page {
             onClicked: pageStack.push(Qt.resolvedUrl("LivePlayerPage.qml"), {
                 roomId: roomId,
                 roomTitle: title,
-                roomOwner: owner
+                roomOwner: owner,
+                roomCover: cover
             })
 
             Image {

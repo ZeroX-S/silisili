@@ -28,11 +28,13 @@
 #include <QGuiApplication>
 #include <QFileInfo>
 #include <QLockFile>
+#include <QOpenGLContext>
 #include <QPluginLoader>
 #include <QQmlContext>
 #include <QQuickView>
 #include <QScopedPointer>
 #include <QRegExp>
+#include <QSurfaceFormat>
 #include <QStringList>
 #include <QSysInfo>
 #include <QtQml>
@@ -48,6 +50,14 @@ extern "C" {
 
 #include <clocale>
 #include <cstring>
+
+// Qt 5.6 exports this function as part of the Qt_5 ABI, but only declares it
+// in a private header.  Sailfish's QQuickView and Cover scene graphs consult
+// the global share context when AA_ShareOpenGLContexts is enabled.  Declaring
+// the exported function here avoids a private-header build dependency.
+QT_BEGIN_NAMESPACE
+Q_GUI_EXPORT void qt_gl_set_global_share_context(QOpenGLContext *context);
+QT_END_NAMESPACE
 
 namespace {
 
@@ -210,6 +220,27 @@ int main(int argc, char *argv[]) {
     app->setOrganizationName(QStringLiteral("cn.silisili.native"));
     app->setApplicationVersion(QString::fromLatin1(SILISILI_NATIVE_APP_VERSION));
 
+    // On Sailfish 5.1 the AA_ShareOpenGLContexts flag alone does not create a
+    // root context before the first QQuickView is initialized.  A cold direct
+    // live launch then has no global share group: the foreground can share
+    // with its own window as a fallback, but the separately rendered Cover
+    // cannot sample that texture.  Seed the process-wide root before creating
+    // either view so foreground, Cover and system PiP join the same group.
+    QScopedPointer<QOpenGLContext> seededGlobalShareContext;
+    if (!QOpenGLContext::globalShareContext()) {
+        seededGlobalShareContext.reset(new QOpenGLContext);
+        seededGlobalShareContext->setFormat(QSurfaceFormat::defaultFormat());
+        if (seededGlobalShareContext->create()) {
+            qt_gl_set_global_share_context(seededGlobalShareContext.data());
+            qInfo() << "native player: seeded process-wide global share context"
+                    << "valid" << seededGlobalShareContext->isValid();
+        } else {
+            qWarning() << "native player: global share context seed failed;"
+                       << "per-window compatibility fallback remains available";
+            seededGlobalShareContext.reset();
+        }
+    }
+
     // Lipstick normally activates the existing task, but development package
     // replacement and crash recovery can race a second launcher. Keep the VOD
     // backend process-wide as well as session-wide.
@@ -266,13 +297,14 @@ int main(int argc, char *argv[]) {
     SearchModel searchModel(&accountService);
     HomeFeedModel homeFeed(&accountService);
     PlaybackResolver playbackResolver(&accountService, directVideoCapabilities);
+    LiveResolver liveResolver(&accountService);
     MpvVideoItem playbackVideo;
-    PlaybackSession playbackSession(&playbackResolver, &accountService);
+    PlaybackSession playbackSession(&playbackResolver, &liveResolver,
+                                    &accountService);
     DisplayFrameMonitor displayFrameMonitor(&playbackSession);
     playbackSession.attachPlayer(&playbackVideo);
     DanmakuModel danmakuModel;
     LiveFeedModel liveFeed;
-    LiveResolver liveResolver(&accountService);
     RegionFeedModel regionFeed;
     DynamicFeedModel dynamicFeed(&accountService);
     InboxModel inboxModel(&accountService);
@@ -308,7 +340,6 @@ int main(int argc, char *argv[]) {
                                             &systemPipController);
     view->rootContext()->setContextProperty(QStringLiteral("danmakuModel"), &danmakuModel);
     view->rootContext()->setContextProperty(QStringLiteral("liveFeed"), &liveFeed);
-    view->rootContext()->setContextProperty(QStringLiteral("liveResolver"), &liveResolver);
     view->rootContext()->setContextProperty(QStringLiteral("regionFeed"), &regionFeed);
     view->rootContext()->setContextProperty(QStringLiteral("dynamicFeed"), &dynamicFeed);
     view->rootContext()->setContextProperty(QStringLiteral("inboxModel"), &inboxModel);
@@ -358,6 +389,8 @@ int main(int argc, char *argv[]) {
         qgetenv("SILISILI_NATIVE_TEST_BVID")).trimmed();
     const QString testCid = QString::fromLocal8Bit(
         qgetenv("SILISILI_NATIVE_TEST_CID")).trimmed();
+    const QString testRoomId = QString::fromLocal8Bit(
+        qgetenv("SILISILI_NATIVE_TEST_ROOM_ID")).trimmed();
     const QString testAid = QString::fromLocal8Bit(
         qgetenv("SILISILI_NATIVE_TEST_AID")).trimmed();
     const QString testContentMode = QString::fromLocal8Bit(
@@ -377,6 +410,7 @@ int main(int argc, char *argv[]) {
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestPage"), testPage);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestBvid"), testBvid);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestCid"), testCid);
+    view->rootContext()->setContextProperty(QStringLiteral("nativeTestRoomId"), testRoomId);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestAid"), testAid);
     view->rootContext()->setContextProperty(QStringLiteral("nativeTestContentMode"),
                                             testContentMode);
@@ -404,7 +438,8 @@ int main(int argc, char *argv[]) {
             || testPage == QStringLiteral("playback-presentation")
             || testPage == QStringLiteral("compact")
             || testPage == QStringLiteral("compact-continuity")
-            || testPage == QStringLiteral("multipart-autonext");
+            || testPage == QStringLiteral("multipart-autonext")
+            || testPage == QStringLiteral("live-player");
     if (testPage == QStringLiteral("network-recovery")) {
         // Isolate the deterministic network-transition regression from the
         // unrelated account refresh so the one-shot failure always targets

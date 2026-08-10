@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.25
+Release:        1.35
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -100,6 +100,64 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.35
+- Make PlaybackSession the common presentation owner for VOD, PGC and live,
+  while retaining separate resolver, quality, seek, speed and history rules.
+- Present an active live stream through the configured moving-video Cover or
+  movable system PiP without pausing, reloading or creating another decoder.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.34
+- Seed Qt's exported process-wide global share context before either QQuick
+  scene graph is created, so cold-start foreground, Cover and system PiP all
+  sample the same hardware-decoded texture without reloading playback.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.33
+- When Sailfish has not yet published Qt's global share context, explicitly
+  share the live renderer with the already initialized QQuickWindow context;
+  retain the 1.25 global-share path whenever it is available.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.32
+- Delay only live stream resolution until the process-lifetime renderer has
+  joined Qt Quick's initialized OpenGL share group, eliminating the direct-live
+  startup race without changing the 1.25 VOD presentation checks.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.31
+- Keep the proven 1.25 VOD presentation path unchanged while allowing only
+  live surfaces to validate an EGL-shared texture directly when Qt does not
+  report the late-created scene-graph context relationship.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.30
+- Restore the 1.25 point-on-demand renderer, preload, texture-sharing and
+  presentation gates without the later experimental foreground changes.
+- Keep the live-only droidmedia timestamp normalization and live FLV audio
+  discovery fix, so the live repair cannot alter ordinary VOD behavior.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.29
+- Publish verified droidmedia frames independently of the libmpv audio restart
+  event while retaining the non-zero history-position gate.
+- Give live FLV audio discovery a container-specific probe budget so direct
+  hardware video does not leave libmpv with no selected audio stream.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.28
+- Accept the main player's persistent texture when the native GL namespace
+  confirms visibility after a Lipstick context transition, preventing an
+  audio-only black screen caused by stale Qt share-group bookkeeping.
+- Restore the explicit portable-software compatibility override while keeping
+  automatic hardware-start and first-frame fallback as the production path.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.27
+- Accept a persistent video texture in the Cover or system-PiP scene graph
+  when the native GL namespace confirms visibility even if Qt's share-group
+  bookkeeping reports the Lipstick-owned window as unshared.
+- Retain the live hardware timestamp normalization and non-seekable fallback
+  guarantees introduced in 1.26.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.26
+- Normalize live-container hardware timestamps to libmpv's playback clock so
+  long-running FLV sources cannot be throttled as hours ahead of audio.
+- Preserve non-seekable live semantics during hardware restart and software
+  fallback, preventing an impossible initial-position gate from hiding video.
+
 * Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.25
 - Apply a non-zero initial/history position as a paused per-file start option,
   and release audio only after the new file confirms the target clock and the

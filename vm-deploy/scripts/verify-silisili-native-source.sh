@@ -100,11 +100,61 @@ grep -Fq 'setWaylandRegion(m_view, m_inputRegion, true)' \
     || fail system-pip-input-region-missing
 grep -Fq 'LINK_FLAGS "-pie"' "$NATIVE_ROOT/CMakeLists.txt" \
     || fail privileged-system-pip-not-pie
+
+# PlaybackSession is the one presentation/session owner, while source
+# acquisition and transport semantics remain explicitly split by media kind.
+# These source gates prevent a later live-page shortcut from silently bringing
+# back a second player, an independent background policy, or VOD-only
+# operations on a non-seekable live stream.
+grep -Fq 'enum MediaKind {' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-media-kind-missing
+grep -Fq 'VideoOnDemand,' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-vod-kind-missing
+grep -Fq 'PgcOnDemand,' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-pgc-kind-missing
+grep -Fq 'LiveStream' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-live-kind-missing
+grep -Fq 'PlaybackResolver *m_vodResolver;' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-vod-resolver-missing
+grep -Fq 'LiveResolver *m_liveResolver;' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail playback-session-live-resolver-missing
+grep -Fq 'm_vodResolver->resolve(' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-vod-routing-missing
+grep -Fq 'm_liveResolver->resolve(' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-routing-missing
+grep -Fq 'native live transport: seek ignored' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-seek-boundary-missing
+grep -Fq 'leaveLiveSourceForOnDemand("video")' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-to-vod-cancel-missing
+grep -Fq 'leaveLiveSourceForOnDemand("pgc")' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-to-pgc-cancel-missing
+grep -Fq 'm_player->setSpeed(1.0);' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-speed-reset-missing
+grep -Fq 'if (live()) return;' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-speed-boundary-missing
+grep -Fq 'if (!m_active || live() || !m_player' "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail playback-session-live-history-boundary-missing
+grep -Fq 'void LiveResolver::cancel()' "$NATIVE_ROOT/src/liveresolver.cpp" \
+    || fail live-resolver-cancel-missing
+grep -Fq 'playbackSession.playLive(' "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-page-session-entry-missing
+grep -Fq 'playbackSession.requestQuality(' "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-page-session-quality-missing
+if grep -Eq 'liveResolver\.(resolve|sourceUrl|selectedQuality|qualities)' \
+        "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml"; then
+    fail live-page-bypasses-playback-session
+fi
+if grep -Eq 'MpvVideoItem[[:space:]]*\{' "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml"; then
+    fail live-page-local-player-regression
+fi
+grep -Fq 'playbackSession.mediaKind === "live"' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-live-state-missing
 if grep -Eq 'SILISILI_NATIVE_(TEST|FORCE_ORIENTATION)' "$DESKTOP"; then
     fail test-hook-enabled-in-desktop
 fi
 
-printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|system_pip=notification-configurable|release_asset=declared|visual_model=unused\n' \
+printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|system_pip=notification-configurable|release_asset=declared|visual_model=unused\n' \
     "$spec_version" "$spec_release" \
     "$(wc -l <"$temporary/source-files" | tr -d ' ')" \
     "$(sed -n 's|.*<file[^>]*>\([^<]*\)</file>.*|\1|p' "$qrc" | wc -l | tr -d ' ')"

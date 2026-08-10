@@ -15,6 +15,23 @@ LiveResolver::LiveResolver(AccountService *accountService, QObject *parent)
     : QObject(parent), m_accountService(accountService), m_loading(false),
       m_selectedQuality(0), m_revision(0), m_requestSerial(0) {}
 
+void LiveResolver::cancel() {
+    ++m_requestSerial;
+    if (m_reply) {
+        disconnect(m_reply, 0, this, 0);
+        m_reply->abort();
+        m_reply->deleteLater();
+        m_reply.clear();
+    }
+    m_loading = false;
+    m_sourceUrl.clear();
+    m_errorMessage.clear();
+    m_qualities.clear();
+    m_selectedQuality = 0;
+    m_selectedQualityLabel.clear();
+    emit changed();
+}
+
 void LiveResolver::resolve(const QString &roomId, int quality) {
     if (roomId.isEmpty()) return;
     if (m_reply) {

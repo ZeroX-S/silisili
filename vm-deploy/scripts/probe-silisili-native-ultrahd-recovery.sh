@@ -8,12 +8,15 @@ set -eu
 # quality ladder stays visible, while unverified UHD is capped at real 1080P60
 # hardware decode without ever allocating the unsafe UHD codec session.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.25.aarch64.rpm}
-expected_sha=${2:-7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337}
-expected_package=silisili-native-devel-1.1.0-1.25.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
+expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
+expected_package=silisili-native-devel-1.1.0-1.35.aarch64
 test_bvid=${SILISILI_UHD_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_UHD_TEST_CID:-37630051884}
-minimum_cma_free_kb=${SILISILI_UHD_MINIMUM_CMA_FREE_KB:-32768}
+# The bounded 1080p OMX session on the Pixel 3a XL normally leaves roughly
+# 25--30 MiB CMA free.  Treat less than 16 MiB as exhaustion pressure while
+# still rejecting the unsafe real-UHD allocation path entirely below.
+minimum_cma_free_kb=${SILISILI_UHD_MINIMUM_CMA_FREE_KB:-16384}
 phase=preflight
 test_pid=
 production_pid=
@@ -24,9 +27,9 @@ events_for_pid() {
 
 application_pids() {
     for process in /proc/[0-9]*; do
-        executable=$(readlink "$process/exe" 2>/dev/null || true)
-        case "$executable" in
-            /usr/bin/silisili-native|"/usr/bin/silisili-native (deleted)")
+        command=$(tr '\000' ' ' <"$process/cmdline" 2>/dev/null || true)
+        case "$command" in
+            /usr/bin/silisili-native*)
                 basename "$process"
                 ;;
         esac
@@ -54,7 +57,8 @@ launch_application() {
         WAYLAND_DISPLAY=../../display/wayland-0 \
         QT_QPA_PLATFORM=wayland \
         "$@" \
-        /usr/bin/invoker --verbose --verbose --no-wait --type=generic \
+        /usr/bin/invoker --verbose --verbose --no-wait --type=silica-qt5 \
+            --id=cn.silisili.native --single-instance \
             /usr/bin/silisili-native
 }
 
@@ -347,7 +351,7 @@ poll=0
 while test "$poll" -lt 60; do
     production_events=$(events_for_pid "$production_pid")
     printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.25"' \
+        'native app: build identity "silisili-native-devel" "1.1.0" "1.35"' \
         >/dev/null && break
     sleep 0.25
     poll=$((poll + 1))

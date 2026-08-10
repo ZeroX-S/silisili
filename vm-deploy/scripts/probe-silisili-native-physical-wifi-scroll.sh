@@ -7,9 +7,9 @@ set -eu
 # model is involved; the assertions use real input events, process identity,
 # network state and QML event-loop markers.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.25.aarch64.rpm}
-expected_sha=${2:-7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337}
-expected_package=silisili-native-devel-1.1.0-1.25.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
+expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
+expected_package=silisili-native-devel-1.1.0-1.35.aarch64
 phase=preflight
 test_pid=
 production_pid=
@@ -21,9 +21,9 @@ events_for_pid() {
 
 application_pids() {
     for process in /proc/[0-9]*; do
-        executable=$(readlink "$process/exe" 2>/dev/null || true)
-        case "$executable" in
-            /usr/bin/silisili-native|"/usr/bin/silisili-native (deleted)")
+        command=$(tr '\000' ' ' <"$process/cmdline" 2>/dev/null || true)
+        case "$command" in
+            /usr/bin/silisili-native*)
                 basename "$process"
                 ;;
         esac
@@ -51,7 +51,8 @@ launch_application() {
         WAYLAND_DISPLAY=../../display/wayland-0 \
         QT_QPA_PLATFORM=wayland \
         "$@" \
-        /usr/bin/invoker --verbose --verbose --no-wait --type=generic \
+        /usr/bin/invoker --verbose --verbose --no-wait --type=silica-qt5 \
+            --id=cn.silisili.native --single-instance \
             /usr/bin/silisili-native
 }
 
@@ -256,7 +257,7 @@ poll=0
 while test "$poll" -lt 60; do
     production_events=$(events_for_pid "$production_pid")
     printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.25"' \
+        'native app: build identity "silisili-native-devel" "1.1.0" "1.35"' \
         >/dev/null && break
     sleep 0.25
     poll=$((poll + 1))

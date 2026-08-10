@@ -36,7 +36,8 @@ Page {
             })
         } else if (roomId.length > 0) {
             pageStack.push(Qt.resolvedUrl("LivePlayerPage.qml"), {
-                roomId: roomId, roomTitle: mediaTitle, roomOwner: author
+                roomId: roomId, roomTitle: mediaTitle, roomOwner: author,
+                roomCover: mediaCover
             })
         }
     }

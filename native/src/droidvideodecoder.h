@@ -28,7 +28,8 @@ public:
     explicit DroidVideoDecoder(MpvVideoItem *owner);
     ~DroidVideoDecoder();
 
-    bool start(const QString &url, double startPosition);
+    bool start(const QString &url, double startPosition,
+               bool normalizeStreamingTimeline = false);
     void stop();
     void seek(double position);
     void setPaused(bool paused);
@@ -76,6 +77,9 @@ private:
     std::atomic<int> m_seekSerial;
     std::atomic<long long> m_seekTargetUs;
     std::atomic<long long> m_dropBeforeUs;
+    std::atomic<bool> m_normalizeStreamingTimeline;
+    std::atomic<bool> m_inputTimestampOriginSet;
+    std::atomic<long long> m_inputTimestampOriginUs;
 
     AVFormatContext *m_format;
     AVBSFContext *m_bsf;

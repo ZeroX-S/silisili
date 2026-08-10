@@ -32,6 +32,7 @@ public:
 
 public slots:
     void resolve(const QString &roomId, int quality = 250);
+    void cancel();
 
 signals:
     void changed();

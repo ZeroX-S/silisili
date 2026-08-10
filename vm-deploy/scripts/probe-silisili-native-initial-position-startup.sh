@@ -6,9 +6,9 @@ set -eu
 # hardware texture must not trigger software fallback, and the first visible
 # frame must arrive from the single original media load.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.25.aarch64.rpm}
-expected_sha=${2:-7bdd5a32007d2e2b959e92e868979bf4e74ceaf7b891543b63991577819e0337}
-expected_package=silisili-native-devel-1.1.0-1.25.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
+expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
+expected_package=silisili-native-devel-1.1.0-1.35.aarch64
 test_bvid=${SILISILI_STARTUP_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_STARTUP_TEST_CID:-37630051884}
 test_trials=${SILISILI_STARTUP_TEST_TRIALS:-3}
@@ -28,9 +28,9 @@ monotonic_events_for_pid() {
 
 application_pids() {
     for process in /proc/[0-9]*; do
-        executable=$(readlink "$process/exe" 2>/dev/null || true)
-        case "$executable" in
-            /usr/bin/silisili-native|"/usr/bin/silisili-native (deleted)")
+        command=$(tr '\000' ' ' <"$process/cmdline" 2>/dev/null || true)
+        case "$command" in
+            /usr/bin/silisili-native*)
                 basename "$process"
                 ;;
         esac
@@ -56,7 +56,8 @@ launch_application() {
         WAYLAND_DISPLAY=../../display/wayland-0 \
         QT_QPA_PLATFORM=wayland \
         "$@" \
-        /usr/bin/invoker --verbose --verbose --no-wait --type=generic \
+        /usr/bin/invoker --verbose --verbose --no-wait --type=silica-qt5 \
+            --id=cn.silisili.native --single-instance \
             /usr/bin/silisili-native
 }
 

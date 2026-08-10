@@ -66,7 +66,8 @@ Page {
             pageStack.push(Qt.resolvedUrl("LivePlayerPage.qml"), {
                 roomId: item.roomId,
                 roomTitle: item.title,
-                roomOwner: item.owner
+                roomOwner: item.owner,
+                roomCover: item.cover
             })
         }
     }

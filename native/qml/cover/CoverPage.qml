@@ -134,7 +134,12 @@ CoverBackground {
         Label {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: playbackSession.active
+            text: playbackSession.active && playbackSession.mediaKind === "live"
+                  ? qsTr("%1 · %2%3")
+                    .arg(playbackSession.paused ? qsTr("直播已暂停") : qsTr("直播中"))
+                    .arg(playbackSession.selectedQualityLabel)
+                    .arg(cover.liveCoverVideo ? "" : qsTr(" · 系统小窗"))
+                  : playbackSession.active
                   ? qsTr("%1 / %2 · %3%4")
                     .arg(Math.floor(playbackSession.position))
                     .arg(Math.floor(playbackSession.duration))
