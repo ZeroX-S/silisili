@@ -24,12 +24,14 @@
 
 #include <QDebug>
 #include <QCoreApplication>
+#include <QEvent>
 #include <QFile>
 #include <QGuiApplication>
 #include <QFileInfo>
 #include <QLockFile>
 #include <QOpenGLContext>
 #include <QPluginLoader>
+#include <QPointer>
 #include <QQmlContext>
 #include <QQuickView>
 #include <QScopedPointer>
@@ -37,6 +39,7 @@
 #include <QSurfaceFormat>
 #include <QStringList>
 #include <QSysInfo>
+#include <QTimer>
 #include <QtQml>
 #include <sailfishapp.h>
 #include <mpv/client.h>
@@ -200,6 +203,37 @@ bool amberBarcodeModuleAvailable() {
     return false;
 }
 
+class ApplicationCloseFilter : public QObject {
+public:
+    ApplicationCloseFilter(QQuickView *mainView,
+                           SystemPipController *pipController,
+                           PlaybackSession *playbackSession,
+                           QObject *parent)
+        : QObject(parent), m_mainView(mainView), m_pipController(pipController),
+          m_playbackSession(playbackSession), m_closeRequested(false) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (watched == m_mainView && event && event->type() == QEvent::Close
+                && !m_closeRequested) {
+            m_closeRequested = true;
+            qInfo() << "native application shutdown: main window close received"
+                    << "systemPiPVisible"
+                    << (m_pipController && m_pipController->visible());
+            if (m_pipController) m_pipController->shutdown();
+            if (m_playbackSession) m_playbackSession->stop();
+            QTimer::singleShot(0, qApp, SLOT(quit()));
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    QPointer<QQuickView> m_mainView;
+    SystemPipController *m_pipController;
+    PlaybackSession *m_playbackSession;
+    bool m_closeRequested;
+};
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -297,7 +331,7 @@ int main(int argc, char *argv[]) {
     SearchModel searchModel(&accountService);
     HomeFeedModel homeFeed(&accountService);
     PlaybackResolver playbackResolver(&accountService, directVideoCapabilities);
-    LiveResolver liveResolver(&accountService);
+    LiveResolver liveResolver(&accountService, directVideoCapabilities);
     MpvVideoItem playbackVideo;
     PlaybackSession playbackSession(&playbackResolver, &liveResolver,
                                     &accountService);
@@ -311,6 +345,40 @@ int main(int argc, char *argv[]) {
     QScopedPointer<QQuickView> view(SailfishApp::createView());
     SystemPipController systemPipController(view.data(), &playbackSession,
                                             &playbackVideo, app.data());
+    ApplicationCloseFilter applicationCloseFilter(
+                view.data(), &systemPipController, &playbackSession, app.data());
+    view->installEventFilter(&applicationCloseFilter);
+    QObject::connect(app.data(), &QCoreApplication::aboutToQuit, [&]() {
+        qInfo() << "native application shutdown: barrier started"
+                << "systemPiPVisible" << systemPipController.visible()
+                << "playbackActive" << playbackSession.active();
+        systemPipController.shutdown();
+        playbackSession.stop();
+        playbackVideo.shutdown();
+        qInfo() << "native application shutdown: barrier complete"
+                << "systemPiPVisible" << systemPipController.visible()
+                << "playbackActive" << playbackSession.active();
+    });
+    // Device regression hook: enter a real background system-PiP state, then
+    // issue the same QWindow Close event as task-switcher application closure.
+    // Production never schedules this path.
+    if (qgetenv("SILISILI_NATIVE_TEST_CLOSE_WHILE_PIP")
+            == QByteArrayLiteral("1")) {
+        QObject::connect(&systemPipController,
+                         &SystemPipController::visibilityChanged,
+                         app.data(), [&]() {
+            if (!systemPipController.visible()
+                    || app->property("pipCloseScheduled").toBool())
+                return;
+            app->setProperty("pipCloseScheduled", true);
+            qInfo() << "native application shutdown test: close scheduled"
+                    << "systemPiPVisible" << true;
+            const QPointer<QQuickView> guardedView(view.data());
+            QTimer::singleShot(2500, app.data(), [guardedView]() {
+                if (guardedView) guardedView->close();
+            });
+        });
+    }
     QObject::connect(view.data(), &QQuickWindow::frameSwapped,
                      &displayFrameMonitor, &DisplayFrameMonitor::frameSwapped,
                      Qt::QueuedConnection);

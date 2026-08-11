@@ -7,9 +7,9 @@ set -eu
 # advancing hardware frames. Assertions use logs, process state and RPM
 # identity only; no screenshot or visual model.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
-expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
-expected_package=silisili-native-devel-1.1.0-1.35.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
+expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
+expected_package=silisili-native-devel-1.1.0-1.40.aarch64
 test_room_id=${SILISILI_LIVE_TEST_ROOM_ID:-23276452}
 minimum_cma_free_kb=${SILISILI_LIVE_MINIMUM_CMA_FREE_KB:-32768}
 phase=preflight
@@ -126,8 +126,10 @@ mcetool --set-never-blank=enabled >/dev/null
 
 phase=launch-live
 rm -f /tmp/silisili-native-defaultuser.lock
+# Full-source presentation is meaningful in the video's landscape orientation.
+# A forced portrait surface can only fit 1920x1080 into a 1080x608 viewport.
 launch_application \
-    SILISILI_NATIVE_FORCE_ORIENTATION=portrait \
+    SILISILI_NATIVE_FORCE_ORIENTATION=landscape \
     SILISILI_NATIVE_TEST_PAGE=live-player \
     SILISILI_NATIVE_TEST_CONTENT_MODE=quality-cycle \
     SILISILI_NATIVE_TEST_ROOM_ID="$test_room_id" \
@@ -145,7 +147,7 @@ while test "$poll" -lt 320; do
         break
     fi
     if printf '%s\n' "$events" | grep -E \
-        'native live: source resolved, quality [0-9]+ choices 1' >/dev/null \
+        'native live: source resolved, quality [0-9]+ .* choices 1' >/dev/null \
         && printf '%s\n' "$events" | grep -E \
         'native (hardware video: first shared-texture frame rendered|player: first persistent shared-texture frame rendered)' >/dev/null; then
         quality_cycle=0
@@ -162,6 +164,12 @@ events=$(events_for_pid "$test_pid")
 expected_media_loads=$((quality_cycle + 1))
 test "$(printf '%s\n' "$events" | grep -c \
     'native live: source resolved, quality' || true)" -ge "$expected_media_loads"
+printf '%s\n' "$events" | grep -E \
+    'native live: source request started .*requestedQuality 0 wireQuality 10000 automaticOriginal true capabilityAwareCodecSelection true' \
+    >/dev/null
+printf '%s\n' "$events" | grep -E \
+    'native live: source resolved, quality [0-9]+ .*requestedQuality 0 wireQuality 10000 automaticOriginal true .*protocol ".+" format ".+" codec "(avc|hevc)" hardwareCapable (true|false)' \
+    >/dev/null
 test "$(printf '%s\n' "$events" | grep -c \
     'native player: load command submitted' || true)" -ge "$expected_media_loads"
 test "$(printf '%s\n' "$events" | grep -c \
@@ -176,17 +184,33 @@ printf '%s\n' "$events" | grep -E \
 printf '%s\n' "$events" | grep -E \
     'native hardware video: OMX decoder started .*timestampMode streaming-normalized .*binderCallbackBlocking false' \
     >/dev/null
+test "$(printf '%s\n' "$events" | grep -c \
+    'native live quality: actual stream ready qn' || true)" \
+    -ge "$expected_media_loads"
+printf '%s\n' "$events" | grep -E \
+    'native live quality: actual stream ready qn [0-9]+ label .* · [0-9]+×[0-9]+ · [0-9.]+fps geometry [0-9]+ x [0-9]+ sourceFps [0-9.]+ presentation [0-9]+ x [0-9]+ videoViewport [0-9]+ x [0-9]+ profile fullscreen-native sourcePixelsPreserved true' \
+    >/dev/null
+test "$(printf '%s\n' "$events" | grep -c \
+    'native live quality: actual stream ready .* sourcePixelsPreserved true' || true)" \
+    -ge "$expected_media_loads"
 if test "$quality_cycle" -eq 1; then
     printf '%s\n' "$events" | grep -E \
         'native live quality: cycle requested from [0-9]+ to [0-9]+' >/dev/null
     printf '%s\n' "$events" | grep -E \
         'native live quality: cycle ready quality [0-9]+ loadSerial 2 frameSerial 1' \
         >/dev/null
+    printf '%s\n' "$events" | grep -E \
+        'native live: quality switch requested .* presentationAspectRetained 1\.777' \
+        >/dev/null
+    test -z "$(printf '%s\n' "$events" | grep -F \
+        'native layout: page live-player orientation portrait' || true)"
+    printf '%s\n' "$events" | grep -F \
+        'native layout: page live-player orientation landscape' >/dev/null
     printf 'live_quality_cycle=ready|mode=advertised-multiple|media_loads=%s\n' \
         "$expected_media_loads"
 else
     printf '%s\n' "$events" | grep -E \
-        'native live: source resolved, quality [0-9]+ choices 1' >/dev/null
+        'native live: source resolved, quality [0-9]+ .* choices 1' >/dev/null
     printf 'live_quality_cycle=not-applicable|reason=one-advertised-quality|media_loads=%s\n' \
         "$expected_media_loads"
 fi
@@ -292,10 +316,8 @@ launch_application >/tmp/silisili-native-production-after-live-gate.log 2>&1
 production_pid=$(wait_for_single_process)
 poll=0
 while test "$poll" -lt 80; do
-    production_events=$(events_for_pid "$production_pid")
-    printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.35"' \
-        >/dev/null && break
+    grep -Fq '/usr/bin/silisili-native' "/proc/$production_pid/maps" \
+        2>/dev/null && break
     sleep 0.25
     poll=$((poll + 1))
 done
@@ -304,7 +326,7 @@ test -z "$(rpm -V silisili-native-devel 2>/dev/null || true)"
 
 trap - EXIT
 mcetool --set-never-blank=disabled >/dev/null 2>&1 || true
-printf 'native_live_playback=ready|package=%s|room=%s|quality_cycle=%s|media_loads=%s|streaming_timeline=normalized|hardware_fallback=0|controls=physical-pause-resume|hold_seconds=60|first_serial=%s|last_serial=%s|unique_fps=%s|minimum_cma_free_kb=%s|production_pid=%s|rpm_verify=clean|sha256=%s|visual_model=unused\n' \
+printf 'native_live_playback=ready|package=%s|room=%s|quality_cycle=%s|media_loads=%s|initial_wire_quality=10000|actual_stream_verified=1|presentation=source-pixels-preserved|streaming_timeline=normalized|hardware_fallback=0|controls=physical-pause-resume|hold_seconds=60|first_serial=%s|last_serial=%s|unique_fps=%s|minimum_cma_free_kb=%s|production_pid=%s|rpm_verify=clean|sha256=%s|visual_model=unused\n' \
     "$expected_package" "$test_room_id" "$quality_cycle" "$expected_media_loads" \
     "$first_serial" "$last_serial" \
     "$unique_fps" "$minimum_cma_free_kb" "$production_pid" "$expected_sha"

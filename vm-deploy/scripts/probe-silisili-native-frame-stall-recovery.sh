@@ -1,17 +1,20 @@
 #!/bin/sh
 set -eu
 
-# Deterministically suppress hardware-frame publication after 60 frames while
-# the separate libmpv audio clock continues. The production watchdog must
-# restart only the same-quality droidmedia video decoder, retain the existing
-# shared texture and media-load serial, and resume advancing frames without a
-# quality change, audio reload, screenshot or visual-model assertion.
+# Enter the real full-screen 1080P+ path and deterministically suppress frame
+# publication across several consecutive droidmedia generations while the
+# separate libmpv audio clock continues. Every outgoing BufferQueue generation
+# must balance the strong references granted by buffer_created(), preserve CMA
+# headroom and resume the same shared texture without a media/audio reload.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
-expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
-expected_package=silisili-native-devel-1.1.0-1.35.aarch64
-test_bvid=${SILISILI_STALL_TEST_BVID:-BV1P4ddBBEJF}
-test_cid=${SILISILI_STALL_TEST_CID:-37630051884}
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
+expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
+expected_package=silisili-native-devel-1.1.0-1.40.aarch64
+test_bvid=${SILISILI_STALL_TEST_BVID:-BV17P386GEg9}
+test_cid=${SILISILI_STALL_TEST_CID:-40445085531}
+test_quality=${SILISILI_STALL_TEST_QUALITY:-116}
+stall_count=${SILISILI_STALL_TEST_COUNT:-6}
+minimum_cma_free_kb=${SILISILI_STALL_MINIMUM_CMA_FREE_KB:-16384}
 phase=preflight
 test_pid=
 production_pid=
@@ -92,6 +95,8 @@ trap cleanup EXIT
 trap 'exit 130' HUP INT TERM
 
 test -f "$rpm_path"
+test "$stall_count" -ge 1
+test "$stall_count" -le 12
 printf '%s  %s\n' "$expected_sha" "$rpm_path" | sha256sum -c -
 rpm -K --nosignature "$rpm_path"
 test "$(rpm -qp --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}' "$rpm_path")" \
@@ -111,59 +116,84 @@ mcetool --set-never-blank=enabled >/dev/null
 phase=launch-injected-playback
 rm -f /tmp/silisili-native-defaultuser.lock
 launch_application \
-    SILISILI_NATIVE_FORCE_ORIENTATION=portrait \
+    SILISILI_NATIVE_FORCE_ORIENTATION=landscape \
     SILISILI_NATIVE_TEST_PAGE=history-resume \
-    SILISILI_NATIVE_TEST_CONTENT_MODE=direct \
+    SILISILI_NATIVE_TEST_CONTENT_MODE=fullscreen \
     SILISILI_NATIVE_TEST_BVID="$test_bvid" \
     SILISILI_NATIVE_TEST_CID="$test_cid" \
-    SILISILI_NATIVE_TEST_QUALITY=80 \
+    SILISILI_NATIVE_TEST_QUALITY="$test_quality" \
     SILISILI_NATIVE_TEST_START_POSITION=14 \
-    SILISILI_NATIVE_TEST_HARDWARE_STALL_ONCE=1 \
+    SILISILI_NATIVE_TEST_HARDWARE_STALL_COUNT="$stall_count" \
     >/tmp/silisili-native-frame-stall-launch.log 2>&1
 test_pid=$(wait_for_single_process)
 test_starttime=$(awk '{print $22}' "/proc/$test_pid/stat")
 binder_before=$(binder_count "$test_pid")
 
-phase=wait-recovery
+phase=enter-fullscreen
 poll=0
-while test "$poll" -lt 480; do
+while test "$poll" -lt 160; do
     events=$(events_for_pid "$test_pid")
-    restart_line=$(printf '%s\n' "$events" | awk \
-        '/same-quality decoder restart completed/ { line = $0 } END { print line }')
-    case "$restart_line" in
-        *"audioReload false"*"textureRetained true"*) break ;;
-    esac
+    printf '%s\n' "$events" | grep -F \
+        'native player: deterministic fullscreen regression entry' >/dev/null \
+        && printf '%s\n' "$events" | grep -F \
+        'native player: fullscreen surface handoff completed' >/dev/null \
+        && printf '%s\n' "$events" | grep -E \
+        'native (hardware video: shared framebuffer geometry|player: video framebuffer geometry reset).*profile "?fullscreen-native"?' \
+        >/dev/null && break
     sleep 0.25
     poll=$((poll + 1))
 done
-test "$poll" -lt 480
+test "$poll" -lt 160
+
+phase=wait-repeated-recovery
+poll=0
+while test "$poll" -lt 1200; do
+    events=$(events_for_pid "$test_pid")
+    restart_count=$(printf '%s\n' "$events" | grep -c \
+        'same-quality decoder restart completed' || true)
+    test "$restart_count" -ge "$stall_count" && break
+    sleep 0.25
+    poll=$((poll + 1))
+done
+test "$poll" -lt 1200
 test -e "/proc/$test_pid/stat"
 test "$(awk '{print $22}' "/proc/$test_pid/stat")" = "$test_starttime"
 
 events=$(events_for_pid "$test_pid")
-injected_generation=$(printf '%s\n' "$events" | awk '
+injection_count=$(printf '%s\n' "$events" | grep -c \
+    'deterministic frame stall injected' || true)
+restart_count=$(printf '%s\n' "$events" | grep -c \
+    'same-quality decoder restart completed' || true)
+test "$injection_count" -eq "$stall_count"
+test "$restart_count" -eq "$stall_count"
+first_injected_generation=$(printf '%s\n' "$events" | awk '
     /deterministic frame stall injected/ {
         for (i = 1; i <= NF; ++i) if ($i == "generation") print $(i + 1) + 0
         exit
     }
 ')
-restart_generations=$(printf '%s\n' "$events" | awk '
+last_restart_generations=$(printf '%s\n' "$events" | awk '
     /same-quality decoder restart completed/ {
         previous = 0; current = 0
         for (i = 1; i <= NF; ++i) {
             if ($i == "previousGeneration") previous = $(i + 1) + 0
             if ($i == "generation") current = $(i + 1) + 0
         }
-        print previous "|" current
-        exit
+        result = previous "|" current
     }
+    END { print result }
 ')
-previous_generation=${restart_generations%%|*}
-recovered_generation=${restart_generations#*|}
-test "$injected_generation" -eq "$previous_generation"
+previous_generation=${last_restart_generations%%|*}
+recovered_generation=${last_restart_generations#*|}
+test "$first_injected_generation" -gt 0
 test "$recovered_generation" -gt "$previous_generation"
 test "$(printf '%s\n' "$events" | grep -c \
     'native player: load command submitted' || true)" -eq 1
+test "$(printf '%s\n' "$events" | grep -c \
+    'native hardware video: created buffer references released.*balanced true' || true)" \
+    -ge "$stall_count"
+test -z "$(printf '%s\n' "$events" | grep -E \
+    'created buffer references released.*balanced false' || true)"
 
 phase=wait-recovered-decoder
 poll=0
@@ -183,9 +213,16 @@ test -z "$(printf '%s\n' "$events" | grep -F \
     'native hardware video: switching to software fallback' || true)"
 
 phase=wait-post-recovery-frames
+if test "$stall_count" -gt 1; then
+    first_injection_serial=180
+else
+    first_injection_serial=60
+fi
+last_injection_serial=$((first_injection_serial + (stall_count - 1) * 30))
+expected_post_recovery_serial=$((1 + 60 * ((last_injection_serial + 118) / 60)))
 poll=0
 post_recovery_serial=0
-while test "$poll" -lt 320; do
+while test "$poll" -lt 480; do
     events=$(events_for_pid "$test_pid")
     post_recovery_serial=$(printf '%s\n' "$events" | awk '
         /native hardware video: shared-texture frame checkpoint/ {
@@ -196,16 +233,15 @@ while test "$poll" -lt 320; do
         }
         END { print last + 0 }
     ')
-    test "$post_recovery_serial" -lt 121 || break
+    test "$post_recovery_serial" -lt "$expected_post_recovery_serial" || break
     sleep 0.25
     poll=$((poll + 1))
 done
 phase=validate-post-recovery-serial
-test "$post_recovery_serial" -ge 121
+test "$post_recovery_serial" -ge "$expected_post_recovery_serial"
 
-# Check decoded-source cadence, not the 60 Hz scene-graph repetition timer.
-# Serial 61 is the first logged checkpoint after the injected generation was
-# replaced; serial 121 is exactly 60 newly published hardware frames later.
+# Check two decoded-source checkpoints entirely after the final injected
+# generation, not the 60 Hz scene-graph repetition timer.
 set -- $(printf '%s\n' "$events" | awk '
     /native hardware video: shared-texture frame checkpoint/ {
         serial = 0; elapsed = 0
@@ -213,11 +249,11 @@ set -- $(printf '%s\n' "$events" | awk '
             if ($i == "serial") serial = $(i + 1) + 0
             if ($i == "elapsedMs") elapsed = $(i + 1) + 0
         }
-        if (serial == 61 && first == 0) first = elapsed
-        if (serial == 121 && second == 0) second = elapsed
+        if (serial == expected - 60 && first == 0) first = elapsed
+        if (serial == expected && second == 0) second = elapsed
     }
     END { print first + 0, second + 0 }
-')
+' expected="$expected_post_recovery_serial")
 phase=validate-post-recovery-cadence
 recovery_first_elapsed_ms=$1
 recovery_second_elapsed_ms=$2
@@ -235,7 +271,7 @@ cma_free_kb=$(awk '/^CmaFree:/ { print $2 }' /proc/meminfo)
 # The Pixel 3a XL settles around 25 MiB free while its bounded 1080p OMX
 # buffers are active.  Keep a fail-closed exhaustion guard without rejecting
 # that measured steady state.
-test "$cma_free_kb" -ge 16384
+test "$cma_free_kb" -ge "$minimum_cma_free_kb"
 phase=validate-binder-state
 binder_after=$(binder_count "$test_pid")
 binder_delta=$((binder_after - binder_before))
@@ -247,10 +283,8 @@ launch_application >/tmp/silisili-native-production-launch.log 2>&1
 production_pid=$(wait_for_single_process)
 poll=0
 while test "$poll" -lt 80; do
-    production_events=$(events_for_pid "$production_pid")
-    printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.35"' \
-        >/dev/null && break
+    grep -Fq '/usr/bin/silisili-native' "/proc/$production_pid/maps" \
+        2>/dev/null && break
     sleep 0.25
     poll=$((poll + 1))
 done
@@ -258,7 +292,8 @@ test "$poll" -lt 80
 test -z "$(rpm -V silisili-native-devel 2>/dev/null || true)"
 
 phase=complete
-printf 'native_frame_stall_recovery=ready|package=%s|test_pid=%s|same_pid=1|injected_generation=%s|recovered_generation=%s|audio_reload=0|media_loads=1|texture_retained=1|post_recovery_serial=%s|recovery_unique_fps=%s|binder_delta=%s|cma_free_kb=%s|production_pid=%s|rpm_verify=clean|sha256=%s|visual_model=unused\n' \
-    "$expected_package" "$test_pid" "$injected_generation" \
+printf 'native_frame_stall_recovery=ready|package=%s|bvid=%s|cid=%s|quality=%s|fullscreen=1|test_pid=%s|same_pid=1|injections=%s|restarts=%s|first_generation=%s|recovered_generation=%s|buffer_refs_balanced=1|audio_reload=0|media_loads=1|texture_retained=1|post_recovery_serial=%s|recovery_unique_fps=%s|binder_delta=%s|cma_free_kb=%s|production_pid=%s|rpm_verify=clean|sha256=%s|visual_model=unused\n' \
+    "$expected_package" "$test_bvid" "$test_cid" "$test_quality" "$test_pid" \
+    "$injection_count" "$restart_count" "$first_injected_generation" \
     "$recovered_generation" "$post_recovery_serial" "$recovery_unique_fps" "$binder_delta" \
     "$cma_free_kb" "$production_pid" "$expected_sha"

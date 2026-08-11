@@ -44,6 +44,10 @@ public:
     Q_INVOKABLE void setSensorOrientation(int angle);
     Q_INVOKABLE void setBackgroundPlaybackMode(const QString &mode);
     Q_INVOKABLE void restoreApplication();
+    // Close the privileged overlay synchronously before the application-owned
+    // decoder/GL objects are torn down. This is idempotent so both a main-view
+    // Close event and QCoreApplication::aboutToQuit can enforce the barrier.
+    void shutdown();
 
 signals:
     void backgroundPlaybackModeChanged();
@@ -95,5 +99,6 @@ private:
     bool m_applicationForeground;
     bool m_foregroundProbePending;
     bool m_restoreInProgress;
+    bool m_shuttingDown;
     QString m_backgroundPlaybackMode;
 };

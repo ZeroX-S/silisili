@@ -124,7 +124,7 @@ SystemPipController::SystemPipController(QQuickView *mainView,
       m_orientationAngle(0), m_forcedTestOrientation(-1000),
       m_available(false), m_deviceUnlocked(false), m_displayOn(false),
       m_applicationForeground(true), m_foregroundProbePending(false),
-      m_restoreInProgress(false),
+      m_restoreInProgress(false), m_shuttingDown(false),
       m_backgroundPlaybackMode(
           QSettings().value(QString::fromLatin1(kBackgroundModeKey),
                             QStringLiteral("cover")).toString()) {
@@ -268,8 +268,35 @@ SystemPipController::SystemPipController(QQuickView *mainView,
 }
 
 SystemPipController::~SystemPipController() {
+    shutdown();
     delete m_view;
     m_view = 0;
+}
+
+void SystemPipController::shutdown() {
+    if (m_shuttingDown) return;
+    m_shuttingDown = true;
+    m_available = false;
+    m_restoreInProgress = false;
+    m_foregroundProbePending = false;
+    m_swapSampleTimer.stop();
+    m_presentationTimer.stop();
+    m_visibilityDelayTimer.stop();
+    m_foregroundProbeTimer.stop();
+    m_restoreGuardTimer.stop();
+    m_inputRegion = QRegion();
+    if (m_view) {
+        m_view->removeEventFilter(this);
+        m_view->setMask(QRegion());
+        m_view->setProperty("MOUSE_REGION", QVariant::fromValue(QRegion()));
+        applyInputRegion();
+        m_view->hide();
+        m_view->releaseResources();
+    }
+    qInfo() << "native application shutdown: system PiP released"
+            << "visible" << visible()
+            << "presentationTimer" << m_presentationTimer.isActive()
+            << "inputRegionRects" << m_inputRegion.rectCount();
 }
 
 bool SystemPipController::visible() const {
@@ -523,7 +550,7 @@ void SystemPipController::refreshDeviceState() {
 }
 
 void SystemPipController::updateVisibility() {
-    if (!m_view || !m_session) return;
+    if (m_shuttingDown || !m_view || !m_session) return;
     const bool backgrounded = !m_applicationForeground;
     if (m_backgroundPlaybackMode == QStringLiteral("pip")
             && !m_restoreInProgress

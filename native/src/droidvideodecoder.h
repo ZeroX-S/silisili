@@ -15,6 +15,7 @@
 #include <deque>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 class MpvVideoItem;
 struct _DroidMediaBuffer;
@@ -42,6 +43,8 @@ public:
     void frameRenderCompleted(int generation);
     void discardPendingFrame();
 
+    bool onBufferCreated(_DroidMediaBuffer *buffer);
+    void onBuffersReleased();
     void onFrameAvailable(_DroidMediaBuffer *buffer);
 
 private:
@@ -64,6 +67,7 @@ private:
     void clearDecodedFrames();
     void postFailure(int generation, const QString &reason);
     long long masterClockUs(bool *valid) const;
+    void releaseCreatedBufferReferences(const char *reason);
     void teardownCodec();
 
     MpvVideoItem *m_owner;
@@ -86,6 +90,11 @@ private:
     int m_videoStream;
     _DroidMediaCodec *m_codec;
     _DroidMediaBufferQueue *m_bufferQueue;
+    std::vector<_DroidMediaBuffer *> m_createdBuffers;
+    mutable std::mutex m_createdBufferMutex;
+    std::atomic<int> m_createdBufferReferenceCount;
+    std::atomic<int> m_destroyedBufferReferenceCount;
+    std::atomic<bool> m_bufferQueueReleased;
 
     std::thread m_demuxThread;
     std::thread m_presentThread;

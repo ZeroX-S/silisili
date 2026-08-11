@@ -14,6 +14,7 @@ namespace {
 const int kDefaultSoftwareQuality = 80;
 const int kMaximumApiQuality = 127;
 const int kMaximumStablePhoneQuality = 116;
+const int kMaximumStableLiveQuality = 400;
 
 int normalizedSoftwareQuality(int requestedQuality) {
     return requestedQuality > 0
@@ -35,6 +36,7 @@ PlaybackSession::PlaybackSession(PlaybackResolver *vodResolver,
       m_dropFirstFrameEdgeForTest(
           qgetenv("SILISILI_NATIVE_TEST_DROP_FIRST_FRAME_EDGE") == QByteArrayLiteral("1")),
       m_surfaceTransition(false), m_initialResumePending(false),
+      m_retainedVideoAspectRatio(0.0),
       m_loadedRevision(0), m_awaitedLoadSerial(0), m_preparedLoadSerial(0),
       m_pendingPosition(0.0), m_requestedResumePosition(0.0),
       m_pendingPaused(false), m_preparedQuality(0), m_loadedLiveRevision(0),
@@ -105,8 +107,25 @@ double PlaybackSession::brightness() const { return m_player ? m_player->brightn
 double PlaybackSession::speed() const { return m_player ? m_player->speed() : 1.0; }
 int PlaybackSession::videoWidth() const { return m_player ? m_player->videoWidth() : 0; }
 int PlaybackSession::videoHeight() const { return m_player ? m_player->videoHeight() : 0; }
+double PlaybackSession::sourceFrameRate() const {
+    return m_player ? m_player->sourceFrameRate() : 0.0;
+}
+int PlaybackSession::presentedTextureWidth() const {
+    return m_player ? m_player->presentedTextureWidth() : 0;
+}
+int PlaybackSession::presentedTextureHeight() const {
+    return m_player ? m_player->presentedTextureHeight() : 0;
+}
+int PlaybackSession::presentedVideoWidth() const {
+    return m_player ? m_player->presentedVideoWidth() : 0;
+}
+int PlaybackSession::presentedVideoHeight() const {
+    return m_player ? m_player->presentedVideoHeight() : 0;
+}
 double PlaybackSession::videoAspectRatio() const {
-    return videoHeight() > 0 ? static_cast<double>(videoWidth()) / videoHeight() : 0.0;
+    const double currentAspect = videoHeight() > 0
+            ? static_cast<double>(videoWidth()) / videoHeight() : 0.0;
+    return currentAspect > 0.0 ? currentAspect : m_retainedVideoAspectRatio;
 }
 QString PlaybackSession::errorMessage() const {
     if (live()) {
@@ -127,8 +146,35 @@ int PlaybackSession::selectedQuality() const {
     return m_vodResolver ? m_vodResolver->selectedQuality() : 0;
 }
 QString PlaybackSession::selectedQualityLabel() const {
-    if (live()) return m_liveResolver
-            ? m_liveResolver->selectedQualityLabel() : QString();
+    if (live()) {
+        QString label = m_liveResolver
+                ? m_liveResolver->selectedQualityLabel() : QString();
+        if (videoWidth() <= 0 || videoHeight() <= 0) return label;
+        QString actual = QStringLiteral("%1×%2")
+                .arg(videoWidth()).arg(videoHeight());
+        if (sourceFrameRate() > 0.0) {
+            const int roundedFps = qRound(sourceFrameRate());
+            const QString fps = qAbs(sourceFrameRate() - roundedFps) < 0.05
+                    ? QString::number(roundedFps)
+                    : QString::number(sourceFrameRate(), 'f', 2);
+            actual += QStringLiteral(" · %1fps").arg(fps);
+        }
+        const int sourceShortEdge = qMin(videoWidth(), videoHeight());
+        const int sourceLongEdge = qMax(videoWidth(), videoHeight());
+        const int presentedShortEdge = qMin(presentedVideoWidth(),
+                                            presentedVideoHeight());
+        const int presentedLongEdge = qMax(presentedVideoWidth(),
+                                           presentedVideoHeight());
+        if (presentedShortEdge > 0 && presentedLongEdge > 0
+                && (presentedShortEdge < sourceShortEdge
+                    || presentedLongEdge < sourceLongEdge)) {
+            actual += QStringLiteral(" · 显示%1×%2")
+                    .arg(presentedVideoWidth())
+                    .arg(presentedVideoHeight());
+        }
+        return label.isEmpty() ? actual
+                               : label + QStringLiteral(" · ") + actual;
+    }
     return m_vodResolver ? m_vodResolver->selectedQualityLabel() : QString();
 }
 
@@ -144,8 +190,12 @@ void PlaybackSession::attachPlayer(QObject *playerObject) {
                    this, &PlaybackSession::firstFramePresented);
         disconnect(m_player, &MpvVideoItem::hardwareFirstFrameTimedOut,
                    this, &PlaybackSession::hardwareFirstFrameTimedOut);
+        disconnect(m_player, &MpvVideoItem::unsafeLiveQualityRejected,
+                   this, &PlaybackSession::unsafeLiveQualityRejected);
         disconnect(m_player, &MpvVideoItem::sharedTextureFrameChanged,
                    this, &PlaybackSession::sharedTextureFrameChanged);
+        disconnect(m_player, &MpvVideoItem::presentationGeometryChanged,
+                   this, &PlaybackSession::playerChanged);
     }
     m_player = player;
     connect(m_player, &MpvVideoItem::stateChanged, this, &PlaybackSession::playerChanged);
@@ -155,8 +205,12 @@ void PlaybackSession::attachPlayer(QObject *playerObject) {
             this, &PlaybackSession::firstFramePresented);
     connect(m_player, &MpvVideoItem::hardwareFirstFrameTimedOut,
             this, &PlaybackSession::hardwareFirstFrameTimedOut);
+    connect(m_player, &MpvVideoItem::unsafeLiveQualityRejected,
+            this, &PlaybackSession::unsafeLiveQualityRejected);
     connect(m_player, &MpvVideoItem::sharedTextureFrameChanged,
             this, &PlaybackSession::sharedTextureFrameChanged);
+    connect(m_player, &MpvVideoItem::presentationGeometryChanged,
+            this, &PlaybackSession::playerChanged);
     useHost(m_surfaceHost ? m_surfaceHost.data() : m_fallbackHost.data());
     emit surfaceChanged();
     emit changed();
@@ -299,7 +353,9 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
     const int requestedQuality = normalizedSoftwareQuality(quality);
     const bool wasActive = m_active;
     const bool sameVideo = m_active && !m_pgc && m_bvid == bvid && m_cid == cid;
+    const bool sameVideoFamily = m_active && !m_pgc && m_bvid == bvid;
     if (m_active && !sameVideo) reportPlaybackProgress("video-switch", true);
+    if (!sameVideoFamily) m_retainedVideoAspectRatio = 0.0;
     const bool preparedVideo = !resumeRequested && !m_active
             && (m_preparingVideo || m_preparedVideoReady)
             && m_preparedBvid == bvid && m_preparedCid == cid
@@ -407,7 +463,9 @@ void PlaybackSession::playPgcInternal(const QString &aid, const QString &bvid,
     const int requestedQuality = normalizedSoftwareQuality(quality);
     const bool wasActive = m_active;
     const bool sameVideo = m_active && m_pgc && m_cid == cid && m_epId == epId;
+    const bool sameProgram = m_active && m_pgc && m_aid == aid;
     if (m_active && !sameVideo) reportPlaybackProgress("episode-switch", true);
+    if (!sameProgram) m_retainedVideoAspectRatio = 0.0;
     m_title = title;
     m_cover = cover;
     m_aid = aid;
@@ -453,13 +511,14 @@ void PlaybackSession::requestQuality(int quality) {
     if (!m_active) return;
     if (live()) {
         if (!m_liveResolver || m_liveRoomId.isEmpty()) return;
-        const int requestedQuality = quality > 0 ? quality : 250;
+        const int requestedQuality = quality > 0 ? quality : 0;
         m_pendingPaused = paused();
         qInfo() << "native live: quality switch requested"
                 << "from" << selectedQuality()
                 << "to" << requestedQuality
                 << "catalogChoices" << qualities().size()
-                << "nonSeekable" << true;
+                << "nonSeekable" << true
+                << "presentationAspectRetained" << videoAspectRatio();
         m_liveResolver->resolve(m_liveRoomId, requestedQuality);
         return;
     }
@@ -469,7 +528,8 @@ void PlaybackSession::requestQuality(int quality) {
             << "from" << selectedQuality()
             << "to" << requestedQuality
             << "catalogChoices" << qualities().size()
-            << "positionRetained" << position();
+            << "positionRetained" << position()
+            << "presentationAspectRetained" << videoAspectRatio();
     m_firstFrameReady = false;
     m_startupElapsed.restart();
     m_awaitedLoadSerial = m_player ? m_player->loadSerial() + 1 : 0;
@@ -513,7 +573,7 @@ void PlaybackSession::playLive(const QString &roomId, const QString &title,
             << "roomId" << roomId
             << "singleDecoder" << true
             << "coverAndPipEligible" << true;
-    m_liveResolver->resolve(roomId, quality > 0 ? quality : 250);
+    m_liveResolver->resolve(roomId, quality);
     emit changed();
     emit surfaceChanged();
 }
@@ -605,6 +665,7 @@ void PlaybackSession::stop() {
     if (wasActive) reportPlaybackProgress("stop", true);
     m_active = false;
     m_mediaKind = NoMedia;
+    m_retainedVideoAspectRatio = 0.0;
     m_firstFrameReady = true;
     m_finishedSmallWindowStopScheduled = false;
     m_surfaceTransition = false;
@@ -704,6 +765,15 @@ void PlaybackSession::liveResolverChanged() {
 }
 
 void PlaybackSession::playerChanged() {
+    const double currentAspect = m_player ? m_player->videoAspectRatio() : 0.0;
+    if (currentAspect > 0.0
+            && qAbs(currentAspect - m_retainedVideoAspectRatio) > 0.0001) {
+        m_retainedVideoAspectRatio = currentAspect;
+        qInfo() << "native player: session presentation aspect retained"
+                << m_retainedVideoAspectRatio
+                << "mediaKind" << mediaKind()
+                << "survivesQualityTransition" << true;
+    }
     reconcileFirstFrameReady("player-state-level-check");
     if (ended()) reportPlaybackProgress("completed", true);
     if (scheduleNextVideoPart()) {
@@ -788,9 +858,16 @@ void PlaybackSession::firstFramePresented(int loadSerial, double framePosition) 
 void PlaybackSession::hardwareFirstFrameTimedOut(int loadSerial, int width,
                                                  int height,
                                                  double framesPerSecond) {
-    if (!m_active || live() || !m_player || !m_vodResolver
+    if (!m_active || !m_player
             || (m_awaitedLoadSerial > 0 && loadSerial != m_awaitedLoadSerial))
         return;
+    if (live()) {
+        requestSafeLiveQualityFallback(QStringLiteral(
+                    "original-first-frame-timeout-%1x%2-%3fps")
+                .arg(width).arg(height).arg(framesPerSecond, 0, 'f', 2));
+        return;
+    }
+    if (!m_vodResolver) return;
     const int failedQuality = selectedQuality();
     if (failedQuality <= kMaximumStablePhoneQuality) return;
     const double retainedPosition = position();
@@ -817,6 +894,38 @@ void PlaybackSession::hardwareFirstFrameTimedOut(int loadSerial, int width,
     else
         m_vodResolver->resolve(m_bvid, m_cid, failedQuality);
     emit changed();
+}
+
+void PlaybackSession::unsafeLiveQualityRejected(int loadSerial,
+                                                const QString &reason) {
+    if (!m_active || !live() || !m_player
+            || (m_awaitedLoadSerial > 0 && loadSerial != m_awaitedLoadSerial))
+        return;
+    requestSafeLiveQualityFallback(reason);
+}
+
+bool PlaybackSession::requestSafeLiveQualityFallback(const QString &reason) {
+    if (!m_active || !live() || !m_liveResolver || !m_player
+            || m_liveRoomId.isEmpty()
+            || selectedQuality() <= 0
+            || selectedQuality() <= kMaximumStableLiveQuality)
+        return false;
+    const int failedQuality = selectedQuality();
+    m_pendingPaused = paused();
+    m_firstFrameReady = false;
+    m_startupElapsed.restart();
+    m_player->beginSourceTransition();
+    m_awaitedLoadSerial = m_player->loadSerial() + 1;
+    qWarning() << "native live quality: safe fallback requested"
+               << "from" << failedQuality
+               << "to" << kMaximumStableLiveQuality
+               << "reason" << reason
+               << "sameSession" << true
+               << "unsafeSoftwareDecode" << false;
+    m_liveResolver->resolve(m_liveRoomId, kMaximumStableLiveQuality);
+    emit changed();
+    emit surfaceChanged();
+    return true;
 }
 
 void PlaybackSession::sharedTextureFrameChanged(int frameSerial) {

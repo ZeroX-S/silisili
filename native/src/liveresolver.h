@@ -1,5 +1,7 @@
 #pragma once
 
+#include "playbackresolver.h"
+
 #include <QNetworkAccessManager>
 #include <QPointer>
 #include <QObject>
@@ -20,7 +22,9 @@ class LiveResolver : public QObject {
     Q_PROPERTY(int revision READ revision NOTIFY changed)
 
 public:
-    explicit LiveResolver(AccountService *accountService, QObject *parent = 0);
+    explicit LiveResolver(AccountService *accountService,
+                          const DirectVideoCapabilities &directCapabilities,
+                          QObject *parent = 0);
 
     bool loading() const { return m_loading; }
     QString sourceUrl() const { return m_sourceUrl; }
@@ -31,7 +35,9 @@ public:
     int revision() const { return m_revision; }
 
 public slots:
-    void resolve(const QString &roomId, int quality = 250);
+    // quality <= 0 requests the account-visible original stream. Explicit
+    // server qn values remain exact user selections.
+    void resolve(const QString &roomId, int quality = 0);
     void cancel();
 
 signals:
@@ -41,6 +47,7 @@ private:
     QNetworkAccessManager m_network;
     QPointer<QNetworkReply> m_reply;
     AccountService *m_accountService;
+    DirectVideoCapabilities m_directCapabilities;
     bool m_loading;
     QString m_sourceUrl;
     QString m_errorMessage;

@@ -19,16 +19,24 @@ Page {
     property bool qualityRegressionComplete: false
     property int qualityRegressionPreviousLoadSerial: 0
     property bool liveStartRequested: false
+    property int actualQualityLoggedLoadSerial: 0
+    property int actualQualityLoggedTextureWidth: 0
+    property int actualQualityLoggedTextureHeight: 0
+    property int actualQualityLoggedVideoWidth: 0
+    property int actualQualityLoggedVideoHeight: 0
 
     property bool playerLoading: playbackSession.loading
     property string playerError: playbackSession.errorMessage
     property bool playerPlaying: playbackSession.active
                                  && playbackSession.mediaKind === "live"
                                  && playbackSession.playing
-    property int automaticOrientations: video.videoAspectRatio > 1.05
+    // PlaybackSession retains the last verified aspect while the decoder
+    // replaces one quality with another. Reading the raw item aspect here
+    // would briefly return zero and unlock portrait orientation mid-switch.
+    property int automaticOrientations: playbackSession.videoAspectRatio > 1.05
                                         ? Orientation.Landscape | Orientation.LandscapeInverted
-                                        : video.videoAspectRatio > 0
-                                          && video.videoAspectRatio < 0.95
+                                        : playbackSession.videoAspectRatio > 0
+                                          && playbackSession.videoAspectRatio < 0.95
                                           ? Orientation.Portrait | Orientation.PortraitInverted
                                           : Orientation.All
     property string orientationModeLabel: orientationMode === 0 ? qsTr("按视频比例")
@@ -59,8 +67,14 @@ Page {
             return
         liveStartRequested = true
         console.log("native live: renderer ready before resolve")
-        playbackSession.playLive(roomId, roomTitle, roomCover, 250)
+        // Let LiveResolver request the account-visible original stream. A
+        // positive qn is reserved for an explicit quality-picker selection.
+        playbackSession.playLive(roomId, roomTitle, roomCover, 0)
         playbackSession.claimSurface(videoHost)
+        // Match PlayerPage's proven full-screen presentation path. Without
+        // this promotion live remained on the 800-pixel compact/Cover texture
+        // even when the decoder input was 1920x1080.
+        fullResolutionTimer.restart()
     }
 
     function openQualityDialog() {
@@ -102,6 +116,51 @@ Page {
         wasPlaying = playerPlaying
     }
 
+    function reportActualQuality() {
+        if (playbackSession.mediaKind !== "live"
+                || playbackSession.selectedQuality <= 0
+                || playbackSession.videoWidth <= 0
+                || playbackSession.videoHeight <= 0
+                || playbackSession.sourceFrameRate <= 0
+                || video.presentedTextureWidth <= 0
+                || video.presentedTextureHeight <= 0
+                || (video.loadSerial === actualQualityLoggedLoadSerial
+                    && video.presentedTextureWidth === actualQualityLoggedTextureWidth
+                    && video.presentedTextureHeight === actualQualityLoggedTextureHeight
+                    && video.presentedVideoWidth === actualQualityLoggedVideoWidth
+                    && video.presentedVideoHeight === actualQualityLoggedVideoHeight))
+            return
+        actualQualityLoggedLoadSerial = video.loadSerial
+        actualQualityLoggedTextureWidth = video.presentedTextureWidth
+        actualQualityLoggedTextureHeight = video.presentedTextureHeight
+        actualQualityLoggedVideoWidth = video.presentedVideoWidth
+        actualQualityLoggedVideoHeight = video.presentedVideoHeight
+        var sourceShortEdge = Math.min(playbackSession.videoWidth,
+                                       playbackSession.videoHeight)
+        var sourceLongEdge = Math.max(playbackSession.videoWidth,
+                                      playbackSession.videoHeight)
+        var presentedShortEdge = Math.min(video.presentedVideoWidth,
+                                          video.presentedVideoHeight)
+        var presentedLongEdge = Math.max(video.presentedVideoWidth,
+                                         video.presentedVideoHeight)
+        var sourcePixelsPreserved = presentedShortEdge >= sourceShortEdge
+                                    && presentedLongEdge >= sourceLongEdge
+        console.log("native live quality: actual stream ready",
+                    "qn", playbackSession.selectedQuality,
+                    "label", playbackSession.selectedQualityLabel,
+                    "geometry", playbackSession.videoWidth,
+                    "x", playbackSession.videoHeight,
+                    "sourceFps", playbackSession.sourceFrameRate,
+                    "presentation", video.presentedTextureWidth,
+                    "x", video.presentedTextureHeight,
+                    "videoViewport", video.presentedVideoWidth,
+                    "x", video.presentedVideoHeight,
+                    "profile", video.fullResolutionPresentation
+                               ? "fullscreen-native" : "bounded-shared",
+                    "sourcePixelsPreserved", sourcePixelsPreserved,
+                    "loadSerial", video.loadSerial)
+    }
+
     function cycleOrientationMode() {
         orientationMode = (orientationMode + 1) % 4
         orientationToast.visible = true
@@ -122,19 +181,27 @@ Page {
     Component.onDestruction: {
         // A delayed page teardown must never stop a VOD/PGC session that has
         // already replaced this live room in the shared PlaybackSession.
+        fullResolutionTimer.stop()
+        playbackSession.setSurfaceHighResolution(videoHost, false)
         if (playbackSession.mediaKind === "live")
             playbackSession.stop()
     }
+    onWidthChanged: if (playbackSession.mediaKind === "live") fullResolutionTimer.restart()
+    onHeightChanged: if (playbackSession.mediaKind === "live") fullResolutionTimer.restart()
 
     Connections {
         target: playbackSession
-        onChanged: synchronizeControls()
+        onChanged: {
+            synchronizeControls()
+            reportActualQuality()
+        }
     }
 
     Connections {
         target: video
         onRendererReadyChanged: startLiveWhenRendererReady()
         onStateChanged: synchronizeControls()
+        onPresentationGeometryChanged: reportActualQuality()
         onSharedTextureFrameChanged: {
             if (qualityRegressionRequested && !qualityRegressionComplete
                     && frameSerial > 0
@@ -231,7 +298,7 @@ Page {
             if (video.ended) {
                 playbackSession.requestQuality(
                             playbackSession.selectedQuality > 0
-                            ? playbackSession.selectedQuality : 250)
+                            ? playbackSession.selectedQuality : 0)
             } else {
                 var requestedPause = !video.paused
                 playbackSession.togglePaused()
@@ -333,6 +400,19 @@ Page {
         id: orientationToastTimer
         interval: 1800
         onTriggered: orientationToast.visible = false
+    }
+    Timer {
+        id: fullResolutionTimer
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (playbackSession.mediaKind !== "live")
+                return
+            playbackSession.setSurfaceHighResolution(videoHost, true)
+            console.log("native live player: fullscreen native-resolution promotion requested",
+                        "host", Math.round(videoHost.width), Math.round(videoHost.height),
+                        "source", playbackSession.videoWidth, playbackSession.videoHeight)
+        }
     }
     Timer {
         id: hideTimer

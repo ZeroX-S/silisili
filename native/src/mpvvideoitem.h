@@ -27,10 +27,19 @@ class MpvVideoItem : public QQuickItem {
     Q_PROPERTY(double speed READ speed NOTIFY stateChanged)
     Q_PROPERTY(int videoWidth READ videoWidth NOTIFY stateChanged)
     Q_PROPERTY(int videoHeight READ videoHeight NOTIFY stateChanged)
+    Q_PROPERTY(double sourceFrameRate READ sourceFrameRate NOTIFY stateChanged)
     Q_PROPERTY(double videoAspectRatio READ videoAspectRatio NOTIFY stateChanged)
     Q_PROPERTY(int loadSerial READ loadSerial)
     Q_PROPERTY(int presentedLoadSerial READ presentedLoadSerial)
     Q_PROPERTY(int presentedFrameSerial READ presentedFrameSerial)
+    Q_PROPERTY(int presentedTextureWidth READ presentedTextureWidth
+               NOTIFY presentationGeometryChanged)
+    Q_PROPERTY(int presentedTextureHeight READ presentedTextureHeight
+               NOTIFY presentationGeometryChanged)
+    Q_PROPERTY(int presentedVideoWidth READ presentedVideoWidth
+               NOTIFY presentationGeometryChanged)
+    Q_PROPERTY(int presentedVideoHeight READ presentedVideoHeight
+               NOTIFY presentationGeometryChanged)
     Q_PROPERTY(bool fullResolutionPresentation READ fullResolutionPresentation
                WRITE setFullResolutionPresentation NOTIFY stateChanged)
     Q_PROPERTY(bool hardwareDecoding READ hardwareDecoding NOTIFY stateChanged)
@@ -52,6 +61,7 @@ public:
     double speed() const { return m_speed; }
     int videoWidth() const { return m_videoWidth; }
     int videoHeight() const { return m_videoHeight; }
+    double sourceFrameRate() const { return m_sourceFrameRate; }
     double videoAspectRatio() const {
         return m_videoHeight > 0 ? static_cast<double>(m_videoWidth) / m_videoHeight : 0.0;
     }
@@ -60,6 +70,10 @@ public:
         return m_sharedTextureFrameSerial > 0 ? m_loadSerial : 0;
     }
     int presentedFrameSerial() const { return m_sharedTextureFrameSerial; }
+    int presentedTextureWidth() const { return m_presentedTextureWidth; }
+    int presentedTextureHeight() const { return m_presentedTextureHeight; }
+    int presentedVideoWidth() const { return m_presentedVideoWidth; }
+    int presentedVideoHeight() const { return m_presentedVideoHeight; }
     bool fullResolutionPresentation() const { return m_fullResolutionPresentation; }
     bool hardwareDecoding() const { return m_hardwareDecodeActive; }
     bool rendererReady() const;
@@ -99,6 +113,9 @@ public slots:
     void reportCoverSwap(int frameSerial);
     void setFullResolutionPresentation(bool enabled);
     void stop();
+    // Final process-exit barrier. Unlike stop(), this also destroys the
+    // persistent mpv/GL backend after the overlay has been hidden.
+    void shutdown();
     void claimSurface(QObject *hostObject);
     void releaseSurface(QObject *hostObject);
 
@@ -111,10 +128,19 @@ signals:
     void firstFramePresented(int loadSerial, double position);
     void hardwareFirstFrameTimedOut(int loadSerial, int width, int height,
                                     double framesPerSecond);
+    // Live has no seekable position to retain. If an original/UHD source is
+    // rejected before its first frame, let PlaybackSession request a lower
+    // advertised qn instead of attempting a phone-hostile software decode.
+    void unsafeLiveQualityRejected(int loadSerial, const QString &reason);
     // A lightweight second QQuickItem can sample the same application-owned
     // texture in Lipstick's system overlay. This signal never owns or decodes
     // media; it only schedules another scene-graph presentation of the frame.
     void sharedTextureFrameChanged(int frameSerial);
+    // Unlike videoWidth/videoHeight (decoder input), these dimensions describe
+    // the application-owned texture that Qt Quick actually scales to screen.
+    // Keeping both observable prevents a 1080p input from being reported as
+    // 1080p presentation when the shared framebuffer is still compact-sized.
+    void presentationGeometryChanged();
 
 private slots:
     void advanceProgressClock();
@@ -153,6 +179,8 @@ private:
     void recordPresentedFrameForFloor();
     void resetFrameFloorWindow();
     void resetFrameFloorQualification();
+    void updatePresentedTextureGeometry(const QSize &textureSize,
+                                        const QSize &videoViewportSize);
     void reportFrameFloorSummary(const char *reason);
     void syncHardwareClock();
     void resetHardwareStallWatchdog();
@@ -162,6 +190,7 @@ private:
                             double startPosition, bool pausedAfterLoad,
                             bool videoEnabled, bool liveStreamSource);
     bool startHardwareDecode(const QString &videoUrl, double startPosition);
+    void drainDeferredHardwareBuffers(const char *reason);
     void stopHardwareDecode();
     void fallbackToSoftwareDecode(const QString &reason);
     static void sharedTextureRenderUpdate(void *context);
@@ -179,6 +208,10 @@ private:
     bool m_liveStreamSource;
     QAtomicInt m_sharedTextureRenderQueued;
     int m_sharedTextureFrameSerial;
+    int m_presentedTextureWidth;
+    int m_presentedTextureHeight;
+    int m_presentedVideoWidth;
+    int m_presentedVideoHeight;
     QElapsedTimer m_sharedTextureFrameTimer;
     QElapsedTimer m_coverSwapCadenceTimer;
     int m_lastCoverSwapFrameSerial;
@@ -205,6 +238,9 @@ private:
     bool m_testHardwareStallEnabled;
     bool m_testHardwareStallInjected;
     int m_testHardwareStallGeneration;
+    int m_testHardwareStallTargetCount;
+    int m_testHardwareStallInjectedCount;
+    int m_testHardwareStallNextFrameSerial;
     QTimer m_foregroundRestoreTimer;
     int m_foregroundRestoreStage;
     QTimer m_progressClockTimer;

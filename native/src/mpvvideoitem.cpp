@@ -73,6 +73,33 @@ bool resolveHardwareTextureFunctions() {
     return hardwareEglCreateImage && hardwareEglDestroyImage
             && hardwareGlImageTargetTexture;
 }
+
+int testHardwareStallTargetCount() {
+    bool countReady = false;
+    const int requestedCount = QString::fromLocal8Bit(
+                qgetenv("SILISILI_NATIVE_TEST_HARDWARE_STALL_COUNT"))
+            .trimmed().toInt(&countReady);
+    if (countReady && requestedCount > 0)
+        return qBound(1, requestedCount, 12);
+    return qgetenv("SILISILI_NATIVE_TEST_HARDWARE_STALL_ONCE")
+            == QByteArrayLiteral("1") ? 1 : 0;
+}
+
+QSize fittedVideoViewport(const QSize &textureSize,
+                          int sourceWidth, int sourceHeight) {
+    if (textureSize.width() < 1 || textureSize.height() < 1
+            || sourceWidth < 1 || sourceHeight < 1)
+        return QSize();
+    const double sourceAspect = static_cast<double>(sourceWidth) / sourceHeight;
+    const double textureAspect = static_cast<double>(textureSize.width())
+            / textureSize.height();
+    if (sourceAspect > textureAspect) {
+        return QSize(textureSize.width(),
+                     qMax(1, qRound(textureSize.width() / sourceAspect)));
+    }
+    return QSize(qMax(1, qRound(textureSize.height() * sourceAspect)),
+                 textureSize.height());
+}
 }
 
 // libmpv renders into application-owned textures through this offscreen context.
@@ -233,6 +260,8 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
       m_hardwareDecoder(new DroidVideoDecoder(this)),
       m_liveStreamSource(false),
       m_sharedTextureRenderQueued(0), m_sharedTextureFrameSerial(0),
+      m_presentedTextureWidth(0), m_presentedTextureHeight(0),
+      m_presentedVideoWidth(0), m_presentedVideoHeight(0),
       m_lastCoverSwapFrameSerial(0), m_coverSwapCadenceFrames(0),
       m_frameFloorWindowFrames(0), m_frameFloorWindowCount(0),
       m_frameFloorBelowThresholdCount(0), m_frameFloorMinimumFps(0.0),
@@ -244,8 +273,12 @@ MpvVideoItem::MpvVideoItem(QQuickItem *parent)
       m_hardwareStallObservedSerial(0), m_hardwareStallObservedPosition(0.0),
       m_hardwareStallRecoveryCount(0),
       m_testHardwareStallEnabled(
-          qgetenv("SILISILI_NATIVE_TEST_HARDWARE_STALL_ONCE") == QByteArrayLiteral("1")),
+          testHardwareStallTargetCount() > 0),
       m_testHardwareStallInjected(false), m_testHardwareStallGeneration(0),
+      m_testHardwareStallTargetCount(testHardwareStallTargetCount()),
+      m_testHardwareStallInjectedCount(0),
+      m_testHardwareStallNextFrameSerial(
+          testHardwareStallTargetCount() > 1 ? 180 : 60),
       m_foregroundRestoreStage(0), m_progressClockTicks(0), m_loadSerial(0),
       m_loadCommandPending(false), m_pendingLoadStart(0.0), m_pendingLoadPause(false),
       m_initialPositionGatePending(false), m_initialPositionConfirmed(false),
@@ -678,6 +711,11 @@ bool MpvVideoItem::ensureMpv() {
 }
 
 MpvVideoItem::~MpvVideoItem() {
+    shutdown();
+}
+
+void MpvVideoItem::shutdown() {
+    if (!m_backend && !m_hardwareDecoder) return;
     clearSurfaceConnections();
     m_sharedTextureRenderQueued.storeRelease(1);
     stopHardwareDecode();
@@ -685,6 +723,10 @@ MpvVideoItem::~MpvVideoItem() {
     m_hardwareDecoder = 0;
     delete m_backend;
     m_backend = 0;
+    qInfo() << "native application shutdown: playback resources released"
+            << "hardwareDecoder" << false
+            << "mpvBackend" << false
+            << "sharedTexture" << false;
 }
 
 void MpvVideoItem::sharedTextureRenderUpdate(void *context) {
@@ -894,23 +936,15 @@ void MpvVideoItem::renderSharedTextureFrame() {
     m_backend->pendingFramebuffer = -1;
     ++m_sharedTextureFrameSerial;
     recordPresentedFrameForFloor();
+    const QSize presentedViewportSize = fittedVideoViewport(
+                framebufferSize, m_videoWidth, m_videoHeight);
     if (framebufferGeometryChanged) {
-        int videoViewportWidth = framebufferSize.width();
-        int videoViewportHeight = framebufferSize.height();
-        const double sourceAspect = videoAspectRatio();
-        const double framebufferAspect = static_cast<double>(framebufferSize.width())
-                / framebufferSize.height();
-        if (sourceAspect > 0.0) {
-            if (sourceAspect > framebufferAspect)
-                videoViewportHeight = qMax(2, qRound(videoViewportWidth / sourceAspect));
-            else
-                videoViewportWidth = qMax(2, qRound(videoViewportHeight * sourceAspect));
-        }
         qInfo() << "native player: framebuffer profile frame committed"
                 << "profile" << (m_fullResolutionPresentation
                                   ? "fullscreen-native" : "bounded-shared")
                 << "texture" << framebufferSize.width() << "x" << framebufferSize.height()
-                << "videoViewport" << videoViewportWidth << "x" << videoViewportHeight
+                << "videoViewport" << presentedViewportSize.width() << "x"
+                << presentedViewportSize.height()
                 << "source" << m_videoWidth << "x" << m_videoHeight
                 << "frameSerial" << m_sharedTextureFrameSerial;
     }
@@ -948,6 +982,7 @@ void MpvVideoItem::renderSharedTextureFrame() {
     }
     renderGlContext->doneCurrent();
     backendLocker.unlock();
+    updatePresentedTextureGeometry(framebufferSize, presentedViewportSize);
     update();
     emit sharedTextureFrameChanged(m_sharedTextureFrameSerial);
 }
@@ -981,9 +1016,47 @@ void MpvVideoItem::stopHardwareDecode() {
     m_hardwareFirstFrameTimer.stop();
     m_hardwareFirstFramePending = false;
     m_hardwarePresentationCadenceLogged = false;
+    drainDeferredHardwareBuffers("decoder-stop");
     if (m_hardwareDecoder) m_hardwareDecoder->stop();
     if (wasActive)
         qInfo() << "native hardware video: direct pipeline stopped";
+}
+
+void MpvVideoItem::drainDeferredHardwareBuffers(const char *reason) {
+    if (!m_backend) return;
+    QMutexLocker locker(&m_backend->mutex);
+    if (m_backend->deferredHardwareBuffers.isEmpty()) return;
+
+    QOpenGLContext *renderContext = m_backend->renderGlContext;
+    QOffscreenSurface *renderSurface = m_backend->renderSurface;
+    if (!renderContext || !renderSurface
+            || !renderContext->makeCurrent(renderSurface)) {
+        qWarning() << "native hardware video: deferred buffer drain postponed"
+                   << "reason" << reason
+                   << "buffers" << m_backend->deferredHardwareBuffers.size();
+        return;
+    }
+
+    // Decoder stop/restart is the one bounded point where waiting for all GPU
+    // reads is desirable. It guarantees no buffer from the outgoing
+    // BufferQueue remains attached to the persistent renderer and avoids
+    // carrying an old codec generation into the next playback session.
+    renderContext->functions()->glFinish();
+    const int released = m_backend->deferredHardwareBuffers.size();
+    for (int index = 0; index < released; ++index) {
+        MpvVideoBackend::DeferredHardwareBuffer &pending =
+                m_backend->deferredHardwareBuffers[index];
+        if (pending.fence != EGL_NO_SYNC_KHR && hardwareEglDestroySync)
+            hardwareEglDestroySync(pending.display, pending.fence);
+        if (pending.buffer)
+            droid_media_buffer_release(pending.buffer, pending.display, 0);
+    }
+    m_backend->deferredHardwareBuffers.clear();
+    renderContext->doneCurrent();
+    qInfo() << "native hardware video: deferred GPU buffers drained"
+            << "reason" << reason
+            << "released" << released
+            << "boundedAtDecoderBoundary" << true;
 }
 
 void MpvVideoItem::syncHardwareClock() {
@@ -1071,6 +1144,7 @@ void MpvVideoItem::restartHardwareDecodeAfterStall() {
     m_hardwarePresentationTimer.stop();
     m_hardwareFirstFrameTimer.stop();
     m_hardwareFirstFramePending = false;
+    drainDeferredHardwareBuffers("stall-restart");
     m_hardwareDecoder->stop();
 
     const bool restarted = m_hardwareDecoder->start(m_originalVideoUrl,
@@ -1087,6 +1161,13 @@ void MpvVideoItem::restartHardwareDecodeAfterStall() {
 
     m_hardwareFirstFramePending = true;
     m_hardwarePresentationCadenceLogged = false;
+    if (m_testHardwareStallInjected
+            && m_testHardwareStallGeneration == previousGeneration
+            && m_testHardwareStallInjectedCount
+               < m_testHardwareStallTargetCount) {
+        m_testHardwareStallInjected = false;
+        m_testHardwareStallNextFrameSerial = m_sharedTextureFrameSerial + 30;
+    }
     m_hardwareDecoder->setPaused(false);
     m_hardwareDecoder->updateMasterClock(retainedPosition, m_speed, true);
     resetHardwareStallWatchdog();
@@ -1138,6 +1219,14 @@ void MpvVideoItem::hardwareDecodeFailed(int generation,
         return;
     if (reason == QStringLiteral("source-exceeds-device-buffer-budget")
             || reason.startsWith(QStringLiteral("ultrahd-"))) {
+        if (m_liveStreamSource) {
+            qWarning() << "native live quality: unsafe original rejected"
+                       << "loadSerial" << m_loadSerial
+                       << "reason" << reason
+                       << "action" << "request-lower-server-quality";
+            emit unsafeLiveQualityRejected(m_loadSerial, reason);
+            return;
+        }
         qWarning() << "native hardware video: unsafe software fallback suppressed"
                    << "reason" << reason
                    << "action" << "stop-and-select-lower-quality";
@@ -1184,13 +1273,19 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
     }
 
     if (m_testHardwareStallEnabled && !m_testHardwareStallInjected
-            && m_sharedTextureFrameSerial >= 60) {
+            && m_testHardwareStallInjectedCount
+               < m_testHardwareStallTargetCount
+            && m_sharedTextureFrameSerial
+               >= m_testHardwareStallNextFrameSerial) {
         m_testHardwareStallInjected = true;
         m_testHardwareStallGeneration = generation;
+        ++m_testHardwareStallInjectedCount;
         qWarning() << "native hardware video: deterministic frame stall injected"
                    << "generation" << generation
                    << "frameSerial" << m_sharedTextureFrameSerial
-                   << "oneShot" << true;
+                   << "injection" << m_testHardwareStallInjectedCount
+                   << "target" << m_testHardwareStallTargetCount
+                   << "oneShot" << (m_testHardwareStallTargetCount == 1);
     }
     if (m_testHardwareStallInjected
             && generation == m_testHardwareStallGeneration) {
@@ -1221,6 +1316,7 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
 
     QString renderError;
     QSize framebufferSize;
+    QSize presentedViewportSize;
     GLuint publishedTexture = 0;
     bool published = false;
     bool firstPublishedFrame = false;
@@ -1371,6 +1467,7 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
                 gl->glViewport((framebufferSize.width() - viewportWidth) / 2,
                                (framebufferSize.height() - viewportHeight) / 2,
                                viewportWidth, viewportHeight);
+                presentedViewportSize = QSize(viewportWidth, viewportHeight);
                 gl->glActiveTexture(GL_TEXTURE0);
                 gl->glBindTexture(GL_TEXTURE_EXTERNAL_OES,
                                   m_backend->hardwareExternalTexture);
@@ -1556,6 +1653,7 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
                 << "cpuPixelCopies" << 0;
     }
     if (!published) return;
+    updatePresentedTextureGeometry(framebufferSize, presentedViewportSize);
     resetHardwareStallWatchdog();
     if (firstPublishedFrame) {
         m_initialVideoFrameReady = true;
@@ -2187,6 +2285,30 @@ void MpvVideoItem::stop() {
     if (changed) emit stateChanged();
 }
 
+void MpvVideoItem::updatePresentedTextureGeometry(
+        const QSize &textureSize, const QSize &videoViewportSize) {
+    const int width = qMax(0, textureSize.width());
+    const int height = qMax(0, textureSize.height());
+    const int videoWidth = qMax(0, videoViewportSize.width());
+    const int videoHeight = qMax(0, videoViewportSize.height());
+    if (m_presentedTextureWidth == width
+            && m_presentedTextureHeight == height
+            && m_presentedVideoWidth == videoWidth
+            && m_presentedVideoHeight == videoHeight)
+        return;
+    m_presentedTextureWidth = width;
+    m_presentedTextureHeight = height;
+    m_presentedVideoWidth = videoWidth;
+    m_presentedVideoHeight = videoHeight;
+    qInfo() << "native player: presentation texture geometry"
+            << width << "x" << height
+            << "videoViewport" << videoWidth << "x" << videoHeight
+            << "source" << m_videoWidth << "x" << m_videoHeight
+            << "profile" << (m_fullResolutionPresentation
+                               ? "fullscreen-native" : "bounded-shared");
+    emit presentationGeometryChanged();
+}
+
 void MpvVideoItem::claimSurface(QObject *hostObject) {
     QQuickItem *host = qobject_cast<QQuickItem *>(hostObject);
     if (!host) return;
@@ -2585,6 +2707,7 @@ void MpvVideoItem::updateSourceFrameRateFromMpv(double framesPerSecond) {
             << "sourceFps" << m_sourceFrameRate
             << "thresholdFps" << kMinimumPlaybackFrameRate
             << "eligible" << (m_sourceFrameRate + 0.5 >= kMinimumPlaybackFrameRate);
+    emit stateChanged();
 }
 
 void MpvVideoItem::updateLoadingFromMpv(bool loading) {
@@ -2720,6 +2843,10 @@ bool MpvVideoItem::enableSourceFramePresentation(const char *reason) {
             << "loadSerial" << m_loadSerial
             << "videoAspect" << videoAspectRatio();
     if (publishedPendingFrame) {
+        updatePresentedTextureGeometry(
+                    pendingFramebufferSize,
+                    fittedVideoViewport(pendingFramebufferSize,
+                                        m_videoWidth, m_videoHeight));
         m_sharedTextureFrameSerial = 1;
         m_initialVideoFrameReady = true;
         m_sharedTextureFrameTimer.start();
@@ -2789,6 +2916,7 @@ void MpvVideoItem::withdrawPresentedFrame(const char *reason) {
         m_backend->pendingFramebuffer = -1;
     }
     m_sharedTextureFrameSerial = 0;
+    updatePresentedTextureGeometry(QSize(), QSize());
     m_sharedTextureFrameTimer.invalidate();
     m_lastCoverSwapFrameSerial = 0;
     m_coverSwapCadenceFrames = 0;

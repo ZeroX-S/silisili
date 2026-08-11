@@ -75,7 +75,12 @@ ApplicationWindow {
             roomId: nativeTestRoomId
             roomTitle: qsTr("直播播放器回归")
             roomOwner: qsTr("设备测试")
-            orientationMode: 2
+            // Keep direct device regressions aligned with the orientation they
+            // explicitly request. The old hard-coded portrait lock overrode a
+            // landscape launch and made a 1920x1080 stream fit into only a
+            // 1080x608 video viewport, hiding the real full-screen behavior.
+            orientationMode: nativeForcedOrientation === "portrait" ? 2
+                             : nativeForcedOrientation === "landscape" ? 3 : 0
             qualityRegression: nativeTestContentMode === "quality-cycle"
         }
     }
@@ -92,6 +97,8 @@ ApplicationWindow {
             // have finished their bounded metadata prefetch.
             deferAutoplayUntilPrefetched: nativeTestPage !== "history-resume"
                                            && nativeTestContentMode !== "direct"
+                                           && nativeTestContentMode !== "fullscreen"
+                                           && nativeTestContentMode !== "quality-matrix"
         }
     }
 

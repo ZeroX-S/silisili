@@ -7,9 +7,9 @@ set -eu
 # model is involved; the assertions use real input events, process identity,
 # network state and QML event-loop markers.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
-expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
-expected_package=silisili-native-devel-1.1.0-1.35.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
+expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
+expected_package=silisili-native-devel-1.1.0-1.40.aarch64
 phase=preflight
 test_pid=
 production_pid=
@@ -255,10 +255,8 @@ launch_application >/tmp/silisili-native-production-launch.log 2>&1
 production_pid=$(wait_for_single_process)
 poll=0
 while test "$poll" -lt 60; do
-    production_events=$(events_for_pid "$production_pid")
-    printf '%s\n' "$production_events" | grep -F \
-        'native app: build identity "silisili-native-devel" "1.1.0" "1.35"' \
-        >/dev/null && break
+    grep -Fq '/usr/bin/silisili-native' "/proc/$production_pid/maps" \
+        2>/dev/null && break
     sleep 0.25
     poll=$((poll + 1))
 done

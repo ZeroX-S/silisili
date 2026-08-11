@@ -32,6 +32,11 @@ class PlaybackSession : public QObject {
     Q_PROPERTY(double speed READ speed NOTIFY changed)
     Q_PROPERTY(int videoWidth READ videoWidth NOTIFY changed)
     Q_PROPERTY(int videoHeight READ videoHeight NOTIFY changed)
+    Q_PROPERTY(double sourceFrameRate READ sourceFrameRate NOTIFY changed)
+    Q_PROPERTY(int presentedTextureWidth READ presentedTextureWidth NOTIFY changed)
+    Q_PROPERTY(int presentedTextureHeight READ presentedTextureHeight NOTIFY changed)
+    Q_PROPERTY(int presentedVideoWidth READ presentedVideoWidth NOTIFY changed)
+    Q_PROPERTY(int presentedVideoHeight READ presentedVideoHeight NOTIFY changed)
     Q_PROPERTY(double videoAspectRatio READ videoAspectRatio NOTIFY changed)
     Q_PROPERTY(QString title READ title NOTIFY changed)
     Q_PROPERTY(QString cover READ cover NOTIFY changed)
@@ -73,6 +78,11 @@ public:
     double speed() const;
     int videoWidth() const;
     int videoHeight() const;
+    double sourceFrameRate() const;
+    int presentedTextureWidth() const;
+    int presentedTextureHeight() const;
+    int presentedVideoWidth() const;
+    int presentedVideoHeight() const;
     double videoAspectRatio() const;
     QString title() const { return m_title; }
     QString cover() const { return m_cover; }
@@ -102,7 +112,7 @@ public slots:
                    const QString &epId, const QString &title,
                    const QString &cover, double startPosition, int quality = 80);
     void playLive(const QString &roomId, const QString &title,
-                  const QString &cover, int quality = 250);
+                  const QString &cover, int quality = 0);
     void setVideoParts(const QString &bvid, const QVariantList &parts);
     void setVideoAid(const QString &bvid, const QString &aid);
     void requestQuality(int quality);
@@ -129,6 +139,7 @@ private slots:
     void firstFramePresented(int loadSerial, double position);
     void hardwareFirstFrameTimedOut(int loadSerial, int width, int height,
                                     double framesPerSecond);
+    void unsafeLiveQualityRejected(int loadSerial, const QString &reason);
     void sharedTextureFrameChanged(int frameSerial);
     void applicationStateChanged(Qt::ApplicationState state);
 
@@ -148,6 +159,7 @@ private:
                          const QString &title, const QString &cover,
                          double startPosition, bool resumeRequested, int quality);
     void leaveLiveSourceForOnDemand(const char *nextKind);
+    bool requestSafeLiveQualityFallback(const QString &reason);
     bool scheduleNextVideoPart();
     bool reportPlaybackProgress(const char *reason, bool force = false);
 
@@ -177,6 +189,10 @@ private:
     bool m_dropFirstFrameEdgeForTest;
     bool m_surfaceTransition;
     bool m_initialResumePending;
+    // Decoder geometry is deliberately cleared while replacing a source.
+    // Retain the last verified aspect for the same content session so a
+    // quality switch cannot transiently unlock portrait UI in full-screen.
+    double m_retainedVideoAspectRatio;
     QElapsedTimer m_startupElapsed;
     int m_loadedRevision;
     int m_awaitedLoadSerial;

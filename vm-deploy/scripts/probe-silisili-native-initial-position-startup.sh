@@ -6,9 +6,9 @@ set -eu
 # hardware texture must not trigger software fallback, and the first visible
 # frame must arrive from the single original media load.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.35.aarch64.rpm}
-expected_sha=${2:-cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e}
-expected_package=silisili-native-devel-1.1.0-1.35.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
+expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
+expected_package=silisili-native-devel-1.1.0-1.40.aarch64
 test_bvid=${SILISILI_STARTUP_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_STARTUP_TEST_CID:-37630051884}
 test_trials=${SILISILI_STARTUP_TEST_TRIALS:-3}

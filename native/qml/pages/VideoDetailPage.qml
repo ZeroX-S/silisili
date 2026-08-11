@@ -59,6 +59,15 @@ Page {
                                  && isCurrentVideo && playbackSession.playing
     property bool wantsPlaybackSurface: (status === PageStatus.Active || retainedByDialog)
                                         && isCurrentVideo
+    property var video: playbackVideo
+    property var qualityMatrixIds: []
+    property var qualityMatrixResolvedIds: []
+    property int qualityMatrixIndex: -1
+    property int qualityMatrixRequestedId: 0
+    property int qualityMatrixPreviousLoadSerial: 0
+    property bool qualityMatrixAwaitingFrame: false
+    property double qualityMatrixSettledAtMs: 0
+    property bool qualityMatrixComplete: false
     allowedOrientations: Orientation.All
 
     VideoDetailModel { id: videoDetail }
@@ -821,6 +830,133 @@ Page {
                         "y", Math.round(point.y),
                         "width", Math.round(inlineFullscreenButton.width),
                         "height", Math.round(inlineFullscreenButton.height))
+        }
+    }
+
+    Timer {
+        id: fullscreenRegressionTimer
+        interval: 100
+        repeat: true
+        running: nativeTestContentMode === "fullscreen"
+                 && page.status === PageStatus.Active
+        property bool entered: false
+        onTriggered: {
+            if (entered || !isCurrentVideo || inlinePlayerLoading
+                    || !inlineTransportAvailable)
+                return
+            entered = true
+            stop()
+            console.log("native player: deterministic fullscreen regression entry",
+                        "bvid", videoBvid,
+                        "quality", playbackSession.selectedQuality)
+            openFullscreen()
+        }
+    }
+
+    Timer {
+        id: qualityMatrixRegressionTimer
+        interval: 200
+        repeat: true
+        running: nativeTestContentMode === "quality-matrix"
+                 && !page.qualityMatrixComplete
+        onTriggered: {
+            if (!page.isCurrentVideo || page.inlinePlayerLoading
+                    || page.inlinePlayerError.length > 0
+                    || page.video.presentedFrameSerial <= 0)
+                return
+
+            if (page.qualityMatrixIndex < 0) {
+                var discovered = []
+                for (var index = playbackSession.qualities.length - 1;
+                     index >= 0; --index) {
+                    var id = playbackSession.qualities[index].id
+                    // 120/127 remain visible but are separately exercised by
+                    // the UHD safety probe because this phone cannot allocate
+                    // their real decoder surfaces without exhausting CMA.
+                    if (id > 0 && id <= 116)
+                        discovered.push(id)
+                }
+                if (discovered.length < 2)
+                    return
+                page.qualityMatrixIds = discovered
+                page.qualityMatrixResolvedIds = []
+                page.qualityMatrixIndex = 0
+                console.log("native VOD quality matrix: catalog ready",
+                            "ids", discovered.join(","),
+                            "choices", playbackSession.qualities.length,
+                            "initial", playbackSession.selectedQuality)
+            }
+
+            if (page.qualityMatrixAwaitingFrame) {
+                if (page.video.loadSerial <= page.qualityMatrixPreviousLoadSerial
+                        || playbackSession.selectedQuality
+                           !== page.qualityMatrixRequestedId)
+                    return
+                page.qualityMatrixAwaitingFrame = false
+                page.qualityMatrixSettledAtMs = Date.now()
+                var resolved = page.qualityMatrixResolvedIds.slice(0)
+                resolved.push(playbackSession.selectedQuality)
+                page.qualityMatrixResolvedIds = resolved
+                console.log("native VOD quality matrix: step ready",
+                            "index", page.qualityMatrixIndex,
+                            "requested", page.qualityMatrixRequestedId,
+                            "resolved", playbackSession.selectedQuality,
+                            "label", playbackSession.selectedQualityLabel,
+                            "loadSerial", page.video.loadSerial,
+                            "frameSerial", page.video.presentedFrameSerial,
+                            "geometry", page.video.videoWidth + "x" + page.video.videoHeight)
+                ++page.qualityMatrixIndex
+                return
+            }
+
+            if (page.qualityMatrixSettledAtMs > 0
+                    && Date.now() - page.qualityMatrixSettledAtMs < 1500)
+                return
+            if (page.qualityMatrixIndex >= page.qualityMatrixIds.length) {
+                page.qualityMatrixComplete = true
+                stop()
+                console.log("native VOD quality matrix: complete",
+                            "requested", page.qualityMatrixIds.join(","),
+                            "resolved", page.qualityMatrixResolvedIds.join(","),
+                            "loadSerial", page.video.loadSerial,
+                            "frameSerial", page.video.presentedFrameSerial)
+                // Finish through the production session stop path so the
+                // final OMX generation participates in the same lifetime
+                // audit as every preceding quality switch.
+                playbackSession.stop()
+                return
+            }
+
+            page.qualityMatrixRequestedId =
+                    page.qualityMatrixIds[page.qualityMatrixIndex]
+            if (playbackSession.selectedQuality
+                    === page.qualityMatrixRequestedId) {
+                var retained = page.qualityMatrixResolvedIds.slice(0)
+                retained.push(playbackSession.selectedQuality)
+                page.qualityMatrixResolvedIds = retained
+                page.qualityMatrixSettledAtMs = Date.now()
+                console.log("native VOD quality matrix: step ready",
+                            "index", page.qualityMatrixIndex,
+                            "requested", page.qualityMatrixRequestedId,
+                            "resolved", playbackSession.selectedQuality,
+                            "label", playbackSession.selectedQualityLabel,
+                            "loadSerial", page.video.loadSerial,
+                            "frameSerial", page.video.presentedFrameSerial,
+                            "geometry", page.video.videoWidth + "x" + page.video.videoHeight,
+                            "initialSession", true)
+                ++page.qualityMatrixIndex
+                return
+            }
+
+            page.qualityMatrixPreviousLoadSerial = page.video.loadSerial
+            page.qualityMatrixAwaitingFrame = true
+            console.log("native VOD quality matrix: step requested",
+                        "index", page.qualityMatrixIndex,
+                        "from", playbackSession.selectedQuality,
+                        "to", page.qualityMatrixRequestedId,
+                        "position", Math.round(playbackSession.position),
+                        "loadSerial", page.video.loadSerial)
+            playbackSession.requestQuality(page.qualityMatrixRequestedId)
         }
     }
 

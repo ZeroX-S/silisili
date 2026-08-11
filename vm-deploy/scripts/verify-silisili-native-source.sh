@@ -147,6 +147,50 @@ fi
 if grep -Eq 'MpvVideoItem[[:space:]]*\{' "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml"; then
     fail live-page-local-player-regression
 fi
+grep -Fq 'const int kAutomaticOriginalQuality = 10000;' \
+    "$NATIVE_ROOT/src/liveresolver.cpp" \
+    || fail live-automatic-original-request-missing
+grep -Fq 'capabilityAwareCodecSelection' "$NATIVE_ROOT/src/liveresolver.cpp" \
+    || fail live-capability-aware-codec-selection-missing
+grep -Fq 'm_selectedQuality = selected.currentQuality;' \
+    "$NATIVE_ROOT/src/liveresolver.cpp" \
+    || fail live-server-current-quality-verification-missing
+grep -Fq 'liveQualityCatalog(streams, descriptions,' \
+    "$NATIVE_ROOT/src/liveresolver.cpp" \
+    || fail live-supported-quality-catalog-missing
+grep -Fq 'Q_PROPERTY(double sourceFrameRate READ sourceFrameRate' \
+    "$NATIVE_ROOT/src/mpvvideoitem.h" \
+    || fail live-actual-frame-rate-property-missing
+grep -Fq 'label + QStringLiteral(" · ") + actual' \
+    "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail live-actual-quality-label-missing
+grep -Fq 'native live quality: actual stream ready' \
+    "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-actual-quality-semantic-marker-missing
+grep -Fq 'playbackSession.setSurfaceHighResolution(videoHost, true)' \
+    "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-fullscreen-resolution-promotion-missing
+grep -Fq 'nativeForcedOrientation === "landscape" ? 3 : 0' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail live-regression-orientation-still-portrait-locked
+grep -Fq 'Q_PROPERTY(int presentedVideoWidth READ presentedVideoWidth' \
+    "$NATIVE_ROOT/src/mpvvideoitem.h" \
+    || fail final-presentation-viewport-property-missing
+grep -Fq '"sourcePixelsPreserved", sourcePixelsPreserved' \
+    "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-final-presentation-quality-gate-missing
+grep -Fq 'native live quality: safe fallback requested' \
+    "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail live-original-safe-fallback-missing
+grep -Fq 'presentationAspectRetained' \
+    "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail quality-switch-presentation-aspect-retention-missing
+grep -Fq 'automaticOrientations: playbackSession.videoAspectRatio > 1.05' \
+    "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-page-bypasses-retained-presentation-aspect
+grep -Fq 'return currentAspect > 0.0 ? currentAspect : m_retainedVideoAspectRatio;' \
+    "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail quality-switch-aspect-fallback-missing
 grep -Fq 'playbackSession.mediaKind === "live"' \
     "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
     || fail cover-live-state-missing
@@ -154,7 +198,47 @@ if grep -Eq 'SILISILI_NATIVE_(TEST|FORCE_ORIENTATION)' "$DESKTOP"; then
     fail test-hook-enabled-in-desktop
 fi
 
-printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|system_pip=notification-configurable|release_asset=declared|visual_model=unused\n' \
+# Droidmedia grants buffer_created() an extra strong reference and requires
+# clients returning true to release it with droid_media_buffer_destroy(). The
+# user-data marker also prevents the adaptation from granting another reference
+# on every reuse of the same gralloc slot. Keep the stop/restart GPU drain as a
+# separate guard for frames whose EGL fence has not yet been polled.
+grep -Fq 'droid_media_buffer_set_user_data(buffer, this);' \
+    "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail droidmedia-created-buffer-user-data-missing
+grep -Fq 'droid_media_buffer_destroy(*buffer);' \
+    "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail droidmedia-created-buffer-destroy-missing
+grep -Fq '"buffer-queue-release-post-worker"' \
+    "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail droidmedia-buffer-release-callback-unbalanced
+grep -Fq 'deferredUntilWorkersExit' \
+    "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail droidmedia-buffer-release-worker-race-guard-missing
+grep -Fq 'drainDeferredHardwareBuffers("stall-restart")' \
+    "$NATIVE_ROOT/src/mpvvideoitem.cpp" \
+    || fail droidmedia-stall-restart-gpu-drain-missing
+
+# A privileged notification QQuickView must not keep the process alive after
+# the primary task is closed. The order is intentional: hide/release PiP,
+# stop the session, then destroy decoder/mpv/GL while Qt is still alive.
+grep -Fq 'native application shutdown: main window close received' \
+    "$NATIVE_ROOT/src/main.cpp" \
+    || fail main-window-close-barrier-missing
+grep -Fq 'systemPipController.shutdown();' "$NATIVE_ROOT/src/main.cpp" \
+    || fail system-pip-application-shutdown-missing
+grep -Fq 'playbackVideo.shutdown();' "$NATIVE_ROOT/src/main.cpp" \
+    || fail playback-application-shutdown-missing
+grep -Fq 'm_view->releaseResources();' \
+    "$NATIVE_ROOT/src/systempipcontroller.cpp" \
+    || fail system-pip-scenegraph-release-missing
+grep -Fq 'native application shutdown: playback resources released' \
+    "$NATIVE_ROOT/src/mpvvideoitem.cpp" \
+    || fail playback-resource-release-marker-missing
+test -x "$SCRIPT_DIR/probe-silisili-native-pip-shutdown.sh" \
+    || fail pip-shutdown-probe-not-executable
+
+printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|droidmedia_buffer_refs=balanced|system_pip=notification-configurable-shutdown-safe|release_asset=declared|visual_model=unused\n' \
     "$spec_version" "$spec_release" \
     "$(wc -l <"$temporary/source-files" | tr -d ' ')" \
     "$(sed -n 's|.*<file[^>]*>\([^<]*\)</file>.*|\1|p' "$qrc" | wc -l | tr -d ' ')"

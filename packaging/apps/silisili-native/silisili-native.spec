@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.35
+Release:        1.40
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -100,6 +100,42 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Tue Aug 11 2026 silisili contributors <noreply@localhost> - 1.1.0-1.40
+- Promote live playback to the same full-screen framebuffer profile as VOD.
+- Report decoder, shared-texture and effective video-viewport geometry separately.
+- Reject live quality validation when final presentation downscales source pixels.
+- Retain full-screen aspect and control layout across VOD/live quality switches.
+
+* Tue Aug 11 2026 silisili contributors <noreply@localhost> - 1.1.0-1.39
+- Request the account-visible original live quality instead of hard-coding
+  qn=250, while retaining exact server current_qn after any entitlement or
+  source-side fallback.
+- Select AVC/HEVC live transports against the probed droidmedia capabilities,
+  expose the merged playable quality catalog, and label playback with measured
+  resolution/frame rate rather than presenting the server tier as resolution.
+- Retry an unsafe original/UHD live source at the stable qn=400 boundary
+  instead of attempting an unbounded software decode.
+
+* Tue Aug 11 2026 silisili contributors <noreply@localhost> - 1.1.0-1.38
+- Defer buffer_created strong-reference destruction until codec-stop workers
+  and GUI queues return their last raw buffer, eliminating a cross-resolution
+  teardown use-after-free found by the full VOD quality matrix.
+- Retain the application/PiP shutdown barrier introduced during 1.37 testing.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.37
+- Close the privileged system-PiP QQuickView before application teardown and
+  make main-window closure exit the full process instead of retaining a hidden
+  overlay window, decoder, audio session or persistent GL/mpv backend.
+- Exercise every advertised safe VOD quality plus 1080P60/UHD fallback and
+  require every outgoing DroidMedia generation to balance its buffer refs.
+
+* Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.36
+- Balance every droidmedia buffer_created strong reference when an OMX
+  BufferQueue generation is released, preventing repeated decoder recovery
+  from retaining old 1080P gralloc pools until CMA is exhausted.
+- Drain EGL-fenced application buffers at decoder stop/restart boundaries and
+  add a repeated full-screen 1080P+ generation-lifetime regression.
+
 * Mon Aug 10 2026 silisili contributors <noreply@localhost> - 1.1.0-1.35
 - Make PlaybackSession the common presentation owner for VOD, PGC and live,
   while retaining separate resolver, quality, seek, speed and history rules.

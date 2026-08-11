@@ -5,13 +5,111 @@ Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.35.aarch64`
-- RPM SHA-256: `cec6e5d8705068c10f3e14e1f6e026797b0b7734e8d6a21ef35508227cb28d3e`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.35.aarch64.rpm`
-- Build/install date: `2026-08-10`
+- NEVRA: `silisili-native-devel-1.1.0-1.40.aarch64`
+- RPM SHA-256: `ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.40.aarch64.rpm`
+- Build/install date: `2026-08-11`
 - stable package state during this validation: absent
 
-## Latest 1.35 unified VOD/live session and background presentation
+## Latest 1.40 full-source live presentation and orientation-stable quality switching
+
+- The exact checksum-closed 1.40 RPM was transferred through the debug shell,
+  verified again on the phone, installed over the previous development build
+  and remained clean under `rpm -V`.
+- A cold direct live request used application quality `0` and wire quality
+  `qn=10000`. The selected test room exposed three qualities
+  (`10000,400,250`), so the device performed a real quality transition rather
+  than marking the multi-quality path not applicable.
+- The original live stream entered DroidMedia/OMX as `1920x1080@60`. The
+  full-screen shared framebuffer was `2160x1080`, its effective fitted video
+  viewport was the full `1920x1080`, and the semantic gate reported
+  `profile=fullscreen-native` plus `sourcePixelsPreserved=true`. This closes
+  the prior case where a true 1080p decoder input was visibly blurred by an
+  `800x400` final shared framebuffer.
+- The quality cycle changed from `qn=10000` to `qn=250` in the same process.
+  Physical pause/resume remained functional, hardware frame serial advanced
+  from 61 to 1861 over the following 60 seconds at `29.82 fps`, free CMA stayed
+  above the `32768 KiB` guard, and no first-frame timeout or software fallback
+  occurred.
+- `PlaybackSession` now retains the last confirmed video aspect while a VOD or
+  live decoder geometry is deliberately cleared for quality replacement. A
+  real full-screen VOD panel selection changed `qn=112` (1080P+) to `qn=80`
+  (1080P) while the same PID and `2160x1080` player page remained landscape.
+  No `vod-player orientation portrait` marker, decoder fallback or process
+  reconstruction occurred. The live switch likewise retained aspect
+  `1.77778` and emitted no portrait page layout.
+- Runtime, process, physical-input, decoder, shared-texture and effective
+  viewport markers were used throughout. No screenshot interpretation or
+  visual model was used.
+
+## Historical 1.39 real live quality and background presentation
+
+- The exact checksum-closed 1.39 RPM was transferred through the debug shell,
+  verified again on the phone, installed over development package 1.38 and
+  remained clean under `rpm -V`.
+- A cold direct room request used application quality `0` and wire quality
+  `qn=10000` instead of the old fixed `qn=250`. The resolver accepted the
+  server's actual `current_qn`, passed capability-aware AVC/HEVC candidate
+  selection and emitted the decoded width/height/source-fps quality marker.
+- The current test room exposed one server-advertised quality, so the physical
+  multi-quality cycle was correctly recorded as not applicable. A separate
+  sample of 20 currently live rooms also advertised only `qn=10000`; no
+  multi-quality pass is inferred or fabricated from that server state.
+- Live playback retained one process for 60 seconds. Hardware frame serial
+  advanced from 61 to 1861 at `29.80 fps`, physical pause/resume changed the
+  live transport state in the same PID, free CMA stayed at `114648 KiB`, and
+  no first-frame timeout, stall, queue pressure or software fallback occurred.
+- Live Cover presented advancing shared-texture frames 37 through 67 with one
+  media load and no pause or seek recovery. Live system PiP reported
+  `mediaKind=live`, retained one load/decoder, stayed above its display-frame
+  guard and returned to the same foreground session without a hidden seek.
+- Closing the application while live system PiP was visible completed the
+  shutdown barrier. Its one DroidMedia decoder generation released one
+  balanced buffer-reference generation; application, overlay and playback
+  process counts were all zero afterward.
+- The normal Invoker launch was restored with package 1.39, PID `25821` was the
+  Lipstick topmost PID, background mode was restored to Cover and the system's
+  normal display blanking policy was restored. The debug launcher now waits
+  for the real mapplauncherd application command prefix and foreground PID,
+  avoiding false failures caused by padded booster command lines.
+- Runtime, process, package, physical-input, decoder and shared-texture markers
+  were used throughout. No screenshot interpretation or visual model was used.
+
+## Historical 1.38 decoder lifetime, quality matrix and shutdown closure
+
+- Droidmedia's client-owned strong reference for every created gralloc buffer
+  is now tracked explicitly. A buffer-queue release only records the release
+  boundary; references are destroyed after demux/presentation workers stop and
+  their raw-pointer queues are empty. This fixes both long-run CMA exhaustion
+  and the first attempted immediate-release teardown race.
+- The full real-device VOD matrix switched through every quality advertised by
+  the test asset (`qn=16,32,64,80,112`, 360P through 1080P+) in one process.
+  All six decoder generations balanced their created/destroyed references and
+  free CMA remained at least `70412 KiB`.
+- Six deterministic full-screen 1080P+ video-stall injections recovered in the
+  same PID, advanced generation 1 through 7, retained the current texture,
+  kept audio reloads at zero and media loads at one, and recovered at
+  `30.12 fps`. Every retired decoder generation balanced its buffer references.
+- The 1080P60/4K/8K guard ran 60 seconds with 63 frame windows and minimum
+  `55.773 fps`. Unsupported 4K/8K requests stayed on the verified real
+  1920x1080 hardware representation, with no unsafe UHD OMX attempt, software
+  fallback or frame-queue pressure.
+- Closing the primary application while system PiP was visible exercised the
+  close-event and `aboutToQuit` barriers. PiP timers, input region, notification
+  surface, playback session, hardware decoder and persistent GL/mpv backend
+  were released; post-exit application-process, overlay and playback-process
+  counts were all zero.
+- Three non-zero history starts each resumed at 14 seconds with one media load,
+  kept audio gated until the target frame, and avoided software fallback. The
+  maximum media-command-to-frame time was `1675 ms` and maximum full
+  request-to-frame time was `1966 ms`.
+- Live playback ran 60 seconds at `30.01 fps`. Its Cover advanced shared frames
+  31 to 61, and live system PiP used `mediaKind=live`; both modes retained one
+  decoder and one media load with no hidden seek, pause or software fallback.
+- The installed RPM passed `rpm -V`; all of these gates used runtime/process,
+  media, frame, resource and physical-input markers without a visual model.
+
+## Historical 1.35 unified VOD/live session and background presentation
 
 - `PlaybackSession` is now the common presentation owner for ordinary VOD,
   PGC and live. It alone owns the persistent player, foreground surface,

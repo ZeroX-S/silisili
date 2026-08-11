@@ -83,8 +83,13 @@ bool frameAvailableCallback(void *data, DroidMediaBuffer *buffer) {
     return true;
 }
 
-bool bufferCreatedCallback(void *, DroidMediaBuffer *) { return true; }
-void buffersReleasedCallback(void *) {}
+bool bufferCreatedCallback(void *data, DroidMediaBuffer *buffer) {
+    return static_cast<DroidVideoDecoder *>(data)->onBufferCreated(buffer);
+}
+
+void buffersReleasedCallback(void *data) {
+    static_cast<DroidVideoDecoder *>(data)->onBuffersReleased();
+}
 void inputBufferRef(void *) {}
 void inputBufferUnref(void *data) { std::free(data); }
 
@@ -97,7 +102,10 @@ DroidVideoDecoder::DroidVideoDecoder(MpvVideoItem *owner)
       m_dropBeforeUs(0), m_normalizeStreamingTimeline(false),
       m_inputTimestampOriginSet(false), m_inputTimestampOriginUs(0),
       m_format(0), m_bsf(0), m_videoStream(-1),
-      m_codec(0), m_bufferQueue(0), m_inFlightPackets(0),
+      m_codec(0), m_bufferQueue(0),
+      m_createdBufferReferenceCount(0),
+      m_destroyedBufferReferenceCount(0), m_bufferQueueReleased(false),
+      m_inFlightPackets(0),
       m_targetFrameReached(false), m_maxDecodedFrames(8),
       m_maxCodecPackets(8), m_callbackFrameDrops(0),
       m_feedThrottleLogged(false),
@@ -126,6 +134,9 @@ bool DroidVideoDecoder::start(const QString &url, double startPosition,
     m_maxDecodedFrames.store(8);
     m_maxCodecPackets.store(8);
     m_callbackFrameDrops.store(0);
+    m_createdBufferReferenceCount.store(0);
+    m_destroyedBufferReferenceCount.store(0);
+    m_bufferQueueReleased.store(false);
     {
         std::lock_guard<std::mutex> lock(m_frameMutex);
         m_inFlightPackets = 0;
@@ -370,8 +381,65 @@ bool DroidVideoDecoder::openInput(int generation) {
             << (m_normalizeStreamingTimeline.load()
                 ? "streaming-normalized" : "media-time")
             << "binderCallbackBlocking" << false
+            << "createdBufferReferencesManaged" << true
             << "cpuPixelCopies" << 0;
     return true;
+}
+
+bool DroidVideoDecoder::onBufferCreated(_DroidMediaBuffer *buffer) {
+    if (!buffer) return false;
+
+    // Droidmedia gives buffer_created() one extra strong reference. Returning
+    // true is required for subsequent frame_available() delivery, but that
+    // reference then belongs to this client and must be paired with exactly
+    // one droid_media_buffer_destroy(). Mark the slot as initialized so the
+    // adaptation does not call buffer_created() and add another strong
+    // reference every time the same gralloc slot is reused.
+    droid_media_buffer_set_user_data(buffer, this);
+    {
+        std::lock_guard<std::mutex> lock(m_createdBufferMutex);
+        m_createdBuffers.push_back(buffer);
+    }
+    m_createdBufferReferenceCount.fetch_add(1);
+    return true;
+}
+
+void DroidVideoDecoder::onBuffersReleased() {
+    // BufferQueue clears its own slot strong refs before this callback. Worker,
+    // presentation and GUI queues can still hold raw DroidMediaBuffer pointers
+    // until codec_stop() has unblocked and both threads have joined. Keep our
+    // client refs alive until that post-worker point; destroying them here can
+    // race a final droid_media_buffer_release() and dereference freed memory
+    // during a resolution switch.
+    m_bufferQueueReleased.store(true);
+    qInfo() << "native hardware video: buffer queue release observed"
+            << "generation" << m_generation.load()
+            << "deferredUntilWorkersExit" << true;
+}
+
+void DroidVideoDecoder::releaseCreatedBufferReferences(const char *reason) {
+    std::vector<_DroidMediaBuffer *> buffers;
+    {
+        std::lock_guard<std::mutex> lock(m_createdBufferMutex);
+        buffers.swap(m_createdBuffers);
+    }
+    for (std::vector<_DroidMediaBuffer *>::const_iterator buffer = buffers.begin();
+         buffer != buffers.end(); ++buffer) {
+        if (*buffer) droid_media_buffer_destroy(*buffer);
+    }
+    if (!buffers.empty()) {
+        const int destroyed = m_destroyedBufferReferenceCount.fetch_add(
+                    static_cast<int>(buffers.size()))
+                + static_cast<int>(buffers.size());
+        qInfo() << "native hardware video: created buffer references released"
+                << "generation" << m_generation.load()
+                << "reason" << reason
+                << "released" << static_cast<int>(buffers.size())
+                << "createdTotal" << m_createdBufferReferenceCount.load()
+                << "destroyedTotal" << destroyed
+                << "balanced"
+                << (destroyed == m_createdBufferReferenceCount.load());
+    }
 }
 
 bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
@@ -781,6 +849,12 @@ void DroidVideoDecoder::teardownCodec() {
         m_codec = 0;
         m_bufferQueue = 0;
     }
+    // stop() reaches this only after demux/presentation threads have joined
+    // and both decoded/GUI queues have returned their final raw buffer. It is
+    // now safe to drop the strong references granted by buffer_created().
+    releaseCreatedBufferReferences(m_bufferQueueReleased.load()
+                                   ? "buffer-queue-release-post-worker"
+                                   : "codec-destroy-fallback-post-worker");
     if (m_bsf) av_bsf_free(&m_bsf);
     if (m_format) avformat_close_input(&m_format);
     m_videoStream = -1;
