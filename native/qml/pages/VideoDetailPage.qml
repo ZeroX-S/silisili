@@ -133,7 +133,9 @@ Page {
             openPlayer(videoDetail.firstCid, videoDetail.title)
         if (playbackSession.active) {
             playbackSession.beginSurfaceTransition(inlineVideoHost)
-            pageStack.push(Qt.resolvedUrl("PlayerPage.qml"))
+            pageStack.push(Qt.resolvedUrl("PlayerPage.qml"), {
+                returnSurfaceOwner: page
+            })
         }
     }
 

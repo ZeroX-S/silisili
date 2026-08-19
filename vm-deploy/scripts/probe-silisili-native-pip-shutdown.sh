@@ -5,16 +5,56 @@ set -eu
 # The process must exit through the explicit shutdown barrier after hiding PiP,
 # balancing DroidMedia references and destroying the persistent mpv/GL backend.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
-expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
-expected_package=silisili-native-devel-1.1.0-1.40.aarch64
-room_id=${SILISILI_LIVE_TEST_ROOM_ID:-23276452}
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.45.aarch64.rpm}
+expected_sha=${2:-3ad7163a959f79a30de49cd6c3b5eb3205c6b402a6cd98ac690d940d7fa604f6}
+expected_package=silisili-native-devel-1.1.0-1.45.aarch64
+configured_room_id=${SILISILI_LIVE_TEST_ROOM_ID:-}
+room_id=${configured_room_id:-23276452}
 settings=/home/defaultuser/.config/cn.silisili.native/silisili-native.conf
 minimum_cma_free_kb=${SILISILI_PIP_SHUTDOWN_MINIMUM_CMA_FREE_KB:-16384}
 phase=preflight
 pid=
 
 application_pids() { pgrep -f '^/usr/bin/silisili-native' || true; }
+select_active_room() {
+    requested=$1
+    response="/tmp/silisili-native-pip-room-$$.json"
+    feed="/tmp/silisili-native-pip-feed-$$.json"
+    if curl --connect-timeout 5 --max-time 15 --silent --show-error \
+        --output "$response" \
+        "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id=$requested&no_playurl=1&platform=web"; then
+        status=$(sed -n 's/.*"live_status":[[:space:]]*\([0-9][0-9]*\).*/\1/p' \
+            "$response" | head -1)
+        if test "${status:-0}" = 1; then
+            rm -f "$response" "$feed"
+            printf '%s\n' "$requested"
+            return 0
+        fi
+    fi
+    if test -n "$configured_room_id"; then
+        rm -f "$response" "$feed"
+        return 1
+    fi
+    curl --connect-timeout 5 --max-time 15 --silent --show-error \
+        --output "$feed" \
+        'https://api.live.bilibili.com/xlive/web-interface/v1/webMain/getList?platform=web'
+    candidates=$(grep -oE '"roomid":[0-9]+' "$feed" 2>/dev/null \
+        | cut -d: -f2 | awk '!seen[$0]++' | head -12 || true)
+    for candidate in $candidates; do
+        curl --connect-timeout 5 --max-time 15 --silent --show-error \
+            --output "$response" \
+            "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id=$candidate&no_playurl=1&platform=web"
+        status=$(sed -n 's/.*"live_status":[[:space:]]*\([0-9][0-9]*\).*/\1/p' \
+            "$response" | head -1)
+        if test "${status:-0}" = 1; then
+            rm -f "$response" "$feed"
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    rm -f "$response" "$feed"
+    return 1
+}
 events_for_pid() {
     test -n "$pid" || return 0
     journalctl -b "_PID=$pid" --no-pager -o cat 2>/dev/null || true
@@ -79,6 +119,10 @@ test "$(rpm -q --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}' \
 test -z "$(rpm -V silisili-native-devel 2>/dev/null || true)"
 test -x /tmp/bonito-direct-touch
 test -f "$settings"
+room_id=$(select_active_room "$room_id")
+printf 'native_live_room_selection=ready|requested=%s|selected=%s|fallback=%s\n' \
+    "${configured_room_id:-23276452}" "$room_id" \
+    "$(test "$room_id" = "${configured_room_id:-23276452}" && printf false || printf true)"
 set_mode pip
 mcetool --unblank-screen >/dev/null
 mcetool --set-tklock-mode=unlocked >/dev/null

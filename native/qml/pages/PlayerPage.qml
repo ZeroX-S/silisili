@@ -9,6 +9,7 @@ Page {
     property string videoCid
     property string videoTitle
     property string videoCover
+    property var returnSurfaceOwner
     property bool controlsVisible: true
     property int orientationMode: 0
     property bool previousPlaying: playbackSession.playing
@@ -97,6 +98,12 @@ Page {
             playbackSession.setSurfaceHighResolution(videoHost, false)
             playbackSession.releaseSurface(videoHost)
         }
+    }
+
+    function leaveFullscreen() {
+        if (returnSurfaceOwner)
+            playbackSession.beginSurfaceTransition(videoHost)
+        pageStack.pop()
     }
 
     function openDanmakuSettings() {
@@ -254,7 +261,7 @@ Page {
         anchors.bottom: parent.bottom
         width: playerGestures.backSwipeCorridorWidth
         z: 25
-        onSwiped: pageStack.pop()
+        onSwiped: leaveFullscreen()
     }
 
     Rectangle {
@@ -273,7 +280,7 @@ Page {
             anchors.leftMargin: Theme.paddingMedium
             anchors.verticalCenter: parent.verticalCenter
             icon.source: "image://theme/icon-m-back"
-            onClicked: pageStack.pop()
+            onClicked: leaveFullscreen()
         }
         Label {
             anchors.left: backButton.right

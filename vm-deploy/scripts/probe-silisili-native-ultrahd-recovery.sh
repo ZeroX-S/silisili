@@ -8,9 +8,9 @@ set -eu
 # quality ladder stays visible, while unverified UHD is capped at real 1080P60
 # hardware decode without ever allocating the unsafe UHD codec session.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
-expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
-expected_package=silisili-native-devel-1.1.0-1.40.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.45.aarch64.rpm}
+expected_sha=${2:-3ad7163a959f79a30de49cd6c3b5eb3205c6b402a6cd98ac690d940d7fa604f6}
+expected_package=silisili-native-devel-1.1.0-1.45.aarch64
 test_bvid=${SILISILI_UHD_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_UHD_TEST_CID:-37630051884}
 # The bounded 1080p OMX session on the Pixel 3a XL normally leaves roughly

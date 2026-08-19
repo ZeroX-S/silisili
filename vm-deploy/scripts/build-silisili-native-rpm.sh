@@ -201,6 +201,12 @@ find "$stage/licenses" -type f -exec chmod a+r {} +
 icon_source="$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native-devel.png"
 test -f "$icon_source" || fail "native icon asset missing"
 install -m0644 "$icon_source" "$stage/silisili-native-devel.png"
+cover_pip_icon="$PROJECT_ROOT/native/qml/assets/cover-action-pip.png"
+cover_cover_icon="$PROJECT_ROOT/native/qml/assets/cover-action-cover.png"
+test -f "$cover_pip_icon" || fail "Cover PiP icon asset missing"
+test -f "$cover_cover_icon" || fail "Cover mode icon asset missing"
+install -m0644 "$cover_pip_icon" "$stage/silisili-native-cover-pip.png"
+install -m0644 "$cover_cover_icon" "$stage/silisili-native-cover-cover.png"
 readelf -h "$stage/silisili-native" | grep -Fq AArch64 || fail "binary is not AArch64"
 readelf -h "$stage/silisili-native" | grep -Eq 'Type:.*DYN' \
     || fail "privileged mapplauncherd application is not PIE/ET_DYN"

@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.40
+Release:        1.47
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -43,6 +43,8 @@ cp -a %{stagingdir}/lib/. %{buildroot}/usr/lib64/silisili-native/
 cp -a %{stagingdir}/licenses/. %{buildroot}/usr/share/licenses/%{name}/
 install -m0644 %{stagingdir}/silisili-native.desktop %{buildroot}/usr/share/applications/cn.silisili.native.desktop
 install -m0644 %{stagingdir}/silisili-native-devel.png %{buildroot}/usr/share/icons/hicolor/86x86/apps/silisili-native-devel.png
+install -m0644 %{stagingdir}/silisili-native-cover-pip.png %{buildroot}/usr/share/icons/hicolor/86x86/apps/silisili-native-cover-pip.png
+install -m0644 %{stagingdir}/silisili-native-cover-cover.png %{buildroot}/usr/share/icons/hicolor/86x86/apps/silisili-native-cover-cover.png
 install -m0644 %{stagingdir}/silisili-native.privileges %{buildroot}/usr/share/mapplauncherd/privileges.d/silisili-native
 
 %post
@@ -96,10 +98,50 @@ exit 0
 /usr/lib64/silisili-native/*
 /usr/share/applications/cn.silisili.native.desktop
 /usr/share/icons/hicolor/86x86/apps/silisili-native-devel.png
+/usr/share/icons/hicolor/86x86/apps/silisili-native-cover-pip.png
+/usr/share/icons/hicolor/86x86/apps/silisili-native-cover-cover.png
 /usr/share/mapplauncherd/privileges.d/silisili-native
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Wed Aug 19 2026 silisili contributors <noreply@localhost> - 1.1.0-1.47
+- Load the Cover presentation switch icons from the public system icon path
+  so Lipstick can render the bottom-center CoverAction reliably.
+
+* Wed Aug 19 2026 silisili contributors <noreply@localhost> - 1.1.0-1.46
+- Add a charcoal contrast halo to the Cover/mini-player mode icons so the
+  existing Cover action remains visible on both light and dark themes.
+- Add an auditable one-transaction fast deployment helper for development
+  devices with exact SHA, NEVRA and RPM verification.
+
+* Wed Aug 19 2026 silisili contributors <noreply@localhost> - 1.1.0-1.45
+- Use the supplied handheld artwork for the diagonally tiled idle Cover and
+  supplied target-mode icons for Cover/system-PiP switching.
+- Add persistent one/two-column layouts shared by video and live feeds.
+- Add a persistent policy for continuing VOD/live playback in the movable
+  in-app mini player after leaving a playback page.
+
+* Sun Aug 16 2026 silisili contributors <noreply@localhost> - 1.1.0-1.44
+- Distribute active Cover resolution, video, title and progress evenly across
+  the full area above the native Cover actions.
+- Add a runtime geometry invariant for balanced Cover layout regression.
+
+* Sun Aug 16 2026 silisili contributors <noreply@localhost> - 1.1.0-1.43
+- Make Cover layout probing edge-triggered so progress updates cannot starve or flood it.
+- Report a synchronously loaded idle Cover logo exactly once after component creation.
+
+* Sun Aug 16 2026 silisili contributors <noreply@localhost> - 1.1.0-1.42
+- Deduplicate active Cover layout probes and use the verified physical gesture
+  mapping for landscape Cover/PiP device regression.
+
+* Sun Aug 16 2026 silisili contributors <noreply@localhost> - 1.1.0-1.41
+- Replace the idle Cover card with the supplied transparent logo over a
+  diagonally tiled field of handheld-console silhouettes.
+- Order active Cover content as actual resolution, moving video, one-line
+  marquee title and timely playback progress.
+- Add a Cover action that switches the shared background presentation between
+  moving Cover video and the movable system PiP without reloading playback.
+
 * Tue Aug 11 2026 silisili contributors <noreply@localhost> - 1.1.0-1.40
 - Promote live playback to the same full-screen framebuffer profile as VOD.
 - Report decoder, shared-texture and effective video-viewport geometry separately.

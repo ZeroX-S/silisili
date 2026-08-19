@@ -4,19 +4,30 @@ import "../components"
 
 Page {
     id: page
+    readonly property int contentColumns: appSettings.contentColumns === 2 ? 2 : 1
+    readonly property real gridCellWidth: width / contentColumns
+    readonly property real singleCoverWidth:
+        Math.min(width * 0.42, Theme.itemSizeHuge * 2)
+    readonly property real gridCellHeight: contentColumns === 1
+        ? Math.max(singleCoverWidth * 9 / 16, Theme.itemSizeLarge * 1.35)
+          + 2 * Theme.paddingMedium
+        : Math.max(Theme.itemSizeHuge * 1.5,
+                   (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
+                   + Theme.itemSizeLarge * 1.35 + 2 * Theme.paddingMedium)
     allowedOrientations: Orientation.All
 
     ResponsivePageMetrics {
         target: page
         pageName: "live-feed"
-        columns: 1
+        columns: page.contentColumns
     }
 
-    SilicaListView {
+    SilicaGridView {
         id: listView
         anchors.fill: parent
         model: liveFeed
-        spacing: Theme.paddingSmall
+        cellWidth: page.gridCellWidth
+        cellHeight: page.gridCellHeight
         clip: true
 
         onContentYChanged: {
@@ -37,8 +48,8 @@ Page {
 
         delegate: BackgroundItem {
             id: delegateRoot
-            width: listView.width
-            height: Math.max(coverImage.height, details.implicitHeight) + 2 * Theme.paddingMedium
+            width: listView.cellWidth
+            height: listView.cellHeight
             onClicked: pageStack.push(Qt.resolvedUrl("LivePlayerPage.qml"), {
                 roomId: roomId,
                 roomTitle: title,
@@ -48,9 +59,12 @@ Page {
 
             Image {
                 id: coverImage
-                x: Theme.horizontalPageMargin
+                x: page.contentColumns === 1
+                   ? Theme.horizontalPageMargin : Theme.paddingMedium
                 y: Theme.paddingMedium
-                width: Math.min(parent.width * 0.42, Theme.itemSizeHuge * 2)
+                width: page.contentColumns === 1
+                       ? page.singleCoverWidth
+                       : parent.width - 2 * Theme.paddingMedium
                 height: width * 9 / 16
                 source: cover
                 fillMode: Image.PreserveAspectCrop
@@ -60,17 +74,24 @@ Page {
             }
             Column {
                 id: details
-                anchors.left: coverImage.right
-                anchors.leftMargin: Theme.paddingMedium
-                anchors.right: parent.right
-                anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: coverImage.verticalCenter
+                x: page.contentColumns === 1
+                   ? coverImage.x + coverImage.width + Theme.paddingMedium
+                   : Theme.paddingMedium
+                y: page.contentColumns === 1
+                   ? Math.max(Theme.paddingMedium,
+                              coverImage.y + (coverImage.height - implicitHeight) / 2)
+                   : coverImage.y + coverImage.height + Theme.paddingSmall
+                width: page.contentColumns === 1
+                       ? parent.width - x - Theme.horizontalPageMargin
+                       : parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
 
                 Label {
                     width: parent.width
                     text: title
                     color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    font.pixelSize: page.contentColumns === 1
+                                    ? Theme.fontSizeMedium : Theme.fontSizeSmall
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade

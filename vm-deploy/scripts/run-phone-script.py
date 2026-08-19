@@ -38,18 +38,35 @@ def main():
     parser.add_argument("--host", default=os.environ.get("PHONE_IP", "192.168.2.15"))
     parser.add_argument("--port", type=int, default=int(os.environ.get("PHONE_PORT", "2323")))
     parser.add_argument("--timeout", type=float, default=float(os.environ.get("NC_TIMEOUT", "220")))
+    parser.add_argument(
+        "--output",
+        help="Write the captured device output to this file before returning.",
+    )
+    parser.add_argument(
+        "--line-delay",
+        type=float,
+        default=float(os.environ.get("PHONE_SCRIPT_LINE_DELAY", "0.001")),
+    )
+    parser.add_argument(
+        "--suffix-delay",
+        type=float,
+        default=float(os.environ.get("PHONE_SCRIPT_SUFFIX_DELAY", "0.1")),
+    )
     args = parser.parse_args()
 
     with open(args.script, "rb") as script_file:
         payload = base64.b64encode(script_file.read()).decode("ascii")
+    payload_lines = [
+        payload[offset : offset + 76] for offset in range(0, len(payload), 76)
+    ]
 
     remote_b64 = "/tmp/bonito-phone-script.b64"
     remote_script = "/tmp/bonito-phone-script.sh"
     command = " ".join(["/bin/sh", remote_script, *(shlex.quote(value) for value in args.arguments)])
-    request = f"""stty -echo
+    prefix = f"""stty -echo
 cat >{remote_b64} <<'EOF_BONITO_PHONE_SCRIPT'
-{payload}
-EOF_BONITO_PHONE_SCRIPT
+""".encode("ascii", errors="strict")
+    suffix = f"""EOF_BONITO_PHONE_SCRIPT
 base64 -d {remote_b64} >{remote_script}
 chmod +x {remote_script}
 {command}
@@ -61,7 +78,14 @@ printf '{MARKER.decode("utf-8")}%s\\n' "$bonito_phone_rc"
 
     with socket.create_connection((args.host, args.port), timeout=10) as sock:
         time.sleep(1)
-        sock.sendall(request)
+        sock.setblocking(True)
+        sock.sendall(prefix)
+        time.sleep(args.suffix_delay)
+        for line in payload_lines:
+            sock.sendall(line.encode("ascii") + b"\n")
+            time.sleep(args.line_delay)
+        time.sleep(args.suffix_delay)
+        sock.sendall(suffix)
         sock.setblocking(False)
         output, remote_rc = receive_result(sock, args.timeout)
 
@@ -69,6 +93,13 @@ printf '{MARKER.decode("utf-8")}%s\\n' "$bonito_phone_rc"
     marker_at = text.rfind(MARKER.decode("utf-8"))
     if marker_at >= 0:
         text = text[:marker_at]
+    if args.output:
+        temporary_output = f"{args.output}.tmp.{os.getpid()}"
+        with open(temporary_output, "w", encoding="utf-8") as output_file:
+            output_file.write(text.rstrip())
+            output_file.write("\n")
+            output_file.write(f"phone_script_transport_rc={remote_rc}\n")
+        os.replace(temporary_output, args.output)
     if text.strip():
         print(text.rstrip())
     return remote_rc

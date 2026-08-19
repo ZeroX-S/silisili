@@ -18,7 +18,7 @@ pid=$1
 starttime=$(awk '{print $22}' "/proc/$pid/stat")
 package=$(rpm -q --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}' \
     silisili-native-devel)
-test "$package" = silisili-native-devel-1.1.0-1.40.aarch64
+test "$package" = silisili-native-devel-1.1.0-1.45.aarch64
 test -z "$(rpm -V silisili-native-devel 2>/dev/null || true)"
 
 events=$(journalctl -b "_PID=$pid" --no-pager -o cat 2>/dev/null || true)

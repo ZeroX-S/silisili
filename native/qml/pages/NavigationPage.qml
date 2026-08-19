@@ -134,9 +134,8 @@ Page {
                 columns: page.tileColumns
                 NavigationTile {
                     width: parent.width / page.tileColumns
-                    title: qsTr("后台播放显示")
-                    description: systemPipController.backgroundPlaybackMode === "pip"
-                                 ? qsTr("系统小窗播放") : qsTr("Cover 播放")
+                    title: qsTr("播放与显示")
+                    description: qsTr("列表布局、页内小窗与后台显示")
                     onClicked: pageStack.push(Qt.resolvedUrl("PlaybackPresentationPage.qml"))
                 }
                 NavigationTile {

@@ -73,6 +73,10 @@ grep -Fxq 'src/systempipcontroller.cpp' "$temporary/cmake-files" \
     || fail missing-system-pip-cmake-source
 grep -Fxq 'src/systempipcontroller.h' "$temporary/qmake-files" \
     || fail missing-system-pip-qmake-header
+grep -Fxq 'src/appsettings.cpp' "$temporary/cmake-files" \
+    || fail missing-app-settings-cmake-source
+grep -Fxq 'src/appsettings.h' "$temporary/qmake-files" \
+    || fail missing-app-settings-qmake-header
 
 qrc="$NATIVE_ROOT/qml/qml.qrc"
 test -f "$qrc" || fail missing-qrc
@@ -194,6 +198,154 @@ grep -Fq 'return currentAspect > 0.0 ? currentAspect : m_retainedVideoAspectRati
 grep -Fq 'playbackSession.mediaKind === "live"' \
     "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
     || fail cover-live-state-missing
+grep -Fq 'model: watermarkPlane.columns * watermarkPlane.rows' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-handheld-watermark-tiling-missing
+grep -Fq 'readonly property int columns: 5' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-handheld-watermark-column-count-drift
+grep -Fq 'readonly property int rows: 8' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-handheld-watermark-row-count-drift
+grep -Fq 'source: "qrc:/qml/assets/cover-idle-logo.png"' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-idle-logo-missing
+grep -Fq 'native cover: idle logo ready' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-idle-logo-semantic-marker-missing
+test "$(sha256sum "$NATIVE_ROOT/qml/assets/cover-idle-logo.png" \
+        | awk '{print $1}')" \
+    = 1a06fa8e088984fb7ba40fed5c6bdb0ba22e73fa9a0a7524aa33c4d66ca19766 \
+    || fail cover-idle-logo-payload-drift
+grep -Fq 'source: "qrc:/qml/assets/cover-handheld-watermark.png"' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-supplied-handheld-artwork-missing
+test "$(sha256sum "$NATIVE_ROOT/qml/assets/cover-handheld-watermark.png" \
+        | awk '{print $1}')" \
+    = 107e18e4ffa838395d5ef8f606f1db50eb73eba523fc021f6c8476b6d9e5760e \
+    || fail cover-handheld-artwork-payload-drift
+test "$(sha256sum "$NATIVE_ROOT/qml/assets/cover-action-pip.png" \
+        | awk '{print $1}')" \
+    = 24cf9e092bf0cdcaa08d73ec0ea1d07ed86998fc4190173f3b267846bdf48704 \
+    || fail cover-pip-icon-payload-drift
+test "$(sha256sum "$NATIVE_ROOT/qml/assets/cover-action-cover.png" \
+        | awk '{print $1}')" \
+    = bfe0ad5fdecc3a234f66b24d0455c9cdb0134842806f26eb900e4c29d98350ce \
+    || fail cover-mode-icon-payload-drift
+grep -Fq 'id: resolutionLabel' "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-resolution-first-layout-missing
+grep -Fq 'id: titleMarquee' "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-single-line-marquee-missing
+grep -Fq 'width: parent.width * cover.progressRatio' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-progress-indicator-missing
+grep -Fq 'spacing: distributedGap' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-balanced-distribution-missing
+grep -Fq '(height - fixedContentHeight - videoHeight) / 3' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-balanced-gap-formula-drift
+grep -Fq 'Math.abs(occupiedHeight - height) <= 1' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-balanced-height-invariant-missing
+grep -Fq 'playbackCover.balancedDistribution' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-balanced-runtime-marker-missing
+resolution_line=$(grep -nF 'id: resolutionLabel' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" | cut -d: -f1)
+video_line=$(grep -nF 'id: artwork' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" | cut -d: -f1)
+title_line=$(grep -nF 'id: titleClip' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" | cut -d: -f1)
+progress_line=$(grep -nF 'id: progressBlock' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" | cut -d: -f1)
+test "$resolution_line" -lt "$video_line" \
+    && test "$video_line" -lt "$title_line" \
+    && test "$title_line" -lt "$progress_line" \
+    || fail cover-active-layout-order-drift
+test "$(grep -Fc 'CoverAction {' \
+        "$NATIVE_ROOT/qml/cover/CoverPage.qml")" -eq 3 \
+    || fail cover-action-count-drift
+if grep -Fq 'homeFeed.refresh()' "$NATIVE_ROOT/qml/cover/CoverPage.qml"; then
+    fail cover-idle-content-action-regression
+fi
+grep -Fq 'native cover: background presentation toggle handled' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-pip-toggle-semantic-marker-missing
+grep -Fq 'systemPipController.setBackgroundPlaybackMode(next)' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-pip-toggle-control-missing
+grep -Fq 'file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-pip.png' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-pip-toggle-icon-missing
+grep -Fq 'file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-cover.png' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-mode-toggle-icon-missing
+grep -Fq 'silisili-native-cover-pip.png' \
+    "$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native.spec" \
+    || fail cover-pip-icon-rpm-payload-missing
+grep -Fq 'silisili-native-cover-cover.png' \
+    "$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native.spec" \
+    || fail cover-mode-icon-rpm-payload-missing
+grep -Fq 'stage/silisili-native-cover-pip.png' \
+    "$PROJECT_ROOT/vm-deploy/scripts/build-silisili-native-rpm.sh" \
+    || fail cover-pip-icon-stage-missing
+grep -Fq 'stage/silisili-native-cover-cover.png' \
+    "$PROJECT_ROOT/vm-deploy/scripts/build-silisili-native-rpm.sh" \
+    || fail cover-mode-icon-stage-missing
+grep -Fq 'anchors.bottomMargin: Theme.itemSizeSmall + Theme.paddingSmall' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-action-safe-area-missing
+grep -Fq 'native cover: active layout ready' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-active-layout-semantic-marker-missing
+grep -Fq 'property string lastLayoutProbeSignature: ""' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-active-layout-log-dedup-state-missing
+grep -Fq 'signature === cover.lastLayoutProbeSignature' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-active-layout-log-dedup-guard-missing
+grep -Fq 'Component.onCompleted: reportReadiness()' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-idle-cached-logo-readiness-missing
+grep -Fq '&& !coverLayoutProbe.running' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-layout-probe-edge-trigger-missing
+if grep -Fq 'coverLayoutProbe.restart()' \
+        "$NATIVE_ROOT/qml/cover/CoverPage.qml"; then
+    fail cover-layout-probe-progress-starvation-regression
+fi
+grep -Fq 'Q_PROPERTY(int contentColumns READ contentColumns' \
+    "$NATIVE_ROOT/src/appsettings.h" \
+    || fail content-column-setting-property-missing
+grep -Fq 'Q_PROPERTY(bool continueInAppMiniPlayer READ continueInAppMiniPlayer' \
+    "$NATIVE_ROOT/src/appsettings.h" \
+    || fail mini-player-policy-setting-property-missing
+grep -Fq 'SilicaGridView {' "$NATIVE_ROOT/qml/pages/HomePage.qml" \
+    || fail home-configurable-grid-missing
+grep -Fq 'SilicaGridView {' "$NATIVE_ROOT/qml/pages/LiveFeedPage.qml" \
+    || fail live-configurable-grid-missing
+grep -Fq 'appSettings.contentColumns === 2 ? 2 : 1' \
+    "$NATIVE_ROOT/qml/pages/HomePage.qml" \
+    || fail home-column-setting-binding-missing
+grep -Fq 'appSettings.contentColumns === 2 ? 2 : 1' \
+    "$NATIVE_ROOT/qml/pages/LiveFeedPage.qml" \
+    || fail live-column-setting-binding-missing
+grep -Fq 'appSettings.continueInAppMiniPlayer = checked' \
+    "$NATIVE_ROOT/qml/pages/PlaybackPresentationPage.qml" \
+    || fail mini-player-policy-control-missing
+grep -Fq 'native compact player: page exit stopped playback' \
+    "$NATIVE_ROOT/src/playbacksession.cpp" \
+    || fail mini-player-disabled-stop-boundary-missing
+grep -Fq 'playbackSession.liveRoomId === roomId' \
+    "$NATIVE_ROOT/qml/pages/LivePlayerPage.qml" \
+    || fail live-compact-restore-without-reload-missing
+grep -Fq 'returnSurfaceOwner: page' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail fullscreen-return-surface-owner-missing
+test "$(grep -Fc '/tmp/bonito-direct-touch swipe 540 2157 540 1257 500 25' \
+        "$PROJECT_ROOT/vm-deploy/scripts/probe-silisili-native-live-background-presentation.sh")" \
+    -eq 2 || fail landscape-background-gesture-probe-drift
 if grep -Eq 'SILISILI_NATIVE_(TEST|FORCE_ORIENTATION)' "$DESKTOP"; then
     fail test-hook-enabled-in-desktop
 fi
@@ -237,6 +389,17 @@ grep -Fq 'native application shutdown: playback resources released' \
     || fail playback-resource-release-marker-missing
 test -x "$SCRIPT_DIR/probe-silisili-native-pip-shutdown.sh" \
     || fail pip-shutdown-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-vod-cover-layout.sh" \
+    || fail vod-cover-layout-probe-not-executable
+grep -Fq 'SILISILI_COVER_TEST_BVID:-BV1P4ddBBEJF' \
+    "$SCRIPT_DIR/probe-silisili-native-vod-cover-layout.sh" \
+    || fail vod-cover-layout-fixed-source-missing
+grep -Fq 'native cover video: live shared-texture frame presented' \
+    "$SCRIPT_DIR/probe-silisili-native-vod-cover-layout.sh" \
+    || fail vod-cover-layout-frame-advance-gate-missing
+grep -Fq 'occupied_height=$2' \
+    "$SCRIPT_DIR/probe-silisili-native-vod-cover-layout.sh" \
+    || fail vod-cover-layout-runtime-geometry-gate-missing
 
 printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|droidmedia_buffer_refs=balanced|system_pip=notification-configurable-shutdown-safe|release_asset=declared|visual_model=unused\n' \
     "$spec_version" "$spec_release" \

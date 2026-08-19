@@ -243,6 +243,15 @@ ApplicationWindow {
             return
         }
 
+        if (playbackSession.live && playbackSession.liveRoomId.length > 0) {
+            pageStack.push(Qt.resolvedUrl("pages/LivePlayerPage.qml"), {
+                roomId: playbackSession.liveRoomId,
+                roomTitle: playbackSession.title,
+                roomCover: playbackSession.cover
+            })
+            return
+        }
+
         if (playbackSession.bvid.length > 0) {
             pageStack.push(Qt.resolvedUrl("pages/VideoDetailPage.qml"), {
                 videoBvid: playbackSession.bvid,

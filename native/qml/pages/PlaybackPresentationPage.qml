@@ -3,7 +3,10 @@ import Sailfish.Silica 1.0
 
 Page {
     id: page
+    property bool settingsControlsReady: false
     allowedOrientations: Orientation.All
+
+    Component.onCompleted: settingsControlsReady = true
 
     function selectMode(mode) {
         systemPipController.setBackgroundPlaybackMode(mode)
@@ -40,8 +43,8 @@ Page {
             width: parent.width
 
             PageHeader {
-                title: qsTr("后台播放显示")
-                description: qsTr("Cover 与系统小窗二选一")
+                title: qsTr("播放与显示")
+                description: qsTr("列表、页内小窗与后台播放")
             }
 
             Label {
@@ -142,6 +145,37 @@ Page {
                     border.color: Theme.highlightColor
                     color: pipChoice.highlighted ? Theme.highlightColor : "transparent"
                     opacity: pipChoice.enabled ? 1.0 : Theme.opacityLow
+                }
+            }
+
+            SectionHeader { text: qsTr("应用内显示") }
+
+            TextSwitch {
+                width: parent.width
+                text: qsTr("离开播放页后继续小窗播放")
+                description: checked
+                             ? qsTr("切换到应用内其他页面时保留可拖动视频小窗")
+                             : qsTr("离开播放页时停止当前播放并释放视频资源")
+                checked: appSettings.continueInAppMiniPlayer
+                onCheckedChanged: {
+                    if (page.settingsControlsReady)
+                        appSettings.continueInAppMiniPlayer = checked
+                }
+            }
+
+            SectionHeader { text: qsTr("内容列表") }
+
+            ComboBox {
+                width: parent.width
+                label: qsTr("视频和直播列表")
+                currentIndex: appSettings.contentColumns === 2 ? 1 : 0
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("单列") }
+                    MenuItem { text: qsTr("双列") }
+                }
+                onCurrentIndexChanged: {
+                    if (page.settingsControlsReady)
+                        appSettings.contentColumns = currentIndex === 1 ? 2 : 1
                 }
             }
 

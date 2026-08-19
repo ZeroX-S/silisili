@@ -17,6 +17,8 @@ Page {
     property bool qualityRegression: false
     property bool qualityRegressionRequested: false
     property bool qualityRegressionComplete: false
+    property bool wantsPlaybackSurface:
+        status === PageStatus.Active && playbackSession.mediaKind === "live"
     property int qualityRegressionPreviousLoadSerial: 0
     property bool liveStartRequested: false
     property int actualQualityLoggedLoadSerial: 0
@@ -67,6 +69,14 @@ Page {
             return
         liveStartRequested = true
         console.log("native live: renderer ready before resolve")
+        if (playbackSession.live && playbackSession.liveRoomId === roomId) {
+            playbackSession.claimSurface(videoHost)
+            fullResolutionTimer.restart()
+            console.log("native compact player: live surface restored",
+                        "roomId", roomId,
+                        "decoderReload", false)
+            return
+        }
         // Let LiveResolver request the account-visible original stream. A
         // positive qn is reserved for an explicit quality-picker selection.
         playbackSession.playLive(roomId, roomTitle, roomCover, 0)
@@ -183,8 +193,17 @@ Page {
         // already replaced this live room in the shared PlaybackSession.
         fullResolutionTimer.stop()
         playbackSession.setSurfaceHighResolution(videoHost, false)
-        if (playbackSession.mediaKind === "live")
-            playbackSession.stop()
+        playbackSession.releaseSurface(videoHost)
+    }
+    onWantsPlaybackSurfaceChanged: {
+        if (wantsPlaybackSurface) {
+            playbackSession.claimSurface(videoHost)
+            fullResolutionTimer.restart()
+        } else {
+            fullResolutionTimer.stop()
+            playbackSession.setSurfaceHighResolution(videoHost, false)
+            playbackSession.releaseSurface(videoHost)
+        }
     }
     onWidthChanged: if (playbackSession.mediaKind === "live") fullResolutionTimer.restart()
     onHeightChanged: if (playbackSession.mediaKind === "live") fullResolutionTimer.restart()

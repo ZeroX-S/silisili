@@ -24,6 +24,8 @@ endif()
 
 add_executable(silisili-native
     src/main.cpp
+    src/appsettings.cpp
+    src/appsettings.h
     src/bilibiliimagenetwork.cpp
     src/bilibiliimagenetwork.h
     src/networkutils.cpp

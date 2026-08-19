@@ -25,6 +25,8 @@ class PlaybackSession : public QObject {
     Q_PROPERTY(bool compact READ compact NOTIFY surfaceChanged)
     Q_PROPERTY(bool surfaceTransition READ surfaceTransition NOTIFY surfaceChanged)
     Q_PROPERTY(bool backgroundPlayback READ backgroundPlayback WRITE setBackgroundPlayback NOTIFY changed)
+    Q_PROPERTY(bool inAppMiniPlayerEnabled READ inAppMiniPlayerEnabled
+               WRITE setInAppMiniPlayerEnabled NOTIFY changed)
     Q_PROPERTY(double position READ position NOTIFY positionChanged)
     Q_PROPERTY(double duration READ duration NOTIFY changed)
     Q_PROPERTY(double volume READ volume NOTIFY changed)
@@ -42,6 +44,7 @@ class PlaybackSession : public QObject {
     Q_PROPERTY(QString cover READ cover NOTIFY changed)
     Q_PROPERTY(QString bvid READ bvid NOTIFY changed)
     Q_PROPERTY(QString cid READ cid NOTIFY changed)
+    Q_PROPERTY(QString liveRoomId READ liveRoomId NOTIFY changed)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY changed)
     Q_PROPERTY(QVariantList qualities READ qualities NOTIFY changed)
     Q_PROPERTY(int selectedQuality READ selectedQuality NOTIFY changed)
@@ -71,6 +74,7 @@ public:
     bool compact() const;
     bool surfaceTransition() const { return m_surfaceTransition; }
     bool backgroundPlayback() const { return m_backgroundPlayback; }
+    bool inAppMiniPlayerEnabled() const { return m_inAppMiniPlayerEnabled; }
     double position() const;
     double duration() const;
     double volume() const;
@@ -88,6 +92,7 @@ public:
     QString cover() const { return m_cover; }
     QString bvid() const { return m_bvid; }
     QString cid() const { return m_cid; }
+    QString liveRoomId() const { return m_liveRoomId; }
     QString errorMessage() const;
     QVariantList qualities() const;
     int selectedQuality() const;
@@ -124,6 +129,7 @@ public slots:
     void setSpeed(double speed);
     void stop();
     void setBackgroundPlayback(bool enabled);
+    void setInAppMiniPlayerEnabled(bool enabled);
 
 signals:
     void changed();
@@ -180,6 +186,7 @@ private:
     MediaKind m_mediaKind;
     bool m_pgc;
     bool m_backgroundPlayback;
+    bool m_inAppMiniPlayerEnabled;
     bool m_resumeAfterForeground;
     bool m_firstFrameReady;
     bool m_preparingVideo;

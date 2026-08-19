@@ -7,9 +7,9 @@ set -eu
 # advancing hardware frames. Assertions use logs, process state and RPM
 # identity only; no screenshot or visual model.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
-expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
-expected_package=silisili-native-devel-1.1.0-1.40.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.45.aarch64.rpm}
+expected_sha=${2:-3ad7163a959f79a30de49cd6c3b5eb3205c6b402a6cd98ac690d940d7fa604f6}
+expected_package=silisili-native-devel-1.1.0-1.45.aarch64
 test_room_id=${SILISILI_LIVE_TEST_ROOM_ID:-23276452}
 minimum_cma_free_kb=${SILISILI_LIVE_MINIMUM_CMA_FREE_KB:-32768}
 phase=preflight

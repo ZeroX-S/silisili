@@ -10,10 +10,11 @@ Use these transport rules for this project:
   `vm-deploy/scripts/send-phone-file-python.py`. It writes through the debug shell and verifies SHA-256 on the phone.
   Do not use a long phone-side `curl` download through `telnet-cmd.sh`; the command can be truncated before the RPM
   is complete.
-- Multi-step device tests may be sent with `vm-deploy/scripts/run-phone-script.py` when only the final exit code is
-  needed, or `vm-deploy/scripts/send-phone-script-python.py` when live remote output is useful. Both base64-inject a
-  complete shell script. Avoid long inline `telnet-cmd.sh` snippets because command echo can look like success markers
-  and the wrapper can return before the remote work actually reached its own sentinel.
+- Multi-step device tests may be sent with `vm-deploy/scripts/run-phone-script.py` when bounded captured output and the
+  final exit code are needed, or `vm-deploy/scripts/send-phone-script-python.py` when live remote output is useful.
+  `run-phone-script.py` folds Base64 payloads to terminal-safe 76-character lines, paces the prefix/payload/suffix and
+  can atomically retain evidence with `--output`. Avoid long inline `telnet-cmd.sh` snippets because command echo can
+  look like success markers and the wrapper can return before the remote work actually reached its own sentinel.
 - For UI-coordinate tests on rotated fullscreen video, remember that the screenshot may be landscape while
   `/tmp/bonito-direct-touch` can still behave like portrait coordinates. Convert or verify with a no-intermediate-
   screenshot touch script.
@@ -28,6 +29,29 @@ Current native install path:
   intentionally changed.
 - Launch: `work/vm-launch-native-sailjail.sh`
 - One-pass regression smoke: `work/vm-test-native-regression-batch.sh`
+
+For checksum-closed candidate work, use these bounded helpers:
+
+- `probe-silisili-native-device-preflight.sh` records OS/package/process state,
+  `rpm -V`, background mode and exact candidate bytes/SHA/NEVRA. Its local
+  watchdog works on Sailfish images that do not provide GNU `timeout`.
+- `relink-silisili-native-qml-candidate.sh` relinks QML/resource-only changes
+  under SB2 and verifies that execution really entered the build target.
+- `package-silisili-native-candidate.sh` packages the relinked tree and closes
+  the final RPM identity before deployment.
+- `probe-silisili-native-live-background-presentation.sh` chooses a currently
+  active live room, exercises both Cover and system PiP, and asserts shared
+  decoder/load, advancing frame serials, QML layout markers and clean recovery.
+- `probe-silisili-native-vod-cover-layout.sh` uses a fixed VOD and accepts only
+  a balanced Cover geometry plus advancing shared-texture frames after the
+  verified background state. It avoids making layout acceptance depend on a
+  randomly selected live source.
+- `cleanup-silisili-native-device-test-state.sh` is the common bounded cleanup
+  path for application/PiP/playback processes, background mode and blanking.
+- `diagnose-silisili-native-launch-failure.sh` records loader, private runtime,
+  process and journal evidence when a candidate does not launch.
+- `restore-silisili-native-known-good.sh` reinstalls an exact checksum-closed
+  fallback RPM and restores Cover mode when a candidate must be rolled back.
 
 ## Release-source verification
 

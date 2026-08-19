@@ -29,7 +29,8 @@ PlaybackSession::PlaybackSession(PlaybackResolver *vodResolver,
     : QObject(parent), m_vodResolver(vodResolver), m_liveResolver(liveResolver),
       m_accountService(accountService), m_active(false), m_mediaKind(NoMedia),
       m_pgc(false),
-      m_backgroundPlayback(true), m_resumeAfterForeground(false),
+      m_backgroundPlayback(true), m_inAppMiniPlayerEnabled(true),
+      m_resumeAfterForeground(false),
       m_firstFrameReady(true), m_preparingVideo(false),
       m_preparedVideoReady(false), m_finishedSmallWindowStopScheduled(false),
       m_nextVideoPartScheduled(false),
@@ -63,6 +64,13 @@ PlaybackSession::PlaybackSession(PlaybackResolver *vodResolver,
     connect(&m_surfaceTransitionTimer, &QTimer::timeout, this, [this]() {
         if (!m_surfaceTransition) return;
         m_surfaceTransition = false;
+        if (!m_surfaceHost && !m_inAppMiniPlayerEnabled) {
+            qWarning() << "native player: surface transition timed out"
+                       << "fallbackCompact" << false
+                       << "policy" << "disabled";
+            stop();
+            return;
+        }
         if (!m_surfaceHost) useHost(m_fallbackHost.data());
         qWarning() << "native player: surface transition timed out"
                    << "fallbackCompact" << compact();
@@ -258,6 +266,14 @@ void PlaybackSession::releaseSurface(QObject *hostObject) {
         qInfo() << "native player: outgoing surface retained for fullscreen handoff"
                 << "compactVisibleDuringHandoff" << false;
         emit surfaceChanged();
+        return;
+    }
+    if (!m_inAppMiniPlayerEnabled) {
+        qInfo() << "native compact player: page exit stopped playback"
+                << "policy" << "disabled"
+                << "mediaKind" << mediaKind();
+        m_surfaceHost.clear();
+        stop();
         return;
     }
     // PageStack status changes are synchronous. Reparent the same persistent
@@ -702,6 +718,17 @@ void PlaybackSession::setBackgroundPlayback(bool enabled) {
     if (m_backgroundPlayback == enabled) return;
     m_backgroundPlayback = enabled;
     emit changed();
+}
+
+void PlaybackSession::setInAppMiniPlayerEnabled(bool enabled) {
+    if (m_inAppMiniPlayerEnabled == enabled) return;
+    m_inAppMiniPlayerEnabled = enabled;
+    qInfo() << "native compact player: page-exit policy changed" << enabled;
+    emit changed();
+    if (!enabled && compact() && qApp
+            && qApp->applicationState() == Qt::ApplicationActive) {
+        stop();
+    }
 }
 
 void PlaybackSession::resolverChanged() {

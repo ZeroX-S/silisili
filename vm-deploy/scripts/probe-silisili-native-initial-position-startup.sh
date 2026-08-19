@@ -6,12 +6,12 @@ set -eu
 # hardware texture must not trigger software fallback, and the first visible
 # frame must arrive from the single original media load.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
-expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
-expected_package=silisili-native-devel-1.1.0-1.40.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.45.aarch64.rpm}
+expected_sha=${2:-3ad7163a959f79a30de49cd6c3b5eb3205c6b402a6cd98ac690d940d7fa604f6}
+expected_package=silisili-native-devel-1.1.0-1.45.aarch64
 test_bvid=${SILISILI_STARTUP_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_STARTUP_TEST_CID:-37630051884}
-test_trials=${SILISILI_STARTUP_TEST_TRIALS:-3}
+test_trials=${3:-${SILISILI_STARTUP_TEST_TRIALS:-3}}
 phase=preflight
 test_pid=
 production_pid=
@@ -27,14 +27,7 @@ monotonic_events_for_pid() {
 }
 
 application_pids() {
-    for process in /proc/[0-9]*; do
-        command=$(tr '\000' ' ' <"$process/cmdline" 2>/dev/null || true)
-        case "$command" in
-            /usr/bin/silisili-native*)
-                basename "$process"
-                ;;
-        esac
-    done
+    pgrep -f '^/usr/bin/silisili-native' 2>/dev/null || true
 }
 
 stop_application() {
@@ -146,7 +139,8 @@ while test "$trial" -le "$test_trials"; do
     while test "$poll" -lt 240; do
         events=$(events_for_pid "$test_pid")
         printf '%s\n' "$events" | grep -F \
-            'native software video: first frame ready' >/dev/null && break
+            'native software video: first-frame latch reconciled' \
+            >/dev/null && break
         sleep 0.25
         poll=$((poll + 1))
     done
@@ -167,7 +161,7 @@ while test "$trial" -le "$test_trials"; do
         'native player: initial position gate released target 14 actual 14(\.0+)? audioReleased true audioFromConfirmedTarget true firstVideoFrameReady true' \
         >/dev/null
     printf '%s\n' "$events" | grep -E \
-        'native software video: first frame ready .*position 14(\.0+)? .*loadingCoverWithdrawn true' \
+        'native software video: first-frame latch reconciled .*position 14(\.0+)? .*loadingCoverWithdrawn true' \
         >/dev/null
     test -z "$(printf '%s\n' "$events" | grep -E \
         'native hardware video: (first-frame watchdog expired|switching to software fallback)' || true)"
@@ -176,14 +170,14 @@ while test "$trial" -le "$test_trials"; do
     load_time=$(printf '%s\n' "$monotonic_events" | event_time \
         'native player: load command submitted')
     first_frame_time=$(printf '%s\n' "$monotonic_events" | event_time \
-        'native software video: first frame ready')
+        'native software video: first-frame latch reconciled')
     test -n "$load_time" && test -n "$first_frame_time"
     media_startup_ms=$(awk -v start="$load_time" -v finish="$first_frame_time" \
         'BEGIN { printf "%d", (finish - start) * 1000.0 + 0.5 }')
     test "$media_startup_ms" -gt 0
     test "$media_startup_ms" -le 2500
     request_startup_ms=$(printf '%s\n' "$events" | awk '
-        /native software video: first frame ready/ {
+        /native software video: first-frame latch reconciled/ {
             for (i = 1; i <= NF; ++i)
                 if ($i == "requestElapsedMs") { print $(i + 1) + 0; exit }
         }

@@ -7,9 +7,9 @@ set -eu
 # model is involved; the assertions use real input events, process identity,
 # network state and QML event-loop markers.
 
-rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.40.aarch64.rpm}
-expected_sha=${2:-ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64}
-expected_package=silisili-native-devel-1.1.0-1.40.aarch64
+rpm_path=${1:-/tmp/silisili-native-devel-1.1.0-1.45.aarch64.rpm}
+expected_sha=${2:-3ad7163a959f79a30de49cd6c3b5eb3205c6b402a6cd98ac690d940d7fa604f6}
+expected_package=silisili-native-devel-1.1.0-1.45.aarch64
 phase=preflight
 test_pid=
 production_pid=

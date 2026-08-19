@@ -27,6 +27,7 @@ QMAKE_LFLAGS += -pie
 
 SOURCES += \
     src/main.cpp \
+    src/appsettings.cpp \
     src/bilibiliimagenetwork.cpp \
     src/networkutils.cpp \
     src/homefeedmodel.cpp \
@@ -54,6 +55,7 @@ SOURCES += \
     src/configmigration.cpp
 
 HEADERS += \
+    src/appsettings.h \
     src/bilibiliimagenetwork.h \
     src/networkutils.h \
     src/homefeedmodel.h \

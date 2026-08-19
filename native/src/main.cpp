@@ -1,4 +1,5 @@
 #include "configmigration.h"
+#include "appsettings.h"
 #include "homefeedmodel.h"
 #include "searchmodel.h"
 #include "videodetailmodel.h"
@@ -327,6 +328,7 @@ int main(int argc, char *argv[]) {
     const DirectVideoCapabilities directVideoCapabilities =
             directDroidMediaCapabilities();
     const bool nativeHardwareDecodeAvailable = directVideoCapabilities.available();
+    AppSettings appSettings;
     AccountService accountService;
     SearchModel searchModel(&accountService);
     HomeFeedModel homeFeed(&accountService);
@@ -335,6 +337,13 @@ int main(int argc, char *argv[]) {
     MpvVideoItem playbackVideo;
     PlaybackSession playbackSession(&playbackResolver, &liveResolver,
                                     &accountService);
+    playbackSession.setInAppMiniPlayerEnabled(
+                appSettings.continueInAppMiniPlayer());
+    QObject::connect(&appSettings, &AppSettings::continueInAppMiniPlayerChanged,
+                     &playbackSession, [&]() {
+        playbackSession.setInAppMiniPlayerEnabled(
+                    appSettings.continueInAppMiniPlayer());
+    });
     DisplayFrameMonitor displayFrameMonitor(&playbackSession);
     playbackSession.attachPlayer(&playbackVideo);
     DanmakuModel danmakuModel;
@@ -399,6 +408,7 @@ int main(int argc, char *argv[]) {
     view->setPersistentSceneGraph(true);
     view->setPersistentOpenGLContext(true);
     view->rootContext()->setContextProperty(QStringLiteral("homeFeed"), &homeFeed);
+    view->rootContext()->setContextProperty(QStringLiteral("appSettings"), &appSettings);
     view->rootContext()->setContextProperty(QStringLiteral("searchModel"), &searchModel);
     view->rootContext()->setContextProperty(QStringLiteral("accountService"), &accountService);
     view->rootContext()->setContextProperty(QStringLiteral("playbackResolver"), &playbackResolver);

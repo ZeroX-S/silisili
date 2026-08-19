@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.40` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.47` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -30,7 +30,7 @@
 
 ## 原生版界面
 
-以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.40` 的网络、超高清保护、硬解冻结恢复、启播同步、直播真实分辨率和画质切换方向稳定性修复不改变这些页面布局。点击图片可查看原始分辨率。
+以下截图于 2026-08-09 从 Pixel 3a XL / Sailfish OS 5.1 上安装的 `1.1.0-1.18` 原生包重新采集，不使用更早的历史截图，也不是旧版 wiliwili/Borealis 界面。`1.1.0-1.40` 的网络、超高清保护、硬解冻结恢复、启播同步、直播真实分辨率和画质切换方向稳定性修复不改变主要页面布局。`1.1.0-1.45` 更新了 Cover 水印、操作图标与单列/双列内容布局；`1.1.0-1.46` 为 Cover/小窗切换图标补上深色对比光晕，确保浅色和深色主题下都可见。因此下方旧 Cover 图仅保留为历史对照，不代表当前样式。点击图片可查看原始分辨率。
 
 <p align="center">
   <a href="docs/screenshots/native-readme/home.png"><img src="docs/screenshots/native-readme/home.png" alt="原生首页" width="23%"></a>
@@ -90,7 +90,9 @@
 - 使用 `ApplicationWindow`、`PageStack`、`SilicaListView`、`PullDownMenu`、`ContextMenu` 和原生 Dialog。
 - 支持 Sailfish 边缘返回、Maliit 输入法、设备方向传感器和前台播放保持亮屏。
 - 后台显示可在“Cover 播放”和“系统小窗播放”之间配置，两种模式不会同时绘制。
-- Cover 在播放时显示实时视频画面；未播放时显示轻量的品牌斜纹背景和状态信息。
+- Cover 在播放时按“实际分辨率、实时视频、单行滚动标题、播放进度、操作按钮”显示，并可直接切换 Cover/系统小窗呈现；未播放时只显示品牌 Logo，背景由 40 个错位斜铺的掌机剪影水印填满。
+- 首页视频和直播列表共用可持久化的单列/双列设置。
+- 可配置离开点播或直播页面后继续显示应用内可拖动小窗，关闭后则停止播放并释放视频资源。
 - 系统小窗使用 Lipstick notification 表面：可拖动、记忆位置、跟随设备方向，点按返回播放页；视频之外的透明区域保持点击穿透。
 - 锁屏、熄屏、停止播放或自然播放完成时自动隐藏系统小窗；关闭按钮停止播放并保留足够的触控区域。
 
@@ -137,17 +139,17 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-当前 `1.1.0-1.40` 已通过 Pixel 3a XL / Sailfish OS 5.1.0.11 真机门禁，尚未作为正式 GitHub Release 发布。构建完成后，将 RPM 复制到手机并在已启用开发者模式的设备上安装：
+`1.1.0-1.47` 候选包已完成 Sailfish 5.1 AArch64 构建、QML 静态检查、RPM 摘要和源码门禁。此版本修复 Cover 底部中间切换按钮的图标加载，安装后由 Lipstick 直接读取公共图标文件。将 RPM 复制到已启用开发者模式的设备后安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.40.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.47.aarch64.rpm
 ```
 
-本轮真机回归使用的 AArch64 RPM SHA-256 为
-`ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64`。
+当前 `1.47` 候选 AArch64 RPM SHA-256 为
+`91a47722490f0875e47f0012b3786e33c0344ad0037bfb9e4e9d4f7522f7675b`。
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
 
@@ -187,13 +189,15 @@ export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
 bash vm-deploy/scripts/build-silisili-native-rpm.sh
 ```
 
-产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.40.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.47.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
 
 旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
 
 ## 验证基线
 
-已安装的 `1.1.0-1.40` 在 Pixel 3a XL / Sailfish OS `5.1.0.11` 上完成直播真实 1080p 最终呈现、直播多档切换、横屏全屏点播画质切换和 60 秒硬解门禁；并继承 1.39 已通过的 Cover/系统 PiP、退出资源回收，以及 1.38 的完整点播清晰度、1080P60/4K/8K 安全降级、历史位置、网络恢复和 gralloc/ION/CMA 生命周期回归。测试不依赖截图内容推断。
+`1.1.0-1.47` 已完成 AArch64 构建并安装到当前 Sailfish OS 5.2 设备；本次变化将 Cover/小窗切换图标从应用私有 `qrc:/` 路径改为 RPM 公共图标路径，不改变点击区域、播放会话或切换逻辑。设备已通过覆盖安装、NEVRA 查询和 `rpm -V` 校验。测试不依赖截图内容推断，也未使用视觉模型。
+
+开发机可使用 `vm-deploy/scripts/install-silisili-native-fast.sh PATH_TO_RPM` 执行单次传输、SHA-256 比对、`rpm -Uvh --replacepkgs`、NEVRA 查询和 `rpm -V` 校验；它只会替换 `silisili-native-devel` 开发包，并在完成后删除设备上的临时 RPM。
 
 - 冷启动直播以应用档位 `0` 请求服务端 `qn=10000`。真机确认解码输入为 `1920×1080@60`，全屏共享纹理为 `2160×1080`，有效视频视口为完整 `1920×1080`，不再把原画压到旧的 800 像素共享表面；画质标签按真实 `current_qn`、解码分辨率、源帧率和最终呈现更新。
 - 当前测试直播间广告 `qn=10000,400,250` 三档；自动循环从原画切到 `qn=250` 后，物理暂停/继续和连续 60 秒播放均在同一 PID 内通过，帧序号从 61 推进到 1861，测得 `29.82 fps`，无软件回退。

@@ -30,6 +30,7 @@ Item {
     }
 
     Component.onCompleted: schedule()
+    onColumnsChanged: schedule()
 
     Connections {
         target: root.target

@@ -5,12 +5,22 @@ import "../components"
 Page {
     id: page
     property int networkScrollReleaseCount: 0
+    readonly property int contentColumns: appSettings.contentColumns === 2 ? 2 : 1
+    readonly property real gridCellWidth: width / contentColumns
+    readonly property real singleCoverWidth:
+        Math.min(width * 0.38, Theme.itemSizeHuge * 2)
+    readonly property real gridCellHeight: contentColumns === 1
+        ? Math.max(singleCoverWidth * 9 / 16, Theme.itemSizeLarge * 1.5)
+          + 2 * Theme.paddingMedium
+        : Math.max(Theme.itemSizeHuge * 1.65,
+                   (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
+                   + Theme.itemSizeHuge * 1.15 + 2 * Theme.paddingMedium)
     allowedOrientations: Orientation.All
 
     ResponsivePageMetrics {
         target: page
         pageName: "home"
-        columns: 1
+        columns: page.contentColumns
     }
 
     onStatusChanged: {
@@ -36,11 +46,12 @@ Page {
         }
     }
 
-    SilicaListView {
+    SilicaGridView {
         id: listView
         anchors.fill: parent
         model: homeFeed
-        spacing: Theme.paddingSmall
+        cellWidth: page.gridCellWidth
+        cellHeight: page.gridCellHeight
         clip: true
 
         function nearBottom() {
@@ -154,8 +165,8 @@ Page {
 
         delegate: BackgroundItem {
             id: delegateRoot
-            width: listView.width
-            height: Math.max(coverImage.height, details.implicitHeight) + 2 * Theme.paddingMedium
+            width: listView.cellWidth
+            height: listView.cellHeight
             function preparePlayback() {
                 if (page.status === PageStatus.Active && Qt.application.active
                         && bvid.length > 0 && cid.length > 0)
@@ -188,9 +199,12 @@ Page {
 
             Image {
                 id: coverImage
-                x: Theme.horizontalPageMargin
+                x: page.contentColumns === 1
+                   ? Theme.horizontalPageMargin : Theme.paddingMedium
                 y: Theme.paddingMedium
-                width: Math.min(parent.width * 0.38, Theme.itemSizeHuge * 2)
+                width: page.contentColumns === 1
+                       ? page.singleCoverWidth
+                       : parent.width - 2 * Theme.paddingMedium
                 height: width * 9 / 16
                 source: cover
                 fillMode: Image.PreserveAspectCrop
@@ -200,16 +214,21 @@ Page {
             }
             Column {
                 id: details
-                anchors.left: coverImage.right
-                anchors.leftMargin: Theme.paddingMedium
-                anchors.right: parent.right
-                anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: coverImage.verticalCenter
+                x: page.contentColumns === 1
+                   ? coverImage.x + coverImage.width + Theme.paddingMedium
+                   : Theme.paddingMedium
+                y: page.contentColumns === 1
+                   ? Math.max(Theme.paddingMedium,
+                              coverImage.y + (coverImage.height - implicitHeight) / 2)
+                   : coverImage.y + coverImage.height + Theme.paddingSmall
+                width: page.contentColumns === 1
+                       ? parent.width - x - Theme.horizontalPageMargin
+                       : parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
-                Label { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; font.pixelSize: Theme.fontSizeMedium; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; font.pixelSize: page.contentColumns === 1 ? Theme.fontSizeMedium : Theme.fontSizeSmall; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
                 Label { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeSmall; truncationMode: TruncationMode.Fade }
                 Label { width: parent.width; visible: recommendReason.length > 0; text: recommendReason; color: Theme.highlightColor; font.pixelSize: Theme.fontSizeExtraSmall; truncationMode: TruncationMode.Fade }
-                Label { text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeExtraSmall }
+                Label { width: parent.width; text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeExtraSmall; truncationMode: TruncationMode.Fade }
             }
         }
 

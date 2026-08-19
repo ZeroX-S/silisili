@@ -1,15 +1,80 @@
 # Native Sailfish OS device validation
 
-Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.1.0.11. Build target:
-`SailfishOS-5.1.0.11-aarch64`.
+Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.2.0.16. Build target:
+`SailfishOS-5.2.0.16-aarch64`.
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.40.aarch64`
-- RPM SHA-256: `ad19d38a6aaf0a3c9cc86a9fbf12641f77a48f9bb3630a61f62ea713e86f3c64`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.40.aarch64.rpm`
-- Build/install date: `2026-08-11`
+- NEVRA: `silisili-native-devel-1.1.0-1.47.aarch64`
+- RPM SHA-256: `91a47722490f0875e47f0012b3786e33c0344ad0037bfb9e4e9d4f7522f7675b`
+- RPM bytes: `10571832`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.47.aarch64.rpm`
+- Build/install date: `2026-08-19`
 - stable package state during this validation: absent
+
+## Latest 1.47 Cover action icon validation
+
+- The exact checksum-closed 1.47 AArch64 RPM was installed through the device
+  debug shell. The installed package identity matched the candidate NEVRA and
+  `rpm -V silisili-native-devel` was clean.
+- The Cover/mini-player presentation switch remains the middle action in the
+  three-action system Cover bar. Its image source now points at public RPM
+  payloads under `/usr/share/icons/hicolor/86x86/apps/`, rather than the
+  application-only `qrc:/` resource namespace that Lipstick cannot reliably
+  resolve while rendering a Cover action.
+- A fixed VOD was launched, backgrounded through the physical input injector,
+  and captured through the device screenshot helper. The same process remained
+  inactive behind Lipstick while the Cover reported one active layout, shared
+  persistent texture ownership and advancing frame serials; no system PiP
+  surface was shown in Cover mode.
+- The raw device PNG is `1080x2160`, `1835616` bytes, with SHA-256
+  `0e95a6a2da219005f9d628752f075e788e44c7d41a9c6397234cc6a839e9e5b1`.
+  Screenshot collection was used as a user-review artifact only; acceptance
+  evidence came from package, process, background-state and frame markers, and
+  no visual model was used.
+
+## Latest 1.44 balanced Cover layout validation
+
+- The exact checksum-closed 1.44 AArch64 RPM was built from a clean full source
+  tree, verified on the host and phone, installed on the device and remained
+  clean under `rpm -V`.
+- A fixed 1080P VOD resumed at 14 seconds through the production hardware path.
+  The single load reached its first shared texture without software fallback,
+  then the transformed physical edge gesture put the same PID in the
+  background without pausing or seeking.
+- The active Cover reported the required resolution, video, single-line title,
+  progress and three-action order. Its three dynamic gaps measured 63 pixels;
+  occupied and available content heights both measured 602 pixels, satisfying
+  the runtime balanced-layout invariant.
+- The real Cover scene graph shared the persistent video texture and presented
+  advancing frames 24 through 54. The session retained one media load and the
+  same process identity with no hidden seek, software fallback, QML error or
+  renderer error.
+- Source verification passed with 51 active sources and 42 QRC resources. All
+  evidence came from package, process, physical-input, decoder, frame-serial
+  and QML geometry markers; no screenshot interpretation or visual model was
+  used.
+
+## Historical 1.43 Cover and system PiP presentation validation
+
+- The exact checksum-closed 1.43 AArch64 RPM was rebuilt from the current QML
+  resources, verified in the SDK VM and on the phone, installed over the prior
+  development build and remained clean under `rpm -V`.
+- The idle Cover instantiated only the supplied `144x56` brand Logo over 40
+  staggered, diagonally tiled handheld-console silhouettes. The active Cover
+  instantiated the ordered resolution, moving video, single-line title,
+  progress/time and action layout with exactly three Cover actions.
+- A real live stream advanced Cover shared-texture serial 39 through 69. Cover
+  and system PiP each submitted one media load, used one shared decoder and
+  returned without a background pause, hidden seek recovery or software
+  fallback. The PiP path identified the session as live.
+- Closing the application while PiP was active released its one decoder and
+  one buffer generation symmetrically. Application, overlay and playback
+  process counts were all zero afterward, and background mode was restored to
+  Cover.
+- Source verification passed with 51 active sources and 42 QRC resources. All
+  evidence came from package, process, decoder, frame-serial, QML semantic and
+  cleanup markers; no screenshot interpretation or visual model was used.
 
 ## Latest 1.40 full-source live presentation and orientation-stable quality switching
 
