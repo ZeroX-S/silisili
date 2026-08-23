@@ -52,7 +52,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("两种方式共用当前视频纹理和同一套解码，不会同时绘制。切换设置不会重新加载或重新定位视频。")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
 
@@ -76,13 +76,13 @@ Page {
                         width: parent.width
                         text: qsTr("在 Cover 中播放")
                         color: coverChoice.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        font.pixelSize: Theme.fontSizeMedium
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     }
                     Label {
                         width: parent.width
                         text: qsTr("进入主屏后，应用 Cover 显示实时视频画面")
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         wrapMode: Text.Wrap
                     }
                 }
@@ -120,7 +120,7 @@ Page {
                         width: parent.width
                         text: qsTr("在系统小窗中播放")
                         color: pipChoice.highlighted ? Theme.highlightColor : Theme.primaryColor
-                        font.pixelSize: Theme.fontSizeMedium
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     }
                     Label {
                         width: parent.width
@@ -128,7 +128,7 @@ Page {
                               ? qsTr("离开应用后显示可拖动小窗；点按小窗返回播放页")
                               : qsTr("当前系统未提供 Lipstick 小窗表面")
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         wrapMode: Text.Wrap
                     }
                 }
@@ -179,6 +179,34 @@ Page {
                 }
             }
 
+            SectionHeader { text: qsTr("字号") }
+
+            ComboBox {
+                width: parent.width
+                label: qsTr("整体字号")
+                currentIndex: appSettings.fontSizeMode
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("小") }
+                    MenuItem { text: qsTr("中") }
+                    MenuItem { text: qsTr("大") }
+                }
+                onCurrentIndexChanged: {
+                    if (page.settingsControlsReady)
+                        appSettings.fontSizeMode = currentIndex
+                }
+            }
+
+            SectionHeader { text: qsTr("播放手势") }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: qsTr("全屏播放时，左侧上下滑动调整系统全局亮度，右侧上下滑动调整系统媒体音量；应用会在播放开始保存原值，并在播放结束、停止或退出时恢复。")
+                color: Theme.secondaryColor
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
+                wrapMode: Text.Wrap
+            }
+
             SectionHeader { text: qsTr("行为说明") }
 
             Label {
@@ -186,7 +214,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("锁屏、熄屏、停止播放或视频自然结束时，小窗会立即隐藏。系统小窗通过 Lipstick notification 表面显示，不会录制屏幕内容。")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
         }

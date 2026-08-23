@@ -158,7 +158,7 @@ Page {
                     visible: cover.length === 0
                     text: kindLabel.length > 0 ? kindLabel : qsTr("内容")
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
                 Rectangle {
                     anchors.left: parent.left
@@ -188,7 +188,7 @@ Page {
                     width: parent.width
                     text: title
                     color: card.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
@@ -198,7 +198,7 @@ Page {
                     visible: subtitle.length > 0
                     text: subtitle
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
@@ -209,7 +209,7 @@ Page {
                     text: (progressText.length > 0 ? progressText : kindLabel)
                           + (badge.length > 0 ? "  ·  " + badge : "")
                     color: Theme.secondaryHighlightColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
@@ -217,7 +217,7 @@ Page {
                     visible: !canOpen
                     text: qsTr("当前类型暂不支持打开")
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
             }
         }
@@ -242,7 +242,7 @@ Page {
                 visible: !libraryModel.loading && !libraryModel.hasMore && list.count > 0
                 text: qsTr("已加载全部内容")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

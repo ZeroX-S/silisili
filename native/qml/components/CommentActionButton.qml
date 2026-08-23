@@ -37,7 +37,7 @@ BackgroundItem {
                                  : root.active || root.highlighted
                                    ? Theme.highlightColor
                                    : Theme.secondaryColor
-            font.pixelSize: Theme.fontSizeExtraSmall
+            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
         }
     }
 }

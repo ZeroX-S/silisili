@@ -90,8 +90,10 @@ Page {
                     width: parent.width
                     text: title
                     color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: page.contentColumns === 1
-                                    ? Theme.fontSizeMedium : Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(
+                                        page.contentColumns === 1
+                                        ? Theme.fontSizeMedium
+                                        : Theme.fontSizeSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
@@ -100,14 +102,14 @@ Page {
                     width: parent.width
                     text: owner
                     color: Theme.secondaryHighlightColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
                     width: parent.width
                     text: area + (watched.length > 0 ? "  ·  " + watched : "")
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
             }
@@ -133,7 +135,7 @@ Page {
                 visible: !liveFeed.loading && !liveFeed.hasMore && listView.count > 0
                 text: qsTr("已加载全部直播")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

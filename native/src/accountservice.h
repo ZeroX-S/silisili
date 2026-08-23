@@ -12,6 +12,8 @@ class AccountService : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool loading READ loading NOTIFY changed)
     Q_PROPERTY(bool loggedIn READ loggedIn NOTIFY changed)
+    Q_PROPERTY(bool hasSessionCredentials READ hasSessionCredentials NOTIFY changed)
+    Q_PROPERTY(int defaultPlaybackQuality READ defaultPlaybackQuality NOTIFY changed)
     Q_PROPERTY(QString userName READ userName NOTIFY changed)
     Q_PROPERTY(QString avatar READ avatar NOTIFY changed)
     Q_PROPERTY(QString userId READ userId NOTIFY changed)
@@ -26,6 +28,8 @@ public:
     explicit AccountService(QObject *parent = 0);
     static AccountService *instance();
     bool loading() const { return m_loading; } bool loggedIn() const { return m_loggedIn; }
+    bool hasSessionCredentials() const;
+    int defaultPlaybackQuality() const;
     QString userName() const { return m_userName; } QString avatar() const { return m_avatar; }
     QString userId() const { return m_userId; } QString levelText() const { return m_levelText; }
     QString errorMessage() const { return m_errorMessage; }

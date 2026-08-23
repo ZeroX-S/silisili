@@ -46,6 +46,7 @@ SOURCES += \
     src/playbacksession.cpp \
     src/displayframemonitor.cpp \
     src/systempipcontroller.cpp \
+    src/systemcontrols.cpp \
     src/danmakumodel.cpp \
     src/livefeedmodel.cpp \
     src/liveresolver.cpp \
@@ -74,6 +75,7 @@ HEADERS += \
     src/playbacksession.h \
     src/displayframemonitor.h \
     src/systempipcontroller.h \
+    src/systemcontrols.h \
     src/danmakumodel.h \
     src/livefeedmodel.h \
     src/liveresolver.h \

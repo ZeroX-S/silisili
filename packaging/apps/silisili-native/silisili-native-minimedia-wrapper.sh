@@ -14,14 +14,47 @@ do
 done
 test -n "$binary"
 
-# A normally running adaptation service is preferable to this compatibility
-# unit. Remain as a lightweight monitor so systemd does not start a duplicate.
-existing="$(pgrep -f '(/system/bin|/usr/libexec/droid-hybris/system/bin)/minimediaservice' \
-    | head -1 || true)"
-if test -n "$existing"; then
-    while kill -0 "$existing" 2>/dev/null; do sleep 30; done
+lockdir=/run/silisili-native-minimedia.lock
+lockpid="$lockdir/pid"
+
+acquire_lock() {
+    while true; do
+        if mkdir "$lockdir" 2>/dev/null; then
+            printf '%s\n' "$$" >"$lockpid"
+            return 0
+        fi
+        if test -f "$lockpid"; then
+            holder="$(sed -n '1p' "$lockpid" 2>/dev/null || true)"
+            if test -n "$holder" && ! kill -0 "$holder" 2>/dev/null; then
+                rm -rf "$lockdir"
+                continue
+            fi
+        fi
+        return 1
+    done
+}
+
+cleanup_lock() {
+    rm -rf "$lockdir"
+}
+
+if ! acquire_lock; then
+    echo "silisili minimedia: startup already in progress; wrapper exits" >&2
     exit 0
 fi
+trap cleanup_lock EXIT HUP INT TERM
+
+# A normally running adaptation service is preferable to this compatibility
+# unit. Remain as a lightweight monitor so systemd does not start a duplicate.
+for _ in 1 2 3 4 5; do
+    existing="$(pgrep -f '(/system/bin|/usr/libexec/droid-hybris/system/bin)/minimediaservice' \
+        | head -1 || true)"
+    if test -n "$existing"; then
+        echo "silisili minimedia: existing service already running; wrapper exits" >&2
+        exit 0
+    fi
+    sleep 1
+done
 
 probe_log=/run/silisili-native-minimedia-probe.log
 rm -f "$probe_log"

@@ -189,7 +189,7 @@ Item {
                 anchors.fill: parent
                 onClicked: {
                     console.log("native system PiP: close tapped")
-                    playbackSession.stop()
+                    systemPipController.setBackgroundPlaybackMode("cover")
                 }
             }
         }

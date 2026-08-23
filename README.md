@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.47` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.56` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -79,7 +79,7 @@
 - 画质标签来自实际解析结果。1080P、1080P+ 和高帧率档位仍取决于账号权益及服务端是否返回对应视频轨道。
 - 4K/8K 档位仍会完整展示；未验证 UHD 能力的设备默认安全选择真实 1080P60 硬解轨道，避免 OMX 耗尽连续内存后整机卡死。只有经过真机验证的适配才应启用 UHD 解码试运行。
 - 弹幕分段加载、透明度、字号、速度和安全轨道布局。
-- 播放/暂停、精确跳转、倍速、音量、亮度、进度条与当前/总时长同步。
+- 播放/暂停、精确跳转、倍速、进度条与当前/总时长同步；详情页、番剧详情、全屏和直播播放器支持左侧系统亮度、右侧系统媒体音量手势，播放会话开始时保存原值，退出播放后精确恢复。应用内小窗不接管系统亮度或音量。
 - 横竖屏与全屏自适应，保持视频原始比例，不把横屏直播或后续视频过度拉伸；横屏全屏切换清晰度时保留上一张已确认视频比例，加载过程不会短暂切成竖屏 UI。
 - 一个进程级播放会话在详情页、全屏、应用内小窗、Cover 与系统小窗之间复用，切换界面时不重新加载或隐藏定位。
 - 硬解画面序列停止但音频时钟仍前进时，播放器会在约 3 秒后只重建同清晰度视频解码器；音频、进度、媒体加载和当前共享画面保持不变。
@@ -90,8 +90,9 @@
 - 使用 `ApplicationWindow`、`PageStack`、`SilicaListView`、`PullDownMenu`、`ContextMenu` 和原生 Dialog。
 - 支持 Sailfish 边缘返回、Maliit 输入法、设备方向传感器和前台播放保持亮屏。
 - 后台显示可在“Cover 播放”和“系统小窗播放”之间配置，两种模式不会同时绘制。
-- Cover 在播放时按“实际分辨率、实时视频、单行滚动标题、播放进度、操作按钮”显示，并可直接切换 Cover/系统小窗呈现；未播放时只显示品牌 Logo，背景由 40 个错位斜铺的掌机剪影水印填满。
+- 当前页面是普通视频详情、番剧详情、全屏播放器或直播播放器，或者主页正在显示活动的应用内播放小窗，且播放会话尚未结束时，Cover 按“实际分辨率、实时视频、单行滚动标题、播放进度、操作按钮”显示，并可直接切换 Cover/系统小窗呈现；没有活动播放小窗的其他页面只显示品牌 Logo 和由 40 个错位斜铺掌机剪影组成的空闲背景，不注册可触发的 Cover 操作。
 - 首页视频和直播列表共用可持久化的单列/双列设置。
+- 提供小、中、大三档整体字号设置，列表、详情、评论、设置和播放器提示共用同一缩放策略。
 - 可配置离开点播或直播页面后继续显示应用内可拖动小窗，关闭后则停止播放并释放视频资源。
 - 系统小窗使用 Lipstick notification 表面：可拖动、记忆位置、跟随设备方向，点按返回播放页；视频之外的透明区域保持点击穿透。
 - 锁屏、熄屏、停止播放或自然播放完成时自动隐藏系统小窗；关闭按钮停止播放并保留足够的触控区域。
@@ -131,7 +132,7 @@ Bilibili playurl / DASH
 | --- | --- |
 | Sailfish OS `5.0.0.62` SDK | 原生包的最低编译、依赖与 ABI 基线；尚未声明 5.0 真机完整验证 |
 | Pixel 3a XL / Sailfish OS `5.1.0.11` | 当前完整实机开发和回归环境 |
-| Sailfish OS 5.2 | 已实现 `Amber.Barcode`/`QrShareImage` 运行时兼容；完整设备回归仍需按具体机型执行 |
+| Pixel 3a XL / Sailfish OS `5.2.0.16` | 已完成二维码兼容、minimedia 开机竞态和详情页系统亮度/媒体音量真机回归；其余完整播放器矩阵仍保留 5.1 基线 |
 
 硬件解码依赖设备提供可用的 Android 媒体栈、`droidmedia` 与 libhybris EGL/GLES；硬解条件不满足时由播放器使用软件解码兼容路径。系统 PiP 另行依赖 Lipstick notification 表面和软件包声明的权限，不可用时应选择 Cover。
 
@@ -139,17 +140,17 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-`1.1.0-1.47` 候选包已完成 Sailfish 5.1 AArch64 构建、QML 静态检查、RPM 摘要和源码门禁。此版本修复 Cover 底部中间切换按钮的图标加载，安装后由 Lipstick 直接读取公共图标文件。将 RPM 复制到已启用开发者模式的设备后安装：
+`1.1.0-1.56` 发布包已完成 Sailfish AArch64 VM 构建、源码门禁和 5.2 真机像素回归。1.56 在同一个 Cover 生命周期内保留 Lipstick 已注册的动作对象：主页应用内小窗活动时继续显示实时播放 Cover，停止播放后则原位清空三个动作图标，只显示 Logo 与斜铺水印。1.55 的匿名 VOD/番剧默认 720P（QN 64）、登录用户 1080P（QN 80）及匿名渐进式 720P 回退均保留。将 RPM 复制到已启用开发者模式的设备后安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.47.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.56.aarch64.rpm
 ```
 
-当前 `1.47` 候选 AArch64 RPM SHA-256 为
-`91a47722490f0875e47f0012b3786e33c0344ad0037bfb9e4e9d4f7522f7675b`。
+当前 `1.56` AArch64 RPM SHA-256 为
+`b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`。
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
 
@@ -176,7 +177,26 @@ bash vm-deploy/scripts/verify-silisili-native-source.sh
 
 ### 2. 构建 AArch64 RPM
 
-构建脚本默认使用 `SailfishOS-5.0.0.62-aarch64` target 和 `SailfishOS-5.0.0.62-i486` tooling。除了 Sailfish SDK，还需要已经验证的私有 libmpv/FFmpeg 运行库、ARM32 minimedia ABI shim，以及一份包含对应运行库许可文件的旧原生 RPM：
+本项目常规构建不是在 macOS 宿主 shell 里直接执行；macOS 侧保存源码和
+`outputs/` 产物，完整 RPM 构建入口在 Linux/Sailfish 构建 VM 的共享路径中：
+
+```sh
+cd /media/psf/AllFiles/Users/zerox/Documents/Codex/2026-07-31/silisili-native-sailfish/work
+bash vm-build-native-rpm.sh
+```
+
+这个 VM wrapper 会把共享源码复制到 `/home/builder`，使用
+`/opt/sailfish-hadk/platform/sdks/sfossdk/sdk-chroot`、默认
+`SailfishOS-5.1.0.11-aarch64` target、已验证的私有 mpv/FFmpeg 运行库和
+minimedia shim，然后把最终 RPM 写回 macOS 可见的 `outputs/` 目录。若当前
+shell 没有 `/opt/sailfish-hadk`、`sb2` 或 `/media/psf/...`，说明不在构建
+VM 内，不代表工程无法构建。
+
+低层通用脚本 `vm-deploy/scripts/build-silisili-native-rpm.sh` 仍保留
+`SailfishOS-5.0.0.62-aarch64` target 和 `SailfishOS-5.0.0.62-i486`
+tooling 的默认值；直接调用它时，除了 Sailfish SDK，还需要已经验证的私有
+libmpv/FFmpeg 运行库、ARM32 minimedia ABI shim，以及一份包含对应运行库许可
+文件的旧原生 RPM：
 
 ```sh
 export PROJECT_ROOT="$PWD"
@@ -189,13 +209,13 @@ export SILISILI_RUNTIME_LICENSE_RPM="/path/to/audited/silisili-native-devel.rpm"
 bash vm-deploy/scripts/build-silisili-native-rpm.sh
 ```
 
-产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-1.47.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
+产物写入 `$OUTPUT_DIR/silisili-native-devel-1.1.0-RELEASE.aarch64.rpm`。脚本会验证 AArch64/PIE、私有 RPATH、运行库清单、minimedia shim ABI、许可证载荷和最终 RPM 身份。
 
 旧版 wiliwili/Borealis 构建方式仍保留在 [BUILDING.md](BUILDING.md)，但不适用于当前原生客户端。
 
 ## 验证基线
 
-`1.1.0-1.47` 已完成 AArch64 构建并安装到当前 Sailfish OS 5.2 设备；本次变化将 Cover/小窗切换图标从应用私有 `qrc:/` 路径改为 RPM 公共图标路径，不改变点击区域、播放会话或切换逻辑。设备已通过覆盖安装、NEVRA 查询和 `rpm -V` 校验。测试不依赖截图内容推断，也未使用视觉模型。
+`1.1.0-1.56` 已完成 AArch64 构建、RPM 摘要校验、源码门禁与 Sailfish OS 5.2 真机 Cover 生命周期回归。真实点播从详情页进入主页应用内小窗后，物理切到后台仍保持 `compact_active=1|content=playback|actions=3`，PID/启动时间不变。随后物理点击 Cover 关闭按钮，同一进程内会话变为 `content=idle`，三个动作图标源同时清空，`rpm -V` 干净；关闭后的三个 `48x48` 动作区域与当前包冷启动空闲 Cover 逐像素一致，关闭模板相关系数从 `0.9932` 降为 `0.1080`。验证同时覆盖了应用语义状态和 Lipstick 实际像素，未使用视觉模型。1.55 的匿名默认 720P、1.53 的小窗整面拖动及系统亮度/媒体音量隔离回归继续保留在设备验证记录中。
 
 开发机可使用 `vm-deploy/scripts/install-silisili-native-fast.sh PATH_TO_RPM` 执行单次传输、SHA-256 比对、`rpm -Uvh --replacepkgs`、NEVRA 查询和 `rpm -V` 校验；它只会替换 `silisili-native-devel` 开发包，并在完成后删除设备上的临时 RPM。
 

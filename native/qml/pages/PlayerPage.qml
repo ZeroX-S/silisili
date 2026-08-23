@@ -5,10 +5,12 @@ import "../components"
 
 Page {
     id: page
+    readonly property bool coverPlaybackPage: true
     property string videoBvid
     property string videoCid
     property string videoTitle
     property string videoCover
+    readonly property int initialPlaybackQuality: accountService.defaultPlaybackQuality
     property var returnSurfaceOwner
     property bool controlsVisible: true
     property int orientationMode: 0
@@ -160,7 +162,8 @@ Page {
             playbackSession.claimSurface(videoHost)
         if (videoBvid.length > 0 && videoCid.length > 0) {
             playbackSession.claimSurface(videoHost)
-            playbackSession.playVideo(videoBvid, videoCid, videoTitle, videoCover, 80)
+            playbackSession.playVideo(videoBvid, videoCid, videoTitle, videoCover,
+                                      initialPlaybackQuality)
         }
         synchronizeDanmaku()
         previousPlaying = playbackSession.playing
@@ -245,6 +248,7 @@ Page {
         anchors.fill: parent
         z: 20
         controller: playbackSession
+        systemController: systemControls
         pressSpeedEnabled: playbackSession.playing
         onTapped: toggleControls()
         onGestureStarted: {

@@ -59,7 +59,7 @@ Page {
                           ? qsTr("时长 %1 分钟").arg(Math.max(1, Math.round(modelData.duration / 60)))
                           : qsTr("点按播放")
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
             }
         }

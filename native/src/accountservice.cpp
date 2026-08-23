@@ -185,6 +185,18 @@ void AccountService::verifyPlaybackHistory(const QString &bvid, const QString &c
 
 AccountService *AccountService::instance() { return s_instance; }
 
+bool AccountService::hasSessionCredentials() const {
+    return !m_cookies.value(QStringLiteral("SESSDATA")).isEmpty()
+            && !m_cookies.value(QStringLiteral("DedeUserID")).isEmpty();
+}
+
+int AccountService::defaultPlaybackQuality() const {
+    // /nav is asynchronous, while local session cookies are available during
+    // construction. Preserve the signed-in cold-start quality without treating
+    // a credential-free anonymous launch as 1080P.
+    return (m_loggedIn || hasSessionCredentials()) ? 80 : 64;
+}
+
 QUrl AccountService::signedWbiUrl(const QUrl &url) const {
     return NetworkUtils::signWbiUrl(url, m_wbiMixinKey);
 }

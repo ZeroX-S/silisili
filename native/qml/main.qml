@@ -9,6 +9,16 @@ ApplicationWindow {
                                       : nativeForcedOrientation === "portrait"
                                         ? Orientation.Portrait | Orientation.PortraitInverted
                                         : Orientation.All
+    readonly property bool coverPlaybackPageActive:
+        pageStack.currentPage
+        && typeof pageStack.currentPage.coverPlaybackPage !== "undefined"
+        && pageStack.currentPage.coverPlaybackPage
+    readonly property bool coverCompactPlaybackActive:
+        playbackSession.active && playbackSession.compact
+        && !playbackSession.surfaceTransition && !playbackSession.ended
+    readonly property bool coverPlaybackEligible:
+        playbackSession.active && !playbackSession.ended
+        && (coverPlaybackPageActive || coverCompactPlaybackActive)
     property bool compactTestTransitionComplete: false
     property int compactContinuityStage: 0
     property bool multipartEofTestRequested: false
@@ -29,7 +39,19 @@ ApplicationWindow {
                    || nativeTestPage === "multipart-autonext"
                    || nativeTestPage === "history-resume"
                    ? videoDetailTestPage : homePage
+    // Keep one CoverActionList instance for the process lifetime. Lipstick 5.2
+    // retains icons from a destroyed list; CoverPage clears the three icon
+    // sources in place whenever playback is not eligible.
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
+
+    onCoverPlaybackEligibleChanged: {
+        console.log("native cover: eligibility changed",
+                    coverPlaybackEligible ? "playback" : "idle",
+                    "sessionActive", playbackSession.active,
+                    "sessionEnded", playbackSession.ended,
+                    "eligiblePage", coverPlaybackPageActive,
+                    "compactActive", coverCompactPlaybackActive)
+    }
 
     Component { id: homePage; HomePage {} }
     Component { id: navigationTestPage; NavigationPage {} }
@@ -92,12 +114,14 @@ ApplicationWindow {
             videoTitle: qsTr("横屏与悬浮窗测试")
             historyResumeRequested: nativeTestPage === "history-resume"
             historyResumePosition: nativeTestStartPosition
-            initialPlaybackQuality: nativeTestQuality > 0 ? nativeTestQuality : 80
+            requestedInitialPlaybackQuality: nativeTestQuality
             // Direct regression models a tap after the visible home cards
             // have finished their bounded metadata prefetch.
             deferAutoplayUntilPrefetched: nativeTestPage !== "history-resume"
                                            && nativeTestContentMode !== "direct"
                                            && nativeTestContentMode !== "fullscreen"
+                                           && nativeTestContentMode !== "home-cover"
+                                           && nativeTestContentMode !== "system-volume-gesture"
                                            && nativeTestContentMode !== "quality-matrix"
         }
     }
@@ -178,8 +202,14 @@ ApplicationWindow {
         onTriggered: {
             if (playbackSession.active && playbackSession.duration > 0) {
                 appWindow.compactTestTransitionComplete = true
-                pageStack.push(Qt.resolvedUrl("pages/NavigationPage.qml"))
+                var targetPage = nativeTestContentMode === "home-cover"
+                                 ? "pages/HomePage.qml"
+                                 : "pages/NavigationPage.qml"
+                pageStack.push(Qt.resolvedUrl(targetPage))
                 console.log("native compact player: test transition handled",
+                            "target",
+                            nativeTestContentMode === "home-cover"
+                            ? "home" : "navigation",
                             "position", Math.round(playbackSession.position),
                             "duration", Math.round(playbackSession.duration))
             }
@@ -467,7 +497,9 @@ ApplicationWindow {
         }
 
         MouseArea {
+            id: compactDragArea
             anchors.fill: parent
+            z: 6
             drag.target: compactPlayer
             drag.axis: Drag.XAndYAxis
             drag.minimumX: compactPlayer.edgeMargin
@@ -485,8 +517,11 @@ ApplicationWindow {
                             "y", Math.round(compactPlayer.y))
             }
             onPositionChanged: {
-                if (drag.active)
+                if (drag.active) {
+                    if (!compactPlayer.dragMoved)
+                        compactPlayer.hideControls("drag-start")
                     compactPlayer.dragMoved = true
+                }
             }
             onReleased: {
                 if (compactPlayer.dragMoved)
@@ -530,7 +565,7 @@ ApplicationWindow {
                       .arg(appWindow.formatCompactTime(playbackSession.duration))
                       .arg(playbackSession.selectedQualityLabel)
                 color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 truncationMode: TruncationMode.Fade
             }
 
@@ -570,7 +605,7 @@ ApplicationWindow {
                 onClicked: {
                     console.log("native compact player: closed")
                     compactPlayer.hideControls("closed")
-                    playbackSession.stop()
+                    playbackSession.dismissCompactSurface()
                 }
             }
         }

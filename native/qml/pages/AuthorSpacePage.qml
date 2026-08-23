@@ -132,7 +132,7 @@ Page {
                     Label {
                         width: parent.width
                         text: authorSpace.name || initialName
-                        font.pixelSize: Theme.fontSizeMedium
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         color: Theme.primaryColor
                         truncationMode: TruncationMode.Fade
                     }
@@ -141,7 +141,7 @@ Page {
                         visible: authorSpace.signature.length > 0
                         text: authorSpace.signature
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                         maximumLineCount: 2
                         wrapMode: Text.Wrap
                         truncationMode: TruncationMode.Fade
@@ -202,7 +202,7 @@ Page {
                             width: parent.width
                             text: modelData.stats + (modelData.duration.length > 0 ? " · " + modelData.duration : "")
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
                     }
@@ -242,7 +242,7 @@ Page {
                             visible: modelData.time.length > 0
                             text: modelData.time
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         }
                         Label {
                             width: parent.width
@@ -257,7 +257,7 @@ Page {
                             visible: (modelData.source || "").length > 0
                             text: modelData.source || ""
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                             wrapMode: Text.Wrap
                             maximumLineCount: 5
                             truncationMode: TruncationMode.Fade
@@ -322,7 +322,7 @@ Page {
                             text: modelData.stats || ""
                             horizontalAlignment: Text.AlignRight
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         }
                         Button {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -382,7 +382,7 @@ Page {
                              && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
                     text: qsTr("空间内容已全部加载")
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
             }
         }

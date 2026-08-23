@@ -92,7 +92,7 @@ Page {
                       ? qsTr("已显示 %1 条主评论").arg(commentList.count)
                       : qsTr("正在加载评论")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -154,16 +154,23 @@ Page {
                     width: parent.width
                     text: pinned ? qsTr("置顶 · %1").arg(author) : author
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label { width: parent.width; text: messageText; wrapMode: Text.Wrap }
+                Label {
+                    width: parent.width
+                    text: messageText
+                    font.pixelSize: appSettings.scaledFontSize(
+                                        Theme.fontSizeSmall,
+                                        appSettings.fontSizeMode)
+                    wrapMode: Text.Wrap
+                }
                 Label {
                     width: parent.width
                     text: qsTr("%1  ·  赞 %2  ·  回复 %3")
                           .arg(commentTime).arg(likeCount).arg(replyCount)
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
                 Row {
                     width: parent.width
@@ -217,7 +224,7 @@ Page {
                     visible: commentItem.repliesTotal > 0
                     text: qsTr("查看全部 %1 条回复 ›").arg(commentItem.repliesTotal)
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 }
             }
             ContextMenu {
@@ -258,7 +265,7 @@ Page {
                 visible: !commentSource.loading && !commentSource.hasMore && commentList.count > 0
                 text: qsTr("主评论已全部加载；点按可查看楼中楼回复")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

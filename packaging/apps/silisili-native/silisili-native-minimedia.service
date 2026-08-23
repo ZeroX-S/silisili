@@ -1,6 +1,6 @@
 [Unit]
 Description=SiliSili droidmedia compatibility service
-After=local-fs.target
+After=local-fs.target droid-hal-init.service
 
 [Service]
 Type=simple

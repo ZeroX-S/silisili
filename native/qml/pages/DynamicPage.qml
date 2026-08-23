@@ -210,14 +210,14 @@ Page {
                             width: parent.width
                             text: author
                             color: card.highlighted ? Theme.highlightColor : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
                         Label {
                             width: parent.width
                             text: publishTime + (kindLabel.length > 0 ? "  ·  " + kindLabel : "")
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
                     }
@@ -239,7 +239,7 @@ Page {
                     maximumLineCount: 4
                     truncationMode: TruncationMode.Fade
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 }
 
                 Grid {
@@ -312,7 +312,7 @@ Page {
                                   : seasonId.length > 0 ? qsTr("打开番剧 ›")
                                   : qsTr("进入直播间 ›")
                             color: Theme.secondaryHighlightColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         }
                     }
                 }
@@ -323,7 +323,7 @@ Page {
                     text: statsText
                     horizontalAlignment: Text.AlignRight
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
 
                 Button {
@@ -365,7 +365,7 @@ Page {
                 visible: !dynamicFeed.loading && !dynamicFeed.hasMore && list.count > 0
                 text: qsTr("已加载全部动态")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

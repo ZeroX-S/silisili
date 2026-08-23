@@ -6,6 +6,7 @@ import "../components"
 
 Page {
     id: page
+    readonly property bool coverPlaybackPage: true
     property bool landscapeLayout: width > height
     property real landscapePlayerWidth: Math.round(width * 0.64)
     property string seasonId
@@ -14,6 +15,10 @@ Page {
     property string initialCover
     property bool historyResumeRequested: false
     property real historyResumePosition: 0
+    property int requestedInitialPlaybackQuality: 0
+    readonly property int effectiveInitialPlaybackQuality:
+        requestedInitialPlaybackQuality > 0
+        ? requestedInitialPlaybackQuality : accountService.defaultPlaybackQuality
     property bool historyResumeConsumed: false
     property var selectedEpisode: null
     property string selectedAid: selectedEpisode && selectedEpisode.aid ? selectedEpisode.aid : ""
@@ -79,6 +84,12 @@ Page {
     function playSelected() {
         if (!selectedEpisode || selectedCid.length === 0)
             return
+        console.log("native playback quality: initial policy",
+                    "mediaKind", "pgc",
+                    "loggedIn", accountService.loggedIn,
+                    "sessionCredentials", accountService.hasSessionCredentials,
+                    "override", requestedInitialPlaybackQuality,
+                    "requestedQuality", effectiveInitialPlaybackQuality)
         playbackSession.claimSurface(inlineVideoHost)
         var useHistoryResume = historyResumeRequested && !historyResumeConsumed
                                && (episodeId.length === 0 || selectedEpId === episodeId)
@@ -92,11 +103,12 @@ Page {
             playbackSession.playPgcAt(selectedAid, selectedBvid, selectedCid, selectedEpId,
                                       (pgcDetail.title || initialTitle) + " · " + selectedTitle,
                                       selectedEpisode.cover || pgcDetail.cover || initialCover,
-                                      startPosition, 80)
+                                      startPosition, effectiveInitialPlaybackQuality)
         } else {
             playbackSession.playPgc(selectedAid, selectedBvid, selectedCid, selectedEpId,
                                     (pgcDetail.title || initialTitle) + " · " + selectedTitle,
-                                    selectedEpisode.cover || pgcDetail.cover || initialCover, 80)
+                                    selectedEpisode.cover || pgcDetail.cover || initialCover,
+                                    effectiveInitialPlaybackQuality)
         }
         pendingDanmakuCid = selectedCid
         danmakuLoadTimer.restart()
@@ -274,6 +286,7 @@ Page {
             anchors.fill: parent
             z: 20
             controller: inlinePlaybackReady ? playbackSession : null
+            systemController: systemControls
             pressSpeedEnabled: inlinePlaybackReady
             onTapped: toggleInlineControls()
             onGestureStarted: {
@@ -450,7 +463,7 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: pgcDetail.title || initialTitle
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeLarge, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
             Label {
@@ -459,7 +472,7 @@ Page {
                 visible: selectedTitle.length > 0
                 text: selectedTitle
                 color: Theme.highlightColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
             Label {
@@ -469,7 +482,7 @@ Page {
                       + (pgcDetail.ratingText.length > 0 && pgcDetail.stats.length > 0 ? "\n" : "")
                       + pgcDetail.stats
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
 
@@ -530,7 +543,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("播放会继续留在应用内小窗，可一边观看一边浏览或发表评论。")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
 

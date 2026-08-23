@@ -53,7 +53,7 @@ Page {
                         width: parent.width
                         text: messageTime
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     }
                 }
             }
@@ -64,7 +64,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: messageText
                 wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeMedium
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
             }
 
             SectionHeader { visible: messageSubject.length > 0; text: qsTr("原内容") }

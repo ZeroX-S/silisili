@@ -5,6 +5,7 @@ import "../components"
 
 Page {
     id: page
+    readonly property bool coverPlaybackPage: true
     property bool portraitControls: height > width
     property string roomId
     property string roomTitle
@@ -247,6 +248,7 @@ Page {
         anchors.fill: parent
         z: 20
         controller: video
+        systemController: systemControls
         seekEnabled: false
         onTapped: toggleControls()
         onGestureStarted: {
@@ -300,7 +302,7 @@ Page {
                 width: parent.width
                 text: roomOwner
                 color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 truncationMode: TruncationMode.Fade
                 maximumLineCount: 1
             }

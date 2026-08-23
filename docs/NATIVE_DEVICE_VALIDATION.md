@@ -1,16 +1,262 @@
 # Native Sailfish OS device validation
 
-Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.2.0.16. Build target:
-`SailfishOS-5.2.0.16-aarch64`.
+Device: Google Pixel 3a XL (`bonito`) running Sailfish OS 5.2.0.16. Current
+VM wrapper build target: `SailfishOS-5.1.0.11-aarch64`.
+
+Latest built development package:
+
+- NEVRA: `silisili-native-devel-1.1.0-1.56.aarch64`
+- RPM SHA-256: `b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`
+- RPM bytes: `12540903`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.56.aarch64.rpm`
+- Build date: `2026-08-23`
+- Device install status: installed on `2026-08-23`; the exact transferred
+  SHA-256 was verified, 1.55 was upgraded, the final rebuilt 1.56 package was
+  reinstalled, and `rpm -V silisili-native-devel` finished clean.
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.47.aarch64`
-- RPM SHA-256: `91a47722490f0875e47f0012b3786e33c0344ad0037bfb9e4e9d4f7522f7675b`
-- RPM bytes: `10571832`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.47.aarch64.rpm`
-- Build/install date: `2026-08-19`
+- NEVRA: `silisili-native-devel-1.1.0-1.56.aarch64`
+- RPM SHA-256: `b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`
+- RPM bytes: `12540903`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.56.aarch64.rpm`
+- Build/install date: `2026-08-23`
 - stable package state during this validation: absent
+
+## Latest 1.56 Home compact-player Cover lifecycle
+
+- Cover playback eligibility now accepts either an explicit playback page or
+  an active, unfinished Home compact-player session. A residual session on an
+  unrelated page remains in the idle Cover state.
+- The device probe started a real VOD, moved it from the detail page to the
+  actual Home page compact player, and required
+  `eligiblePage=false|compactActive=true|content=playback|actionsEnabled=true`.
+  A physical background gesture retained live shared-texture Cover frames, all
+  three actions, PID `40237`, and the original process start time.
+- The terminal result was
+  `native_compact_cover_context=ready|run=compact-cover-20260823-230827|package=silisili-native-devel-1.1.0-1.56.aarch64|pid=40237|transition=video-detail-to-home|session_active=1|compact_active=1|content=playback|actions_enabled=1|actions=3|background_entry=physical-gesture|mode_restored=pip|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- The fresh Cover artifact is
+  [silisili-compact-home-cover.png](screenshots/5x-test/silisili-compact-home-cover.png).
+  PNG integrity is `1080x2160`, `2028166` bytes, SHA-256
+  `2765ec393e52691c6e60a128e2acaae4e2a305e079eefda47d6f58038d466699`.
+  This is artifact-integrity evidence; no visual model was used.
+
+## Latest 1.56 idle Cover action lifecycle
+
+- The 1.56 AArch64 candidate was built in the Sailfish VM as
+  `silisili-native-devel-1.1.0-1.56.aarch64` and its local SHA-256 is
+  `b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`.
+- Sailfish 5.2 retained stale Cover action pixels after disabling or replacing
+  an existing `CoverActionList`. The final implementation keeps one
+  `CoverPage.qml` and one three-action list for the process lifetime. When the
+  current page/session is not playback-eligible, all three existing
+  `iconSource` bindings become empty in place and every handler rejects a stale
+  trigger. Idle artwork is still only the tiled watermark and centered Logo.
+- The exact RPM transfer/install transaction matched the local SHA-256,
+  installed the expected NEVRA, and completed with `rpm_verify=clean`.
+- A fresh playback Cover was captured after a physical background gesture as
+  [silisili-cover-stop-before.png](screenshots/5x-test/silisili-cover-stop-before.png).
+  A physical tap at Cover close coordinate `(442,808)` emitted
+  `native cover: stop action handled`, changed the same process to
+  `session_active=0|content=idle|actions=0`, and emitted the marker that all
+  three icon sources were empty. PID `37856` and start time `16037388` were
+  unchanged. The fresh result is
+  [silisili-cover-stop-after.png](screenshots/5x-test/silisili-cover-stop-after.png).
+- PNG integrity checks passed at `1080x2160`. Playback/idle SHA-256 values are
+  `d3d44e858bb8cb2d59ebe3779196c105b8de99f8d244cd8087c4129690e3314b`
+  and `501826677d9ee31cf61b105f9d7a9baa4db2e782bf7c295718f5c578731f8677`.
+  The current-package cold-idle reference SHA-256 is
+  `23eb9a57f82a0d7672b437b74f3d4da0633af542b1078fefac111016c203488d`.
+- Conventional alpha-template NCC at the known cancel center measured
+  `0.9932` before stop and `0.1080` after stop. The after-stop pause,
+  presentation and cancel `48x48` RGBA regions are each byte-for-byte equal to
+  the freshly captured current-package cold-idle Cover regions, while
+  respectively 2304, 1158 and 1939 of 2304 pixels changed from playback. This
+  closes both the semantic and stale-Lipstick-pixel boundaries. No visual
+  model was used.
+
+## Latest 1.55 anonymous default quality validation
+
+- Anonymous ordinary video and PGC playback now request QN 64 (720P) by
+  default. Signed-in cold starts retain QN 80 by using synchronously loaded
+  `SESSDATA`/`DedeUserID` credentials while `/nav` is still pending.
+- The exact-qn DASH request remains authoritative. If an anonymous QN 64
+  response exposes only a 480P DASH track, the resolver retries the QN 64
+  progressive endpoint and publishes its real 720P media instead of silently
+  lowering the default.
+- The source gate requires the account-quality properties, QN 64/80 policy,
+  PGC coverage, and the isolated anonymous quality probe.
+- The first 1.55 device run confirmed the anonymous policy marker and one
+  media load, but the upstream DASH response for the fixed sample contained
+  only QN 32. That diagnostic led to the bounded progressive-720P fallback;
+  it is not counted as a final pass.
+- The final package was reinstalled after the Home prefetch/fullscreen entry
+  audit and passed the isolated real-device probe:
+  `native_anonymous_default_quality=ready|run=anonymous-quality-20260822-final|package=silisili-native-devel-1.1.0-1.55.aarch64|bvid=BV1P4ddBBEJF|cid=37630051884|logged_in=0|session_credentials=0|requested_qn=64|selected_qn=64|video=1280x720|route=progressive-720p|loads=1|first_frames=1|same_pid=1|rpm_verify=clean|production_account=untouched|visual_model=unused`.
+
+## Latest 1.54 page-aware idle Cover validation
+
+- The checksum-closed 1.54 AArch64 RPM was built in the `MeeGo Build` VM,
+  verified as `silisili-native-devel-1.1.0-1.54.aarch64`, transferred with the
+  same SHA-256, installed on Sailfish OS 5.2.0.16, and passed
+  `rpm -V silisili-native-devel`.
+- Video detail, PGC detail, full-player and live-player pages now expose one
+  explicit `coverPlaybackPage` marker. Cover playback content requires both an
+  eligible current page and an active, unfinished playback session. All other
+  pages select the idle watermark and Logo even if the shared player session
+  remains active.
+- Sailfish `CoverActionList` exposes `enabled`, not a visual-item `visible`
+  property. Its enabled state now follows the same page-aware Cover state, and
+  every action handler independently rejects a stale trigger when the state is
+  idle.
+- The device probe established real playback on a video detail page, observed
+  `content=playback` with actions enabled, then used the existing compact
+  transition to open a non-video navigation page without stopping playback.
+  It observed `session_active=1`, `content=idle`, and `actions_enabled=0`, then
+  sent a physical background gesture and retained the same PID. The original
+  `pip` preference was restored and the test process was stopped:
+  `native_idle_cover_context=ready|run=idle-cover-20260822-135717|package=silisili-native-devel-1.1.0-1.54.aarch64|pid=43017|transition=video-detail-to-non-video|session_active=1|content=idle|actions_enabled=0|background_entry=physical-gesture|mode_restored=pip|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- Source verification passed with 55 active native sources and 45 QRC
+  resources. No visual model was used.
+
+## Latest 1.53 compact drag, comment type and two-column validation
+
+- The checksum-closed 1.53 AArch64 RPM was built in the `MeeGo Build` Sailfish
+  VM, verified as `silisili-native-devel-1.1.0-1.53.aarch64`, transferred to
+  Sailfish OS 5.2.0.16 with the same SHA-256, installed, and passed
+  `rpm -V silisili-native-devel`.
+- The compact player no longer instantiates `PlayerGestureArea`; one full-size
+  `compactDragArea` owns video-area dragging, taps and double taps, while the
+  bottom controls remain above it. Compact playback therefore has no seek,
+  brightness or volume gesture branch to intercept repositioning.
+- A physical center drag moved the compact surface from
+  `(358,1573,702,395)` to `(218,1478,702,395)`. Brightness stayed at `17`, raw
+  `x-maemo` media volume stayed at `55117`, no `native gesture:` or system
+  control write marker appeared, PID `28469` stayed unchanged, and RPM
+  verification remained clean:
+  `native_compact_drag=ready|package=silisili-native-devel-1.1.0-1.53.aarch64|pid=28469|initial_geometry=358,1573,702,395|dragged_geometry=218,1478,702,395|brightness=17|volume_raw=55117|system_gestures=absent|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- The paired detail-player regression changed StreamRestore media volume from
+  `55117` to `31492` through a physical right-side gesture and restored it to
+  `55117` after playback stopped. PID `34571` remained unchanged and RPM
+  verification stayed clean:
+  `native_volume_gesture=ready|package=silisili-native-devel-1.1.0-1.53.aarch64|pid=34571|surface=video-detail-inline|direction=down|initial_raw=55117|changed_raw=31492|restored_raw=55117|route=pulse-stream-restore-x-maemo|physical_gesture=handled|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- Comment bodies in video-detail preview, the full comment page, the root
+  reply, and nested replies now explicitly use `Theme.fontSizeSmall` through
+  the global small/medium/large scaling helper. Author, time and action-label
+  hierarchy is unchanged.
+- `AppSettings` now uses two columns when `ui/contentColumns` has never been
+  saved. An explicit one-column or two-column user preference is preserved.
+  The post-install device preflight reported `content_columns=2` and
+  `font_size_mode=0`, so the tested phone is currently on the requested
+  two-column layout and small global type mode.
+- Source verification passed with 55 active native sources and 45 QRC
+  resources. No visual model was used.
+
+## Latest 1.52 detail-only system controls and media-volume validation
+
+- The final checksum-closed 1.52 AArch64 RPM was built in the `MeeGo Build`
+  Sailfish VM, transferred through USB RNDIS to the Pixel 3a XL running
+  Sailfish OS 5.2.0.16, installed with exact SHA-256/NEVRA checks, and passed
+  `rpm -V silisili-native-devel`.
+- System brightness and volume gestures are now deliberately limited to the
+  ordinary-video detail player, PGC detail player, full-screen player and live
+  player. The in-app compact player sets
+  `systemControlGesturesEnabled: false` and has no `SystemControls` route.
+- Sailfish 5.2 keeps its actual media level in PulseAudio StreamRestore entry
+  `sink-input-by-media-role:x-maemo`; the default sink remains at 100% and is
+  not the user-visible media level. `SystemControls` therefore reads and writes
+  that entry through the PulseAudio peer D-Bus socket, without spawning one
+  `pactl` process for every move event. The active sink/sink-input `pactl` path
+  remains a compatibility fallback when StreamRestore is unavailable.
+- The physical detail-page gesture probe received the QML handling marker,
+  kept one process, changed the raw `x-maemo` value from `45875` to `65536`,
+  and restored it exactly to `45875` after playback stopped:
+  `native_volume_gesture=ready|package=silisili-native-devel-1.1.0-1.52.aarch64|pid=24706|surface=video-detail-inline|direction=up|initial_raw=45875|changed_raw=65536|restored_raw=45875|route=pulse-stream-restore-x-maemo|physical_gesture=handled|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- The compact-player negative probe injected physical vertical swipes on both
+  sides of the visible `702x395` compact surface. Both were handled as disabled
+  system-control gestures, brightness stayed at `1`, raw media volume stayed at
+  `45875`, and no brightness/volume write marker appeared:
+  `native_compact_system_controls=ready|package=silisili-native-devel-1.1.0-1.52.aarch64|pid=25383|geometry=358,1573,702,395|left_vertical=ignored|right_vertical=ignored|brightness=1|volume_raw=45875|same_pid=1|rpm_verify=clean|visual_model=unused`.
+- Source verification passed with 55 active native sources and 45 QRC
+  resources. No visual model was used for either device test.
+
+## Latest 1.51 minimedia boot-race and VM build-record validation
+
+- Correct build entrypoint is the running Parallels VM `MeeGo Build`, invoked
+  from macOS with
+  `prlctl exec 'MeeGo Build' /usr/bin/env REUSE_OBJECTS=1 /bin/bash /media/psf/AllFiles/Users/zerox/Documents/Codex/2026-07-31/silisili-native-sailfish/work/vm-build-native-rpm.sh`.
+  The macOS shell holds the shared source tree and `outputs/` artifacts but is
+  not itself the Sailfish SDK. Treat `/opt/sailfish-hadk`/`sb2` absence on
+  macOS as a context issue, not as a build blocker.
+- `work/vm-build-native-rpm.sh` now includes `appsettings.cpp`,
+  `systemcontrols.cpp`, their moc objects, and every RPM stage asset required
+  by the current spec: minimedia shim, minimedia wrapper, systemd unit,
+  privileges, and Cover mode icons. Source verification now checks this wrapper
+  so future hand-maintained list drift fails before link or RPM packaging.
+- The minimedia compatibility wrapper now uses an atomic
+  `/run/silisili-native-minimedia.lock`, exits immediately if another wrapper
+  is already starting, waits through the known boot race window, and yields if a
+  real `/system/bin/minimediaservice` is already present. The unit is ordered
+  `After=local-fs.target droid-hal-init.service` to reduce the Android-init
+  race window before the wrapper starts.
+- The 1.51 RPM was built and installed successfully:
+  `native_fast_install=ready|nevra=silisili-native-devel-1.1.0-1.51.aarch64|sha256=9724b4738e7ce9613b90c5a8ff7b2ba905e7f3b1186ce13a59d24bb866e810e6|rpm_verify=clean|visual_model=unused`.
+- Read-only phone audit reported exactly one minimediaservice process, the
+  guard present in the installed wrapper, the unit ordering present, and clean
+  RPM verification:
+  `native_minimedia_boot_race=ready|package=silisili-native-devel-1.1.0-1.51.aarch64|processes=1|service=active|result=success|mainpid=37408|camera_processes=10|droid_hal_processes=3|rpm_verify=clean|wrapper_guard=present|unit_after=droid-hal-init|visual_model=unused`.
+  Camera-related processes were in normal sleeping state during this audit; no
+  duplicate minimediaservice or kernel D-state deadlock was observed.
+- The explicit reboot-cycle validation was then run with
+  `vm-deploy/scripts/probe-silisili-native-minimedia-reboot-cycle.sh`.
+  The debug-shell port went down and came back after reboot, and the post-boot
+  read-only audit again found exactly one minimediaservice process:
+  `native_minimedia_boot_race=ready|package=silisili-native-devel-1.1.0-1.51.aarch64|processes=1|service=active|result=success|mainpid=6284|camera_processes=2|droid_hal_processes=3|rpm_verify=clean|wrapper_guard=present|unit_after=droid-hal-init|visual_model=unused`.
+  The cycle finished with
+  `native_minimedia_reboot_cycle=ready|run=20260821T181109Z|phone=192.168.2.15:2323|visual_model=unused`.
+
+## Latest 1.50 system controls and font-size build validation
+
+- The exact checksum-closed 1.50 AArch64 RPM was built in the Sailfish SDK and
+  passed RPM digest and NEVRA checks as
+  `silisili-native-devel-1.1.0-1.50.aarch64`.
+- Full-screen vertical gestures now call `SystemControls` instead of changing
+  libmpv-local brightness or volume. The left side now prefers Sailfish
+  `mcetool --set-display-brightness` and keeps writable sysfs backlight as a
+  fallback; the right side writes PulseAudio media volume through the active
+  user's runtime socket. Playback start records the original values for
+  playback-ended, playback-inactive and application-quit restoration.
+- `AppSettings` now stores a persistent small/medium/large font-size mode.
+  Explicit QML `Theme.fontSize*` usages across lists, details, comments,
+  settings, Cover and player gesture hints route through
+  `appSettings.scaledFontSize(..., appSettings.fontSizeMode)` so the binding
+  is recalculated as soon as the user changes the mode; the danmaku overlay
+  keeps its dedicated danmaku-size setting.
+- Source verification passed with 55 active native sources and 45 QRC
+  resources. The new regression gates reject a future return to local
+  `controller.setVolume()` / `controller.setBrightness()` gesture handling and
+  require the system-control restore hooks to remain connected.
+- No visual model was used. The corrected read-only system-control probe ran
+  on the phone and confirmed Sailfish OS 5.2.0.16, `mcetool` brightness status
+  `Brightness: 80 (1-100)`, PulseAudio default sink `sink.primary_output`, and
+  the active user socket `/run/user/100000/pulse/native`.
+- A bounded backend transaction changed brightness from `80` to `75` and
+  restored it to `80`, then changed PulseAudio media volume from `100` to `95`
+  and restored it to `100`. The still-running 1.48 process was then closed
+  (`silisili_stop_pre_pids=17832`, `silisili_stop_post_pids=`) so the next
+  launcher start uses the installed 1.49 binary.
+- Follow-up manual testing confirmed the brightness path worked but volume did
+  not affect the current playback stream. PulseAudio diagnosis while
+  `silisili-native` was playing found an active `Sink Input #48` owned by
+  process `24214`, `application.process.binary = "silisili-native"`,
+  `application.name = "mpv"`, and stream volume `79%` while the default sink
+  was `52%`. 1.50 therefore writes both the default sink and the active
+  `silisili-native` sink-input.
+- The 1.50 RPM was installed successfully:
+  `native_fast_install=ready|nevra=silisili-native-devel-1.1.0-1.50.aarch64|sha256=5a338f125713d2009e70039149a40deec48cfaba4d86a8e0452e50bbcfb9363f|rpm_verify=clean|visual_model=unused`.
+  The still-running 1.49 process was closed before handoff
+  (`silisili_stop_pre_pids=24214`, `silisili_stop_post_pids=`), so the next
+  launcher start uses the installed 1.50 binary.
 
 ## Latest 1.47 Cover action icon validation
 

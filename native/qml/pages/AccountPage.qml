@@ -76,7 +76,9 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 horizontalAlignment: Text.AlignHCenter
                 text: accountService.loggedIn ? accountService.userName : qsTr("当前没有可用登录会话")
-                font.pixelSize: accountService.loggedIn ? Theme.fontSizeLarge : Theme.fontSizeMedium
+                font.pixelSize: appSettings.scaledFontSize(accountService.loggedIn
+                                                           ? Theme.fontSizeLarge
+                                                           : Theme.fontSizeMedium, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
                 maximumLineCount: 3
                 truncationMode: TruncationMode.Fade
@@ -88,7 +90,7 @@ Page {
                 horizontalAlignment: Text.AlignHCenter
                 text: accountService.loggedIn ? accountService.levelText : qsTr("可使用哔哩哔哩客户端扫码登录")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
                 maximumLineCount: 3
                 truncationMode: TruncationMode.Fade
@@ -184,7 +186,7 @@ Page {
                     }
                     text: accountService.errorMessage
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                 }
@@ -196,7 +198,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("稳定版配置快照：%1。读取过程不会修改稳定版配置。").arg(configMigrationState)
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
         }

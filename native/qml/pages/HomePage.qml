@@ -170,7 +170,8 @@ Page {
             function preparePlayback() {
                 if (page.status === PageStatus.Active && Qt.application.active
                         && bvid.length > 0 && cid.length > 0)
-                    playbackSession.prepareVideo(bvid, cid, 80)
+                    playbackSession.prepareVideo(bvid, cid,
+                                                 accountService.defaultPlaybackQuality)
             }
             // The feed already includes CID. Resolve the first visible cards
             // while the user is reading the list so a tap does not wait on a
@@ -183,7 +184,8 @@ Page {
                 if (index === 0)
                     preparePlayback()
                 else if (index < 6)
-                    playbackResolver.prefetchVideo(bvid, cid, 80)
+                    playbackResolver.prefetchVideo(
+                                bvid, cid, accountService.defaultPlaybackQuality)
             }
             onPressedChanged: {
                 if (pressed)
@@ -225,10 +227,10 @@ Page {
                        ? parent.width - x - Theme.horizontalPageMargin
                        : parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
-                Label { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; font.pixelSize: page.contentColumns === 1 ? Theme.fontSizeMedium : Theme.fontSizeSmall; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeSmall; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; visible: recommendReason.length > 0; text: recommendReason; color: Theme.highlightColor; font.pixelSize: Theme.fontSizeExtraSmall; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeExtraSmall; truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; font.pixelSize: appSettings.scaledFontSize(page.contentColumns === 1 ? Theme.fontSizeMedium : Theme.fontSizeSmall, appSettings.fontSizeMode); wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; visible: recommendReason.length > 0; text: recommendReason; color: Theme.highlightColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
             }
         }
 
@@ -258,7 +260,7 @@ Page {
                         ? qsTr("上滑到底自动加载")
                         : qsTr("已经到底了")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 truncationMode: TruncationMode.Fade
             }
         }

@@ -621,6 +621,20 @@ void PlaybackResolver::publishResponse(bool pgc, const QString &aid,
     if (highQualityAttempt && !dashVideo.isEmpty()) {
         const int dashQuality = dashVideo.value(QStringLiteral("id")).toInt();
         const int dashHeight = dashVideo.value(QStringLiteral("height")).toInt();
+        // Anonymous playurl can advertise qn=64 while exposing only a 480P
+        // DASH representation. The progressive endpoint still returns the
+        // real 720P file, so do not silently publish that lower DASH track.
+        if (quality >= kProgressiveFallbackQuality
+                && dashQuality < kProgressiveFallbackQuality) {
+            qInfo() << "native player: DASH response below 720P; retrying 720P progressive"
+                    << "requested" << quality
+                    << "bestDashQuality" << dashQuality
+                    << "bestDashHeight" << dashHeight
+                    << "choices" << m_qualities.size();
+            resolveInternal(pgc, aid, bvid, cid, epId,
+                            kProgressiveFallbackQuality, false);
+            return;
+        }
         const QJsonObject dashAudio = chooseDashAudio(
                     dash.value(QStringLiteral("audio")).toArray());
         if (!dashAudio.isEmpty()) {

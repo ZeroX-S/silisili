@@ -46,7 +46,7 @@ Page {
                         width: parent.width
                         text: "silisili"
                         color: Theme.highlightColor
-                        font.pixelSize: Theme.fontSizeHuge
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeHuge, appSettings.fontSizeMode)
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -54,7 +54,7 @@ Page {
                         width: parent.width
                         text: qsTr("原生开发版  %1").arg(nativePackageVersion)
                         color: Theme.primaryColor
-                        font.pixelSize: Theme.fontSizeMedium
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         horizontalAlignment: Text.AlignHCenter
                     }
                     Label {
@@ -152,7 +152,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("感谢所有上游项目贡献者与真机测试者。")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
                 horizontalAlignment: Text.AlignHCenter
             }

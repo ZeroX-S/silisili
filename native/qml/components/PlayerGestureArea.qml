@@ -4,6 +4,7 @@ import Sailfish.Silica 1.0
 Item {
     id: root
     property var controller
+    property var systemController
     // Sailfish PageStack's interactive back gesture starts inside the page,
     // while a swipe from the physical edge minimizes the application. Keep
     // the verified native navigation corridor; playback gestures cover the
@@ -20,6 +21,7 @@ Item {
     property real previewValue: 0
     property string previewText: ""
     property bool seekEnabled: true
+    property bool systemControlGesturesEnabled: true
     property bool pressSpeedEnabled: false
     property real pressSpeed: 2.0
     property int pressSpeedDelay: 520
@@ -75,8 +77,10 @@ Item {
             root.startX = mouse.x + root.backSwipeCorridorWidth
             root.startY = mouse.y
             root.startPosition = root.controller ? root.controller.position : 0
-            root.startVolume = root.controller ? root.controller.volume : 100
-            root.startBrightness = root.controller ? root.controller.brightness : 0
+            root.startVolume = root.systemController
+                               ? root.systemController.volumePercent : 100
+            root.startBrightness = root.systemController
+                                   ? root.systemController.brightnessPercent : 50
             root.gestureMode = 0
             root.wasGesture = false
             if (root.canPressSpeed())
@@ -96,7 +100,8 @@ Item {
                 if (Math.abs(dx) > Math.abs(dy)) {
                     root.gestureMode = root.seekEnabled && root.controller.duration > 0 ? 1 : 4
                 } else {
-                    root.gestureMode = root.startX < root.width / 2 ? 2 : 3
+                    root.gestureMode = root.systemControlGesturesEnabled
+                                     ? (root.startX < root.width / 2 ? 2 : 3) : 4
                 }
                 root.wasGesture = true
                 root.gestureStarted()
@@ -107,15 +112,23 @@ Item {
                     root.startPosition + dx / width * Math.max(60, duration * 0.35)))
                 root.previewText = qsTr("进度 %1 / %2").arg(formatTime(root.previewValue)).arg(formatTime(duration))
             } else if (root.gestureMode === 2) {
-                root.previewValue = Math.max(-100, Math.min(100,
-                    root.startBrightness + (root.startY - mouse.y) / height * 160))
-                root.controller.setBrightness(root.previewValue)
-                root.previewText = qsTr("亮度 %1").arg(Math.round(root.previewValue))
+                root.previewValue = Math.max(1, Math.min(100,
+                    root.startBrightness + (root.startY - mouse.y) / height * 100))
+                if (root.systemController
+                        && root.systemController.setBrightnessPercent(root.previewValue)) {
+                    root.previewText = qsTr("系统亮度 %1%").arg(Math.round(root.previewValue))
+                } else {
+                    root.previewText = qsTr("系统亮度不可用")
+                }
             } else if (root.gestureMode === 3) {
                 root.previewValue = Math.max(0, Math.min(100,
-                    root.startVolume + (root.startY - mouse.y) / height * 130))
-                root.controller.setVolume(root.previewValue)
-                root.previewText = qsTr("音量 %1%").arg(Math.round(root.previewValue))
+                    root.startVolume + (root.startY - mouse.y) / height * 100))
+                if (root.systemController
+                        && root.systemController.setVolumePercent(root.previewValue)) {
+                    root.previewText = qsTr("系统音量 %1%").arg(Math.round(root.previewValue))
+                } else {
+                    root.previewText = qsTr("系统音量不可用")
+                }
             } else if (root.gestureMode === 4) {
                 root.previewText = ""
             }
@@ -127,9 +140,9 @@ Item {
                 root.controller.seek(root.previewValue)
                 console.log("native gesture: seek", Math.round(root.previewValue))
             } else if (root.gestureMode === 2) {
-                console.log("native gesture: brightness", Math.round(root.previewValue))
+                console.log("native gesture: system brightness", Math.round(root.previewValue))
             } else if (root.gestureMode === 3) {
-                console.log("native gesture: volume", Math.round(root.previewValue))
+                console.log("native gesture: system volume", Math.round(root.previewValue))
             } else if (root.gestureMode === 4) {
                 console.log("native gesture: horizontal seek disabled")
             } else if (wasSpeedHold) {
@@ -164,7 +177,7 @@ Item {
             anchors.centerIn: parent
             text: root.previewText
             color: "white"
-            font.pixelSize: Theme.fontSizeMedium
+            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
         }
     }
 

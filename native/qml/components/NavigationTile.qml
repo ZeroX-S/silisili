@@ -21,7 +21,7 @@ BackgroundItem {
             horizontalAlignment: Text.AlignHCenter
             text: root.title
             color: root.highlighted || root.selected ? Theme.highlightColor : Theme.primaryColor
-            font.pixelSize: root.titleFontSize
+            font.pixelSize: appSettings.scaledFontSize(root.titleFontSize, appSettings.fontSizeMode)
             truncationMode: TruncationMode.Fade
         }
 
@@ -32,7 +32,7 @@ BackgroundItem {
             text: root.description
             color: root.highlighted || root.selected
                    ? Theme.secondaryHighlightColor : Theme.secondaryColor
-            font.pixelSize: Theme.fontSizeExtraSmall
+            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             truncationMode: TruncationMode.Fade
         }
     }

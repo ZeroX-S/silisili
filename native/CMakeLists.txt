@@ -62,6 +62,8 @@ add_executable(silisili-native
     src/displayframemonitor.h
     src/systempipcontroller.cpp
     src/systempipcontroller.h
+    src/systemcontrols.cpp
+    src/systemcontrols.h
     src/danmakumodel.cpp
     src/danmakumodel.h
     src/livefeedmodel.cpp

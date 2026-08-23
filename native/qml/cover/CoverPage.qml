@@ -1,10 +1,23 @@
 import QtQuick 2.2
+import QtQuick.Window 2.2
 import Sailfish.Silica 1.0
 import cn.silisili.native.player 1.0
 
 CoverBackground {
     id: cover
 
+    readonly property var currentApplicationPage:
+        __silica_applicationwindow_instance.pageStack.currentPage
+    readonly property bool playbackPageActive:
+        currentApplicationPage
+        && typeof currentApplicationPage.coverPlaybackPage !== "undefined"
+        && currentApplicationPage.coverPlaybackPage
+    readonly property bool compactPlaybackActive:
+        playbackSession.active && playbackSession.compact
+        && !playbackSession.surfaceTransition && !playbackSession.ended
+    readonly property bool hasPlayback:
+        playbackSession.active && !playbackSession.ended
+        && (playbackPageActive || compactPlaybackActive)
     readonly property bool liveCoverVideo:
         systemPipController.backgroundPlaybackMode === "cover"
     readonly property bool liveStream:
@@ -15,9 +28,25 @@ CoverBackground {
                          playbackSession.position
                          / Math.max(1, playbackSession.duration)))
     property string lastLayoutProbeSignature: ""
+    property string pendingPresentationStateReason: "initial"
 
     onWidthChanged: scheduleLayoutProbe()
     onHeightChanged: scheduleLayoutProbe()
+    onHasPlaybackChanged: {
+        schedulePresentationState("playback-state-changed")
+        if (hasPlayback)
+            idleActionIconProbe.stop()
+        else
+            idleActionIconProbe.restart()
+    }
+    onPlaybackPageActiveChanged: schedulePresentationState("page-context-changed")
+    onCompactPlaybackActiveChanged:
+        schedulePresentationState("compact-context-changed")
+
+    function schedulePresentationState(reason) {
+        pendingPresentationStateReason = reason
+        presentationStateProbe.restart()
+    }
 
     function layoutProbeSignature() {
         return Math.round(cover.width) + "x"
@@ -29,7 +58,7 @@ CoverBackground {
     }
 
     function scheduleLayoutProbe() {
-        if (!playbackSession.active) {
+        if (!cover.hasPlayback) {
             lastLayoutProbeSignature = ""
             coverLayoutProbe.stop()
             return
@@ -74,6 +103,8 @@ CoverBackground {
     }
 
     function toggleBackgroundPresentation() {
+        if (!cover.hasPlayback)
+            return
         var previous = systemPipController.backgroundPlaybackMode
         var next = previous === "cover" ? "pip" : "cover"
         systemPipController.setBackgroundPlaybackMode(next)
@@ -91,7 +122,7 @@ CoverBackground {
     Item {
         id: idleWatermark
         anchors.fill: parent
-        visible: !playbackSession.active
+        visible: !cover.hasPlayback
         clip: true
 
         Item {
@@ -136,7 +167,7 @@ CoverBackground {
         id: idleLogo
         property bool readinessReported: false
 
-        visible: !playbackSession.active
+        visible: !cover.hasPlayback
         anchors.centerIn: parent
         width: Math.min(parent.width * 0.72, Theme.itemSizeHuge * 2.1)
         height: width * 56 / 144
@@ -162,12 +193,42 @@ CoverBackground {
     }
 
     Timer {
+        id: presentationStateProbe
+        interval: 0
+        repeat: false
+        onTriggered: console.log("native cover: presentation state ready",
+                                 "reason", cover.pendingPresentationStateReason,
+                                 "eligiblePage", cover.playbackPageActive,
+                                 "compactActive", cover.compactPlaybackActive,
+                                 "sessionActive", playbackSession.active,
+                                 "sessionEnded", playbackSession.ended,
+                                 "content", cover.hasPlayback ? "playback" : "idle",
+                                 "actionsEnabled", cover.hasPlayback,
+                                 "listEnabled", coverActions.enabled)
+    }
+
+    Timer {
+        id: idleActionIconProbe
+        interval: 80
+        repeat: false
+        onTriggered: console.log("native cover: idle action icons cleared",
+                                 "actions", 0,
+                                 "listEnabled", coverActions.enabled,
+                                 "pauseEmpty",
+                                 String(playPauseAction.iconSource).length === 0,
+                                 "presentationEmpty",
+                                 String(presentationAction.iconSource).length === 0,
+                                 "closeEmpty",
+                                 String(closeAction.iconSource).length === 0)
+    }
+
+    Timer {
         id: coverLayoutProbe
         interval: 240
         repeat: false
         running: true
         onTriggered: {
-            if (playbackSession.active) {
+            if (cover.hasPlayback) {
                 var signature = cover.layoutProbeSignature()
                 if (signature === cover.lastLayoutProbeSignature)
                     return
@@ -196,12 +257,15 @@ CoverBackground {
 
     Connections {
         target: playbackSession
-        onChanged: cover.scheduleLayoutProbe()
+        onChanged: {
+            cover.scheduleLayoutProbe()
+            cover.schedulePresentationState("session-changed")
+        }
     }
 
     Column {
         id: playbackCover
-        visible: playbackSession.active
+        visible: cover.hasPlayback
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
@@ -235,7 +299,7 @@ CoverBackground {
             width: parent.width
             text: cover.resolutionText()
             color: Theme.highlightColor
-            font.pixelSize: Theme.fontSizeExtraSmall
+            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.NoWrap
             truncationMode: TruncationMode.Fade
@@ -259,7 +323,7 @@ CoverBackground {
                 source: cover.liveCoverVideo ? playbackVideo : null
                 preserveAspectRatio: true
                 visible: cover.liveCoverVideo
-                         && playbackSession.active && !playbackSession.ended
+                         && cover.hasPlayback
             }
 
             Image {
@@ -277,7 +341,7 @@ CoverBackground {
                          && playbackSession.cover.length === 0
                 text: qsTr("系统小窗播放")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
             }
 
             Rectangle {
@@ -305,14 +369,14 @@ CoverBackground {
                    ? 0 : (titleClip.width - implicitWidth) / 2
                 text: playbackSession.title
                 color: Theme.primaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.NoWrap
                 maximumLineCount: 1
             }
 
             SequentialAnimation {
                 id: titleMarquee
-                running: playbackSession.active
+                running: cover.hasPlayback
                          && titleClip.overflow > Theme.paddingSmall
                 loops: Animation.Infinite
 
@@ -372,7 +436,7 @@ CoverBackground {
                           ? qsTr("直播")
                           : cover.formatTime(playbackSession.position)
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
                 Label {
                     width: parent.width / 2
@@ -381,7 +445,7 @@ CoverBackground {
                                                     : qsTr("实时"))
                           : cover.formatTime(playbackSession.duration)
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     horizontalAlignment: Text.AlignRight
                 }
             }
@@ -389,23 +453,52 @@ CoverBackground {
     }
 
     CoverActionList {
-        enabled: playbackSession.active
+        id: coverActions
+        enabled: true
+        window: cover.Window.window
 
         CoverAction {
-            iconSource: playbackSession.paused
-                        ? "image://theme/icon-cover-play"
-                        : "image://theme/icon-cover-pause"
-            onTriggered: playbackSession.togglePaused()
+            id: playPauseAction
+            iconSource: cover.hasPlayback
+                        ? (playbackSession.paused
+                           ? "image://theme/icon-cover-play"
+                           : "image://theme/icon-cover-pause")
+                        : ""
+            onTriggered: {
+                if (cover.hasPlayback)
+                    playbackSession.togglePaused()
+            }
         }
         CoverAction {
-            iconSource: systemPipController.backgroundPlaybackMode === "cover"
-                        ? "file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-pip.png"
-                        : "file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-cover.png"
-            onTriggered: cover.toggleBackgroundPresentation()
+            id: presentationAction
+            iconSource: cover.hasPlayback
+                        ? (systemPipController.backgroundPlaybackMode === "cover"
+                           ? "file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-pip.png"
+                           : "file:///usr/share/icons/hicolor/86x86/apps/silisili-native-cover-cover.png")
+                        : ""
+            onTriggered: {
+                if (cover.hasPlayback)
+                    cover.toggleBackgroundPresentation()
+            }
         }
         CoverAction {
-            iconSource: "image://theme/icon-cover-cancel"
-            onTriggered: playbackSession.stop()
+            id: closeAction
+            iconSource: cover.hasPlayback
+                        ? "image://theme/icon-cover-cancel" : ""
+            onTriggered: {
+                if (cover.hasPlayback) {
+                    console.log("native cover: stop action handled",
+                                "sessionActive", playbackSession.active,
+                                "mediaKind", playbackSession.mediaKind)
+                    playbackSession.stop()
+                }
+            }
         }
+    }
+
+    Component.onCompleted: {
+        schedulePresentationState("completed")
+        if (!cover.hasPlayback)
+            idleActionIconProbe.start()
     }
 }

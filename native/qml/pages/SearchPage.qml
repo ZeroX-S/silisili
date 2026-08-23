@@ -85,7 +85,7 @@ Page {
             Column { id: labels; anchors.left: coverImage.right; anchors.leftMargin: Theme.paddingMedium; anchors.right: parent.right; anchors.rightMargin: Theme.horizontalPageMargin; anchors.verticalCenter: coverImage.verticalCenter; spacing: Theme.paddingSmall
                 Label { width: parent.width; text: title; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade; color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor }
                 Label { width: parent.width; text: owner; color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: qsTr("播放 %1 · %2").arg(playCount).arg(duration); font.pixelSize: Theme.fontSizeExtraSmall; color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
+                Label { width: parent.width; text: qsTr("播放 %1 · %2").arg(playCount).arg(duration); font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
             }
         }
         BusyIndicator { anchors.centerIn: parent; running: searchModel.loading; size: BusyIndicatorSize.Large }

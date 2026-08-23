@@ -4,7 +4,7 @@ set -eu
 # Read-only baseline for Sailfish deployment and regression transactions.
 
 run_id=${1:-manual}
-rpm_path=${2:-/tmp/silisili-native-devel-1.1.0-1.47.aarch64.rpm}
+rpm_path=${2:-/tmp/silisili-native-devel-1.1.0-1.56.aarch64.rpm}
 
 run_bounded() {
     limit=$1
@@ -51,8 +51,11 @@ fi
 settings=/home/defaultuser/.config/cn.silisili.native/silisili-native.conf
 if test -f "$settings"; then
     mode=$(sed -n 's/^backgroundPresentationMode=//p' "$settings" | tail -1)
-    printf 'device_settings=ready|path=%s|background_mode=%s\n' \
-        "$settings" "${mode:-unset}"
+    content_columns=$(sed -n 's/^contentColumns=//p' "$settings" | tail -1)
+    font_size_mode=$(sed -n 's/^fontSizeMode=//p' "$settings" | tail -1)
+    printf 'device_settings=ready|path=%s|background_mode=%s|content_columns=%s|font_size_mode=%s\n' \
+        "$settings" "${mode:-unset}" "${content_columns:-unset}" \
+        "${font_size_mode:-unset}"
 else
     printf 'device_settings=absent|path=%s\n' "$settings"
 fi

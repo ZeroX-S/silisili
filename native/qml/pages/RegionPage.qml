@@ -108,7 +108,7 @@ Page {
                 }
                 Label {
                     text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount)
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     color: Theme.secondaryColor
                 }
             }

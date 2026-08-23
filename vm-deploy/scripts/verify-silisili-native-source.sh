@@ -77,6 +77,37 @@ grep -Fxq 'src/appsettings.cpp' "$temporary/cmake-files" \
     || fail missing-app-settings-cmake-source
 grep -Fxq 'src/appsettings.h' "$temporary/qmake-files" \
     || fail missing-app-settings-qmake-header
+grep -Fxq 'src/systemcontrols.cpp' "$temporary/cmake-files" \
+    || fail missing-system-controls-cmake-source
+grep -Fxq 'src/systemcontrols.h' "$temporary/qmake-files" \
+    || fail missing-system-controls-qmake-header
+vm_build_wrapper="$PROJECT_ROOT/../vm-build-native-rpm.sh"
+if test -f "$vm_build_wrapper"; then
+    grep -Fq "'\$source_copy/src/appsettings.cpp'" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-app-settings-source
+    grep -Fq "'\$source_copy/src/systemcontrols.cpp'" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-system-controls-source
+    grep -Fq "moc_appsettings.cpp" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-app-settings-moc
+    grep -Fq "moc_systemcontrols.cpp" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-system-controls-moc
+    grep -Fq "appsettings.o" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-app-settings-object
+    grep -Fq "systemcontrols.o" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-system-controls-object
+    grep -Fq 'silisili-native.privileges' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-privileges-stage
+    grep -Fq 'libminimedia-audiosource-shim.so' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-minimedia-shim-stage
+    grep -Fq 'silisili-native-minimedia-wrapper.sh' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-minimedia-wrapper-stage
+    grep -Fq 'silisili-native-minimedia.service' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-minimedia-service-stage
+    grep -Fq 'cover-action-pip.png' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-cover-pip-stage
+    grep -Fq 'cover-action-cover.png' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-cover-cover-stage
+fi
 
 qrc="$NATIVE_ROOT/qml/qml.qrc"
 test -f "$qrc" || fail missing-qrc
@@ -104,6 +135,9 @@ grep -Fq 'setWaylandRegion(m_view, m_inputRegion, true)' \
     || fail system-pip-input-region-missing
 grep -Fq 'LINK_FLAGS "-pie"' "$NATIVE_ROOT/CMakeLists.txt" \
     || fail privileged-system-pip-not-pie
+grep -Fq 'After=local-fs.target droid-hal-init.service' \
+    "$PROJECT_ROOT/packaging/apps/silisili-native/silisili-native-minimedia.service" \
+    || fail minimedia-service-droid-hal-ordering-missing
 
 # PlaybackSession is the one presentation/session owner, while source
 # acquisition and transport semantics remain explicitly split by media kind.
@@ -186,6 +220,60 @@ grep -Fq '"sourcePixelsPreserved", sourcePixelsPreserved' \
 grep -Fq 'native live quality: safe fallback requested' \
     "$NATIVE_ROOT/src/playbacksession.cpp" \
     || fail live-original-safe-fallback-missing
+
+# Anonymous VOD/PGC starts at 720P (Bilibili qn=64). A signed-in cold start
+# must retain 1080P without waiting for asynchronous /nav verification, and an
+# explicit regression/user quality request must continue to override policy.
+grep -Fq 'Q_PROPERTY(bool hasSessionCredentials READ hasSessionCredentials NOTIFY changed)' \
+    "$NATIVE_ROOT/src/accountservice.h" \
+    || fail account-session-credential-property-missing
+grep -Fq 'Q_PROPERTY(int defaultPlaybackQuality READ defaultPlaybackQuality NOTIFY changed)' \
+    "$NATIVE_ROOT/src/accountservice.h" \
+    || fail account-default-playback-quality-property-missing
+grep -Fq 'return (m_loggedIn || hasSessionCredentials()) ? 80 : 64;' \
+    "$NATIVE_ROOT/src/accountservice.cpp" \
+    || fail anonymous-default-playback-quality-not-720p
+grep -Fq 'property int requestedInitialPlaybackQuality: 0' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail video-initial-quality-override-missing
+grep -Fq '? requestedInitialPlaybackQuality : accountService.defaultPlaybackQuality' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail video-account-quality-policy-missing
+grep -Fq '? requestedInitialPlaybackQuality : accountService.defaultPlaybackQuality' \
+    "$NATIVE_ROOT/qml/pages/PgcDetailPage.qml" \
+    || fail pgc-account-quality-policy-missing
+grep -Fq 'requestedInitialPlaybackQuality: nativeTestQuality' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail explicit-test-quality-override-missing
+grep -Fq 'accountService.defaultPlaybackQuality' \
+    "$NATIVE_ROOT/qml/pages/HomePage.qml" \
+    || fail home-default-quality-policy-missing
+grep -Fq 'accountService.defaultPlaybackQuality' \
+    "$NATIVE_ROOT/qml/pages/PlayerPage.qml" \
+    || fail fullscreen-default-quality-policy-missing
+if grep -Eq 'prepareVideo\([^\n]*,[[:space:]]*80\)|prefetchVideo\([^\n]*,[[:space:]]*80\)|playbackSession\.playVideo\([^\n]*,[[:space:]]*80\)' \
+        "$NATIVE_ROOT/qml/pages/HomePage.qml" "$NATIVE_ROOT/qml/pages/PlayerPage.qml"; then
+    fail vod-cold-start-quality-hard-coded-1080p
+fi
+grep -Fq 'native playback quality: initial policy' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail video-initial-quality-semantic-marker-missing
+grep -Fq 'native playback quality: initial policy' \
+    "$NATIVE_ROOT/qml/pages/PgcDetailPage.qml" \
+    || fail pgc-initial-quality-semantic-marker-missing
+grep -Fq 'native player: DASH response below 720P; retrying 720P progressive' \
+    "$NATIVE_ROOT/src/playbackresolver.cpp" \
+    || fail anonymous-dash-to-progressive-720p-fallback-missing
+grep -Fq 'dashQuality < kProgressiveFallbackQuality' \
+    "$NATIVE_ROOT/src/playbackresolver.cpp" \
+    || fail anonymous-dash-720p-fallback-boundary-missing
+if grep -Eq 'startPosition,[[:space:]]*80\)|initialCover,[[:space:]]*80\)' \
+        "$NATIVE_ROOT/qml/pages/PgcDetailPage.qml"; then
+    fail pgc-initial-quality-still-hard-coded-1080p
+fi
+anonymous_quality_probe="$PROJECT_ROOT/vm-deploy/scripts/probe-silisili-native-anonymous-default-quality.sh"
+test -x "$anonymous_quality_probe" \
+    || fail anonymous-default-quality-probe-missing
 grep -Fq 'presentationAspectRetained' \
     "$NATIVE_ROOT/src/playbacksession.cpp" \
     || fail quality-switch-presentation-aspect-retention-missing
@@ -266,6 +354,74 @@ test "$resolution_line" -lt "$video_line" \
 test "$(grep -Fc 'CoverAction {' \
         "$NATIVE_ROOT/qml/cover/CoverPage.qml")" -eq 3 \
     || fail cover-action-count-drift
+grep -Fq 'readonly property bool hasPlayback:' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-page-aware-playback-state-missing
+grep -Fq 'typeof currentApplicationPage.coverPlaybackPage !== "undefined"' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-page-context-guard-missing
+grep -Fq 'readonly property bool compactPlaybackActive:' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-compact-playback-state-missing
+grep -Fq 'playbackSession.active && playbackSession.compact' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-compact-session-guard-missing
+grep -Fq 'playbackPageActive || compactPlaybackActive' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-page-compact-eligibility-missing
+grep -Fq 'readonly property bool coverCompactPlaybackActive:' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail application-cover-compact-state-missing
+grep -Fq 'coverPlaybackPageActive || coverCompactPlaybackActive' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail application-cover-page-compact-eligibility-missing
+grep -Fq 'nativeTestContentMode === "home-cover"' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail compact-home-cover-test-route-missing
+if grep -Fq 'enabled: cover.hasPlayback' \
+        "$NATIVE_ROOT/qml/cover/CoverPage.qml"; then
+    fail cover-action-unsupported-enabled-property-regression
+fi
+grep -Fq 'cover: Qt.resolvedUrl("cover/CoverPage.qml")' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail cover-single-action-list-lifetime-missing
+if grep -Fq 'IdleCoverPage.qml' "$NATIVE_ROOT/qml/qml.qrc"; then
+    fail cover-idle-object-tree-regression
+fi
+grep -Fq 'native cover: idle action icons cleared' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-idle-icon-clear-semantic-marker-missing
+test "$(grep -Fc ': ""' "$NATIVE_ROOT/qml/cover/CoverPage.qml")" -ge 3 \
+    || fail cover-idle-empty-icon-sources-missing
+test -x "$SCRIPT_DIR/probe-silisili-native-cover-stop-actions.sh" \
+    || fail cover-stop-actions-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-compact-cover-context.sh" \
+    || fail compact-cover-context-probe-not-executable
+test "$(grep -Fc 'visible: !cover.hasPlayback' \
+        "$NATIVE_ROOT/qml/cover/CoverPage.qml")" -eq 2 \
+    || fail cover-idle-artwork-state-drift
+grep -Fq 'visible: cover.hasPlayback' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-playback-content-state-missing
+grep -Fq 'native cover: presentation state ready' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-presentation-state-marker-missing
+grep -Fq 'native cover: stop action handled' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-stop-action-semantic-marker-missing
+grep -Fq 'window: cover.Window.window' \
+    "$NATIVE_ROOT/qml/cover/CoverPage.qml" \
+    || fail cover-action-window-lifetime-binding-missing
+for playback_page in VideoDetailPage.qml PlayerPage.qml PgcDetailPage.qml \
+        LivePlayerPage.qml; do
+    grep -Fq 'readonly property bool coverPlaybackPage: true' \
+        "$NATIVE_ROOT/qml/pages/$playback_page" \
+        || fail cover-playback-page-marker-missing
+done
+if grep -Fq 'enabled: playbackSession.active' \
+        "$NATIVE_ROOT/qml/cover/CoverPage.qml"; then
+    fail cover-actions-session-only-regression
+fi
 if grep -Fq 'homeFeed.refresh()' "$NATIVE_ROOT/qml/cover/CoverPage.qml"; then
     fail cover-idle-content-action-regression
 fi
@@ -318,9 +474,31 @@ fi
 grep -Fq 'Q_PROPERTY(int contentColumns READ contentColumns' \
     "$NATIVE_ROOT/src/appsettings.h" \
     || fail content-column-setting-property-missing
+grep -Fq 'QSettings().value(QString::fromLatin1(kContentColumnsKey), 2)' \
+    "$NATIVE_ROOT/src/appsettings.cpp" \
+    || fail content-column-default-not-two
 grep -Fq 'Q_PROPERTY(bool continueInAppMiniPlayer READ continueInAppMiniPlayer' \
     "$NATIVE_ROOT/src/appsettings.h" \
     || fail mini-player-policy-setting-property-missing
+grep -Fq 'Q_PROPERTY(int fontSizeMode READ fontSizeMode' \
+    "$NATIVE_ROOT/src/appsettings.h" \
+    || fail font-size-mode-setting-property-missing
+grep -Fq 'Q_INVOKABLE int scaledFontSize' \
+    "$NATIVE_ROOT/src/appsettings.h" \
+    || fail font-size-scaling-helper-missing
+grep -Fq 'appSettings.fontSizeMode)' \
+    "$NATIVE_ROOT/qml/pages/PlaybackPresentationPage.qml" \
+    || fail font-size-binding-dependency-missing
+if grep -RE 'appSettings\.scaledFontSize\([^,)]*\)' "$NATIVE_ROOT/qml" >/dev/null; then
+    fail font-size-untracked-binding-regression
+fi
+grep -Fq 'appSettings.fontSizeMode = currentIndex' \
+    "$NATIVE_ROOT/qml/pages/PlaybackPresentationPage.qml" \
+    || fail font-size-mode-control-missing
+grep -Fq 'appSettings.scaledFontSize' "$NATIVE_ROOT/qml/pages/HomePage.qml" \
+    || fail home-font-scaling-missing
+grep -Fq 'appSettings.scaledFontSize' "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail detail-font-scaling-missing
 grep -Fq 'SilicaGridView {' "$NATIVE_ROOT/qml/pages/HomePage.qml" \
     || fail home-configurable-grid-missing
 grep -Fq 'SilicaGridView {' "$NATIVE_ROOT/qml/pages/LiveFeedPage.qml" \
@@ -343,6 +521,109 @@ grep -Fq 'playbackSession.liveRoomId === roomId' \
 grep -Fq 'returnSurfaceOwner: page' \
     "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
     || fail fullscreen-return-surface-owner-missing
+grep -Fq 'Q_PROPERTY(double brightnessPercent READ brightnessPercent' \
+    "$NATIVE_ROOT/src/systemcontrols.h" \
+    || fail system-brightness-property-missing
+grep -Fq 'Q_PROPERTY(double volumePercent READ volumePercent' \
+    "$NATIVE_ROOT/src/systemcontrols.h" \
+    || fail system-volume-property-missing
+grep -Fq 'restorePlaybackSession' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-control-restore-missing
+grep -Fq 'native system controls: playback session restored' \
+    "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-control-restore-marker-missing
+grep -Fq 'pactl' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-volume-pulseaudio-route-missing
+grep -Fq 'sink-input-by-media-role:x-maemo' \
+    "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-volume-stream-restore-media-entry-missing
+grep -Fq 'QDBusConnection::connectToPeer' \
+    "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-volume-stream-restore-peer-route-missing
+grep -Fq 'writePulseStreamRestoreVolume' \
+    "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-volume-stream-restore-write-missing
+grep -Fq '/pulse/native' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-volume-runtime-socket-missing
+grep -Fq 'mcetool' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-brightness-mcetool-route-missing
+grep -Fq -- '--set-display-brightness=' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-brightness-mcetool-write-missing
+grep -Fq '/sys/class/backlight' "$NATIVE_ROOT/src/systemcontrols.cpp" \
+    || fail system-brightness-backlight-route-missing
+grep -Fq 'systemControls.beginPlaybackSession();' "$NATIVE_ROOT/src/main.cpp" \
+    || fail system-controls-playback-save-hook-missing
+grep -Fq 'systemControls.restorePlaybackSession' "$NATIVE_ROOT/src/main.cpp" \
+    || fail system-controls-playback-restore-hook-missing
+if grep -Fq 'm_foregroundRefreshTimer.start();' "$NATIVE_ROOT/src/playbacksession.cpp"; then
+    fail foreground-refresh-double-pulse-regression
+fi
+grep -Fq 'dismissCompactSurface()' "$NATIVE_ROOT/src/playbacksession.h" \
+    || fail compact-surface-dismiss-slot-missing
+grep -Fq 'systemPipController.setBackgroundPlaybackMode("cover")' \
+    "$NATIVE_ROOT/qml/SystemPipWindow.qml" \
+    || fail pip-close-returns-to-cover-missing
+grep -Fq 'playbackSession.dismissCompactSurface()' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail compact-close-keeps-playback-missing
+grep -Fq 'id: compactDragArea' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail compact-full-surface-drag-area-missing
+grep -Fq 'drag.target: compactPlayer' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail compact-drag-target-missing
+if grep -Fq 'PlayerGestureArea {' "$NATIVE_ROOT/qml/main.qml"; then
+    fail compact-player-gesture-area-regression
+fi
+if grep -Fq 'systemController: systemControls' "$NATIVE_ROOT/qml/main.qml"; then
+    fail compact-system-controls-route-regression
+fi
+grep -A5 -F 'text: commentData.messageText' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    | grep -Fq 'Theme.fontSizeSmall,' \
+    || fail detail-comment-body-small-font-missing
+grep -A5 -F 'text: messageText' \
+    "$NATIVE_ROOT/qml/pages/CommentsPage.qml" \
+    | grep -Fq 'Theme.fontSizeSmall,' \
+    || fail comments-page-body-small-font-missing
+grep -A5 -F 'text: rootMessage' \
+    "$NATIVE_ROOT/qml/pages/ReplyThreadPage.qml" \
+    | grep -Fq 'Theme.fontSizeSmall,' \
+    || fail reply-root-body-small-font-missing
+grep -A5 -F 'text: messageText' \
+    "$NATIVE_ROOT/qml/pages/ReplyThreadPage.qml" \
+    | grep -Fq 'Theme.fontSizeSmall,' \
+    || fail reply-child-body-small-font-missing
+grep -Fq 'systemController: systemControls' \
+    "$NATIVE_ROOT/qml/pages/VideoDetailPage.qml" \
+    || fail video-detail-system-controls-route-missing
+grep -Fq 'systemController: systemControls' \
+    "$NATIVE_ROOT/qml/pages/PgcDetailPage.qml" \
+    || fail pgc-detail-system-controls-route-missing
+grep -Fq 'systemController.setBrightnessPercent' \
+    "$NATIVE_ROOT/qml/components/PlayerGestureArea.qml" \
+    || fail gesture-system-brightness-route-missing
+grep -Fq 'systemController.setVolumePercent' \
+    "$NATIVE_ROOT/qml/components/PlayerGestureArea.qml" \
+    || fail gesture-system-volume-route-missing
+if grep -Fq 'controller.setBrightness' \
+        "$NATIVE_ROOT/qml/components/PlayerGestureArea.qml"; then
+    fail gesture-local-brightness-regression
+fi
+if grep -Fq 'controller.setVolume' \
+        "$NATIVE_ROOT/qml/components/PlayerGestureArea.qml"; then
+    fail gesture-local-volume-regression
+fi
+test -x "$SCRIPT_DIR/probe-silisili-native-system-controls.sh" \
+    || fail system-controls-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-system-controls-transaction.sh" \
+    || fail system-controls-transaction-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-volume-gesture.sh" \
+    || fail system-volume-gesture-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-compact-system-controls.sh" \
+    || fail compact-system-controls-negative-probe-not-executable
+test -x "$SCRIPT_DIR/stop-silisili-native-app.sh" \
+    || fail native-stop-helper-not-executable
 test "$(grep -Fc '/tmp/bonito-direct-touch swipe 540 2157 540 1257 500 25' \
         "$PROJECT_ROOT/vm-deploy/scripts/probe-silisili-native-live-background-presentation.sh")" \
     -eq 2 || fail landscape-background-gesture-probe-drift

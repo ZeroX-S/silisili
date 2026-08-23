@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.47
+Release:        1.56
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -104,6 +104,77 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Sun Aug 23 2026 silisili contributors <noreply@localhost> - 1.1.0-1.56
+- Keep one CoverActionList for the process lifetime and clear its three icon
+  sources in place when playback stops, preventing stale controls on Sailfish
+  5.2 while retaining guarded action handlers.
+- Treat an active Home-page compact player as playback-eligible so physically
+  backgrounding from Home keeps the live video Cover and its three actions.
+
+* Sat Aug 22 2026 silisili contributors <noreply@localhost> - 1.1.0-1.55
+- Start anonymous video and PGC playback at 720P while retaining 1080P as the
+  signed-in default and preserving explicit test and user quality selection.
+- Base cold-start quality on synchronously loaded session credentials until
+  the asynchronous account-status request completes.
+
+* Sat Aug 22 2026 silisili contributors <noreply@localhost> - 1.1.0-1.54
+- Show video content and Cover actions only while an unfinished playback
+  session belongs to the current video detail, full-player, PGC detail or live
+  player page.
+- Return all other application pages to the idle watermark and logo Cover,
+  and guard stale Cover action triggers during page transitions.
+
+* Sat Aug 22 2026 silisili contributors <noreply@localhost> - 1.1.0-1.53
+- Restore full-surface dragging for the application mini-player and remove its
+  playback seek, brightness and volume gestures so those cannot intercept a
+  repositioning drag.
+- Reduce comment-body text by one theme size while retaining the global
+  small, medium and large font-size modes.
+- Use two columns as the default video and live-feed layout while preserving
+  an existing saved layout preference.
+
+* Sat Aug 22 2026 silisili contributors <noreply@localhost> - 1.1.0-1.52
+- Keep system brightness and media-volume gestures on full-screen and inline
+  detail players, while disabling them for the application mini-player.
+- Route Sailfish media volume through the x-maemo PulseAudio StreamRestore
+  entry so the gesture changes the same persistent value as the system volume
+  controls and applies immediately to an active playback stream.
+- Fall back to default-sink and active sink-input pactl control only when the
+  device does not expose the Sailfish StreamRestore peer interface.
+
+* Fri Aug 21 2026 silisili contributors <noreply@localhost> - 1.1.0-1.51
+- Add full-surface compact-player gestures for system volume/brightness while
+  keeping top-edge dragging separate.
+- Make compact-window close dismiss only the mini-player surface so playback
+  keeps running and Cover can stay in sync.
+- Remove the extra delayed foreground refresh pass and let the media item own
+  the recovery cadence.
+- Make the droidmedia compatibility wrapper yield immediately when a real
+  minimediaservice is already present.
+- Add an atomic startup guard and short settle window to the droidmedia
+  compatibility wrapper so a later real minimediaservice can win the boot
+  race instead of both instances running into each other.
+- Order the compatibility unit after droid-hal-init when that unit exists,
+  reducing the boot-time window where Android init and the wrapper race.
+
+* Fri Aug 21 2026 silisili contributors <noreply@localhost> - 1.1.0-1.50
+- Apply right-side volume gestures to the active silisili-native PulseAudio
+  sink-input as well as the default sink, matching Sailfish media playback
+  behavior where the current stream has its own volume.
+
+* Fri Aug 21 2026 silisili contributors <noreply@localhost> - 1.1.0-1.49
+- Use Sailfish mcetool as the primary system brightness backend and keep
+  sysfs backlight as a fallback for devices that expose a writable node.
+- Bind PulseAudio volume commands to the active user runtime socket and return
+  gesture write status to QML instead of skipping calls after a failed probe.
+- Make font-size bindings explicitly depend on the stored small/medium/large
+  mode so UI text updates immediately when the setting changes.
+
+* Fri Aug 21 2026 silisili contributors <noreply@localhost> - 1.1.0-1.48
+- Route full-screen vertical gestures to system brightness and PulseAudio
+  media volume, saving the original values for playback-exit restoration.
+- Add persistent small/medium/large application font-size modes.
+
 * Wed Aug 19 2026 silisili contributors <noreply@localhost> - 1.1.0-1.47
 - Load the Cover presentation switch icons from the public system icon path
   so Lipstick can render the bottom-center CoverAction reliably.

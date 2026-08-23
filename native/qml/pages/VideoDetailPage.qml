@@ -6,6 +6,7 @@ import "../components"
 
 Page {
     id: page
+    readonly property bool coverPlaybackPage: true
     property bool landscapeLayout: width > height
     property real landscapePlayerWidth: Math.round(width * 0.64)
     property string videoTitle
@@ -15,7 +16,10 @@ Page {
     property string videoCover
     property bool historyResumeRequested: false
     property real historyResumePosition: 0
-    property int initialPlaybackQuality: 80
+    property int requestedInitialPlaybackQuality: 0
+    readonly property int effectiveInitialPlaybackQuality:
+        requestedInitialPlaybackQuality > 0
+        ? requestedInitialPlaybackQuality : accountService.defaultPlaybackQuality
     property bool historyResumeConsumed: false
     property bool deferAutoplayUntilPrefetched: false
     property bool inlineControlsVisible: true
@@ -68,6 +72,7 @@ Page {
     property bool qualityMatrixAwaitingFrame: false
     property double qualityMatrixSettledAtMs: 0
     property bool qualityMatrixComplete: false
+    property bool systemVolumeRegressionStopScheduled: false
     allowedOrientations: Orientation.All
 
     VideoDetailModel { id: videoDetail }
@@ -95,6 +100,12 @@ Page {
     function openPlayer(cid, title) {
         if (!cid || cid.length === 0)
             return
+        console.log("native playback quality: initial policy",
+                    "mediaKind", "video",
+                    "loggedIn", accountService.loggedIn,
+                    "sessionCredentials", accountService.hasSessionCredentials,
+                    "override", requestedInitialPlaybackQuality,
+                    "requestedQuality", effectiveInitialPlaybackQuality)
         playbackSettled = false
         playbackSettledTimer.stop()
         supplementaryFallbackTimer.restart()
@@ -114,12 +125,12 @@ Page {
             playbackSession.playVideoAt(videoBvid, cid,
                                         title || videoDetail.title || videoTitle,
                                         videoDetail.cover || videoCover,
-                                        startPosition, initialPlaybackQuality)
+                                        startPosition, effectiveInitialPlaybackQuality)
         } else {
             playbackSession.playVideo(videoBvid, cid,
                                       title || videoDetail.title || videoTitle,
                                       videoDetail.cover || videoCover,
-                                      initialPlaybackQuality)
+                                      effectiveInitialPlaybackQuality)
         }
         pendingDanmakuCid = cid
         // Danmaku is useful but can parse/create many overlay items. Keep it
@@ -389,11 +400,30 @@ Page {
         wasInlinePlaying = inlinePlaying
     }
 
+    function reportInlineGestureGeometry(reason) {
+        var point = inlineGestures.mapToItem(page, 0, 0)
+        console.log("native detail controls: gesture geometry",
+                    "reason", reason,
+                    "x", Math.round(point.x),
+                    "y", Math.round(point.y),
+                    "width", Math.round(inlineGestures.width),
+                    "height", Math.round(inlineGestures.height),
+                    "pageWidth", Math.round(page.width),
+                    "pageHeight", Math.round(page.height),
+                    "systemControls", inlineGestures.systemController !== null)
+    }
+
     Component.onCompleted: {
         if (videoCid.length > 0 && !initialPlaybackRequested) {
             if (deferAutoplayUntilPrefetched) {
+                console.log("native playback quality: initial policy",
+                            "mediaKind", "video-prepare",
+                            "loggedIn", accountService.loggedIn,
+                            "sessionCredentials", accountService.hasSessionCredentials,
+                            "override", requestedInitialPlaybackQuality,
+                            "requestedQuality", effectiveInitialPlaybackQuality)
                 playbackSession.prepareVideo(videoBvid, videoCid,
-                                             initialPlaybackQuality)
+                                             effectiveInitialPlaybackQuality)
                 console.log("native detail perf: waiting for visible-card media prepare",
                             videoBvid, videoCid)
             } else {
@@ -597,6 +627,26 @@ Page {
             if (isCurrentVideo && playbackSession.playing && !playbackSettled
                     && !playbackSettledTimer.running)
                 playbackSettledTimer.restart()
+            if (nativeTestContentMode === "system-volume-gesture"
+                    && isCurrentVideo && playbackSession.playing
+                    && page.video.presentedFrameSerial > 0
+                    && !page.systemVolumeRegressionStopScheduled) {
+                page.systemVolumeRegressionStopScheduled = true
+                page.reportInlineGestureGeometry("system-volume-ready")
+                systemVolumeRegressionStopTimer.restart()
+                console.log("native system controls regression: gesture window ready",
+                            "restoreDelayMs", systemVolumeRegressionStopTimer.interval)
+            }
+        }
+    }
+
+    Timer {
+        id: systemVolumeRegressionStopTimer
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            playbackSession.stop()
+            console.log("native system controls regression: playback stopped for restore")
         }
     }
 
@@ -679,6 +729,7 @@ Page {
             z: 20
             controller: isCurrentVideo && inlinePlayerError.length === 0
                         ? playbackSession : null
+            systemController: systemControls
             pressSpeedEnabled: inlinePlaybackReady
             onTapped: toggleInlineControls()
             onGestureStarted: {
@@ -998,7 +1049,7 @@ Page {
         Column {
             id: content; width: parent.width
             Item { width: 1; height: Theme.paddingLarge }
-            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoDetail.title || videoTitle; font.pixelSize: Theme.fontSizeLarge; wrapMode: Text.Wrap }
+            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoDetail.title || videoTitle; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeLarge, appSettings.fontSizeMode); wrapMode: Text.Wrap }
             BackgroundItem {
                 width: parent.width
                 height: ownerLabel.implicitHeight + 2 * Theme.paddingSmall
@@ -1018,11 +1069,11 @@ Page {
                     text: (videoDetail.owner || videoOwner)
                           + (videoDetail.ownerMid.length > 0 ? qsTr(" · 查看 UP 主空间和动态 ›") : "")
                     color: parent.highlighted ? Theme.secondaryHighlightColor : Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
             }
-            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoDetail.stats; color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeExtraSmall; wrapMode: Text.Wrap; visible: visibleDetailStage >= 2 }
+            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoDetail.stats; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); wrapMode: Text.Wrap; visible: visibleDetailStage >= 2 }
             SectionHeader { text: qsTr("简介"); visible: visibleDetailStage >= 3 }
             Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoDetail.description || qsTr("加载中…"); color: Theme.secondaryColor; wrapMode: Text.Wrap; visible: visibleDetailStage >= 3 }
             SectionHeader { text: qsTr("分集") ; visible: visibleDetailStage >= 4 && videoDetail.pages.length > 1 }
@@ -1053,7 +1104,7 @@ Page {
                         ? qsTr("评论正在逐条载入，避免影响播放")
                         : qsTr("播放稳定后会按条数加载评论，避免和视频抢处理器")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
             Button {
@@ -1134,12 +1185,15 @@ Page {
                                   ? qsTr("置顶 · %1").arg(commentData.author)
                                   : commentData.author
                             color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
                         Label {
                             width: parent.width
                             text: commentData.messageText
+                            font.pixelSize: appSettings.scaledFontSize(
+                                                Theme.fontSizeSmall,
+                                                appSettings.fontSizeMode)
                             wrapMode: Text.Wrap
                         }
                         Label {
@@ -1149,7 +1203,7 @@ Page {
                                   .arg(commentData.likeCount)
                                   .arg(commentData.replyCount)
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         }
                         Row {
                             width: parent.width
@@ -1186,7 +1240,7 @@ Page {
                             visible: commentItem.repliesTotal > 0
                             text: qsTr("查看全部 %1 条回复 ›").arg(commentItem.repliesTotal)
                             color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                         }
                     }
 
@@ -1236,7 +1290,7 @@ Page {
                 visible: !relatedScheduled && !relatedModel.loading
                 text: qsTr("继续下滑时再加载推荐，避免后台创建过多列表和图片")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
             Repeater {
@@ -1282,14 +1336,14 @@ Page {
                             width: parent.width
                             text: relatedData.owner
                             color: Theme.secondaryHighlightColor
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
                         Label {
                             width: parent.width
                             text: qsTr("播放 %1").arg(relatedData.playCount)
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         }
                     }
                 }

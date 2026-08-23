@@ -714,6 +714,19 @@ void PlaybackSession::stop() {
     if (!wasActive) emit changed();
 }
 
+void PlaybackSession::dismissCompactSurface() {
+    if (!compact() || !m_player) return;
+    qInfo() << "native compact player: surface dismissed"
+            << "active" << m_active
+            << "mediaKind" << mediaKind()
+            << "paused" << paused()
+            << "playing" << playing();
+    m_surfaceHost.clear();
+    useHost(0);
+    emit surfaceChanged();
+    emit changed();
+}
+
 void PlaybackSession::setBackgroundPlayback(bool enabled) {
     if (m_backgroundPlayback == enabled) return;
     m_backgroundPlayback = enabled;
@@ -1093,7 +1106,6 @@ void PlaybackSession::applicationStateChanged(Qt::ApplicationState state) {
                 << "position" << position()
                 << "paused" << paused();
         refreshForegroundSurface();
-        m_foregroundRefreshTimer.start();
     }
     dismissFinishedSmallWindowPlayback();
     if (m_backgroundPlayback || !m_active || !m_player) return;

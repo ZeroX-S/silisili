@@ -106,14 +106,14 @@ Page {
                         width: parent.width
                         text: page.author
                         color: Theme.primaryColor
-                        font.pixelSize: Theme.fontSizeMedium
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         truncationMode: TruncationMode.Fade
                     }
                     Label {
                         width: parent.width
                         text: page.publishTime
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                         truncationMode: TruncationMode.Fade
                     }
                 }
@@ -134,7 +134,7 @@ Page {
                 visible: sourceText.length > 0
                 text: sourceText
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
 
@@ -203,7 +203,7 @@ Page {
                               : seasonId.length > 0 ? qsTr("打开番剧 ›")
                               : qsTr("进入直播间 ›")
                         color: Theme.secondaryHighlightColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     }
                 }
             }
@@ -215,7 +215,7 @@ Page {
                 text: statsText
                 color: Theme.secondaryColor
                 horizontalAlignment: Text.AlignRight
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
 
             Button {

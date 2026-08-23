@@ -112,19 +112,22 @@ Page {
                         width: parent.width
                         text: rootAuthor
                         color: Theme.highlightColor
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                         truncationMode: TruncationMode.Fade
                     }
                     Label {
                         width: parent.width
                         text: rootMessage
+                        font.pixelSize: appSettings.scaledFontSize(
+                                            Theme.fontSizeSmall,
+                                            appSettings.fontSizeMode)
                         wrapMode: Text.Wrap
                     }
                     Label {
                         width: parent.width
                         text: qsTr("%1  ·  赞 %2").arg(rootTime).arg(rootLike)
                         color: Theme.secondaryColor
-                        font.pixelSize: Theme.fontSizeExtraSmall
+                        font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     }
                     Row {
                         width: parent.width
@@ -199,19 +202,22 @@ Page {
                     width: parent.width
                     text: author
                     color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
                     width: parent.width
                     text: messageText
+                    font.pixelSize: appSettings.scaledFontSize(
+                                        Theme.fontSizeSmall,
+                                        appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                 }
                 Label {
                     width: parent.width
                     text: qsTr("%1  ·  赞 %2").arg(commentTime).arg(likeCount)
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 }
                 Row {
                     width: parent.width
@@ -268,7 +274,7 @@ Page {
                 visible: !threadModel.loading && !threadModel.hasMore && replyList.count > 0
                 text: qsTr("回复已全部加载")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

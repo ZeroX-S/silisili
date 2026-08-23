@@ -252,7 +252,7 @@ Page {
                       ? page.qrRenderError
                       : page.qrItemError(page.qrImageItem)
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
             }
@@ -268,7 +268,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: accountService.qrStatus
                 color: accountService.qrActive ? Theme.highlightColor : Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeMedium
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
             }
@@ -278,7 +278,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("使用另一台已登录哔哩哔哩的设备扫码并确认。扫码成功前不会替换当前账户；稳定版配置始终只读。")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
             }

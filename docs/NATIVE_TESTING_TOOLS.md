@@ -1,8 +1,16 @@
 # Native Sailfish test/deploy tooling notes
 
-Current device: Pixel 3a XL Sailfish OS 5.1.0.11 through the Sailfish debug shell at `192.168.2.15:2323`.
+Current device: Pixel 3a XL Sailfish OS 5.2.0.16 through the Sailfish debug shell at `192.168.2.15:2323`.
 The USB interface name in the build VM is deliberately not fixed: it is generated from the
 RNDIS MAC and can change after reconnecting the phone.
+
+Important context boundary: the macOS workspace stores the source tree and the
+RPM artifacts, but it is not the Sailfish SDK environment. Full native RPM
+builds are run from the Linux/Sailfish build VM through the shared path
+`/media/psf/AllFiles/Users/zerox/Documents/Codex/2026-07-31/silisili-native-sailfish`.
+If `/opt/sailfish-hadk`, `sb2`, or `/media/psf/...` are missing from the
+current shell, do not conclude that the project cannot build; switch to the VM
+entrypoint below.
 
 Use these transport rules for this project:
 
@@ -22,10 +30,20 @@ Use these transport rules for this project:
 
 Current native install path:
 
-- Build: `work/vm-build-native-rpm.sh`
-- Install: `work/vm-install-native-phone.sh` (first runs `vm-setup-sailfish-debug.sh`, which
-  discovers the `rndis_host` interface, brings it up and assigns the VM peer address). Set
-  `PHONE_IP` and/or `SAILFISH_DEBUG_HOST_CIDR` only when the phone-side debug endpoint has
+- Build from the Linux/Sailfish build VM:
+  `cd /media/psf/AllFiles/Users/zerox/Documents/Codex/2026-07-31/silisili-native-sailfish/work && bash vm-build-native-rpm.sh`
+  The script copies the macOS-shared source into `/home/builder`, uses
+  `/opt/sailfish-hadk/platform/sdks/sfossdk/sdk-chroot`, the tested
+  `SailfishOS-5.1.0.11-aarch64` target by default, and writes the final RPM
+  back to the macOS-visible `outputs/` directory.
+- Install from the same VM:
+  `bash work/vm-install-native-phone.sh outputs/silisili-native-devel-VERSION-RELEASE.aarch64.rpm`.
+  With no argument it installs the newest `outputs/silisili-native-devel-*.rpm`.
+  The wrapper first runs `vm-setup-sailfish-debug.sh`, which discovers the
+  `rndis_host` interface, brings it up and assigns the VM peer address, then
+  delegates to `vm-deploy/scripts/install-silisili-native-fast.sh` for SHA-256,
+  NEVRA and `rpm -V` verification. Set `PHONE_IP` and/or
+  `SAILFISH_DEBUG_HOST_CIDR` only when the phone-side debug endpoint has
   intentionally changed.
 - Launch: `work/vm-launch-native-sailjail.sh`
 - One-pass regression smoke: `work/vm-test-native-regression-batch.sh`
@@ -46,6 +64,52 @@ For checksum-closed candidate work, use these bounded helpers:
   a balanced Cover geometry plus advancing shared-texture frames after the
   verified background state. It avoids making layout acceptance depend on a
   randomly selected live source.
+- `probe-silisili-native-system-controls.sh` is a read-only preflight for the
+  system brightness/volume gesture path. It reports writable backlight
+  candidates, the PulseAudio default sink and MCE display-related methods
+  without changing device brightness or volume.
+- `probe-silisili-native-system-controls-transaction.sh` performs a bounded
+  backend write/read/restore check for Sailfish display brightness and
+  PulseAudio media volume. Use it only when a temporary system-control change
+  is acceptable.
+- `probe-silisili-native-volume-gesture.sh` launches a real detail-page VOD,
+  injects a physical right-side vertical gesture, requires the
+  `pulse-stream-restore-x-maemo` route and verifies exact automatic volume
+  restoration in the same process.
+- `probe-silisili-native-compact-system-controls.sh` is the compact-player drag
+  gate: a physical drag from the video-area center must move the floating
+  geometry while leaving Sailfish brightness and `x-maemo` media volume
+  unchanged. It also rejects any compact-player `native gesture:` marker.
+- `probe-silisili-native-compact-cover-context.sh` starts a real detail-page
+  VOD, moves it into the actual Home page's visible application mini-player,
+  then backgrounds the app through a physical gesture. It requires the Cover
+  to retain live playback content and all three actions with
+  `eligiblePage=false|compactActive=true`, captures a fresh device screenshot,
+  preserves one PID, and restores the user's original Cover/PiP preference.
+- `probe-silisili-native-anonymous-default-quality.sh` launches the production
+  player with an isolated credential-free `HOME`, so the account session files
+  used by the real user are never touched. It requires the anonymous initial
+  policy to request QN 64 (720P), one source load, a real `1280x720` selected
+  video, one first-frame marker, an unchanged process start time, clean
+  `rpm -V`, and no QML or hardware-fallback errors. When the anonymous DASH
+  response exposes only QN 32/480P, the probe accepts only the bounded
+  QN 64 progressive retry and reports `route=progressive-720p`.
+
+  Run it through the Sailfish debug shell with a unique run id:
+
+  ```sh
+  python3 vm-deploy/scripts/run-phone-script.py \
+    vm-deploy/scripts/probe-silisili-native-anonymous-default-quality.sh \
+    anonymous-quality-$(date -u +%Y%m%dT%H%M%SZ)
+  ```
+
+  A successful run emits both `sailfish_test=ready` and
+  `native_anonymous_default_quality=ready`; `logged_in=0`,
+  `session_credentials=0`, `requested_qn=64`, `selected_qn=64`, and
+  `production_account=untouched` are mandatory fields.
+- `stop-silisili-native-app.sh` terminates the current `silisili-native`
+  process so a just-installed RPM is not confused with an already-running old
+  binary.
 - `cleanup-silisili-native-device-test-state.sh` is the common bounded cleanup
   path for application/PiP/playback processes, background mode and blanking.
 - `diagnose-silisili-native-launch-failure.sh` records loader, private runtime,

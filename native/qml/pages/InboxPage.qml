@@ -87,14 +87,14 @@ Page {
                     width: parent.width
                     text: author
                     color: messageItem.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
                     width: parent.width
                     text: categoryLabel + (messageTime.length > 0 ? "  ·  " + messageTime : "")
                     color: Theme.secondaryHighlightColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
@@ -112,7 +112,7 @@ Page {
                     height: visible ? Math.min(implicitHeight, Theme.fontSizeSmall * 3.0) : 0
                     clip: true
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 }
             }
 
@@ -134,7 +134,7 @@ Page {
                 visible: !inboxModel.loading && !inboxModel.hasMore && list.count > 0
                 text: qsTr("此分类已全部加载")
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
 

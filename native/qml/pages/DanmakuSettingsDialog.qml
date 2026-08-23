@@ -54,7 +54,7 @@ Dialog {
                 text: danmakuModel.loading ? qsTr("正在加载弹幕…")
                                            : qsTr("已加载 %1 条弹幕").arg(danmakuModel.count)
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
             }
         }
         VerticalScrollDecorator {}

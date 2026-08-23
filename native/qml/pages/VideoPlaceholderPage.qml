@@ -17,9 +17,9 @@ Page {
             PageHeader { title: qsTr("视频详情"); description: videoBvid }
             Image { width: parent.width; height: width * 9 / 16; source: videoCover; fillMode: Image.PreserveAspectCrop }
             Item { width: 1; height: Theme.paddingLarge }
-            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoTitle; font.pixelSize: Theme.fontSizeLarge; wrapMode: Text.Wrap }
+            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoTitle; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeLarge, appSettings.fontSizeMode); wrapMode: Text.Wrap }
             Item { width: 1; height: Theme.paddingMedium }
-            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoOwner; color: Theme.secondaryColor; font.pixelSize: Theme.fontSizeSmall }
+            Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: videoOwner; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode) }
             SectionHeader { text: qsTr("迁移状态") }
             Label { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; text: qsTr("详情与播放器将在后续切片接入；本页用于验证原生 PageStack 与边缘滑动返回。") ; color: Theme.secondaryColor; wrapMode: Text.Wrap }
         }

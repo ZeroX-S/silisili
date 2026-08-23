@@ -169,7 +169,7 @@ Page {
                     width: parent.width
                     text: title
                     color: feedItem.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeMedium
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
@@ -179,7 +179,7 @@ Page {
                     visible: descriptionText.length > 0
                     text: descriptionText
                     color: Theme.secondaryColor
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
@@ -189,7 +189,7 @@ Page {
                     visible: badge.length > 0
                     text: badge
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
                 Label {
@@ -197,7 +197,7 @@ Page {
                     visible: sectionTitle.length > 0
                     text: sectionTitle
                     color: Theme.secondaryHighlightColor
-                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
             }

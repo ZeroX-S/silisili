@@ -102,7 +102,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeMedium
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
 

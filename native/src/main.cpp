@@ -22,6 +22,7 @@
 #include "authorspacemodel.h"
 #include "displayframemonitor.h"
 #include "systempipcontroller.h"
+#include "systemcontrols.h"
 
 #include <QDebug>
 #include <QCoreApplication>
@@ -346,6 +347,18 @@ int main(int argc, char *argv[]) {
     });
     DisplayFrameMonitor displayFrameMonitor(&playbackSession);
     playbackSession.attachPlayer(&playbackVideo);
+    SystemControls systemControls(app.data());
+    QObject::connect(&playbackSession, &PlaybackSession::changed,
+                     &systemControls, [&]() {
+        if (playbackSession.active() && !playbackSession.ended()) {
+            systemControls.beginPlaybackSession();
+        } else {
+            systemControls.restorePlaybackSession(
+                        playbackSession.ended()
+                        ? QStringLiteral("playback-ended")
+                        : QStringLiteral("playback-inactive"));
+        }
+    });
     DanmakuModel danmakuModel;
     LiveFeedModel liveFeed;
     RegionFeedModel regionFeed;
@@ -362,6 +375,7 @@ int main(int argc, char *argv[]) {
                 << "systemPiPVisible" << systemPipController.visible()
                 << "playbackActive" << playbackSession.active();
         systemPipController.shutdown();
+        systemControls.restorePlaybackSession(QStringLiteral("application-quit"));
         playbackSession.stop();
         playbackVideo.shutdown();
         qInfo() << "native application shutdown: barrier complete"
@@ -416,6 +430,8 @@ int main(int argc, char *argv[]) {
     view->rootContext()->setContextProperty(QStringLiteral("playbackSession"), &playbackSession);
     view->rootContext()->setContextProperty(QStringLiteral("systemPipController"),
                                             &systemPipController);
+    view->rootContext()->setContextProperty(QStringLiteral("systemControls"),
+                                            &systemControls);
     view->rootContext()->setContextProperty(QStringLiteral("danmakuModel"), &danmakuModel);
     view->rootContext()->setContextProperty(QStringLiteral("liveFeed"), &liveFeed);
     view->rootContext()->setContextProperty(QStringLiteral("regionFeed"), &regionFeed);

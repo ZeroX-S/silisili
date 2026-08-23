@@ -128,6 +128,7 @@ public slots:
     void setBrightness(double brightness);
     void setSpeed(double speed);
     void stop();
+    void dismissCompactSurface();
     void setBackgroundPlayback(bool enabled);
     void setInAppMiniPlayerEnabled(bool enabled);
 
