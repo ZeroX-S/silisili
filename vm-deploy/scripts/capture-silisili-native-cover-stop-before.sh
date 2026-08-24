@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-expected_package=${SILISILI_COVER_STOP_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.56.aarch64}
+expected_package=${SILISILI_COVER_STOP_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.57.aarch64}
 run_id=${SILISILI_COVER_STOP_RUN_ID:-"cover-stop-shot-$(date +%Y%m%d-%H%M%S)"}
 upload_url=${SILISILI_COVER_STOP_UPLOAD_URL:-http://192.168.2.20:18103}
 upload_name=${SILISILI_COVER_STOP_BEFORE_NAME:-silisili-cover-stop-before.png}

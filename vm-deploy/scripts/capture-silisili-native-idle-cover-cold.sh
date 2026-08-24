@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-expected_package=${SILISILI_IDLE_COLD_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.56.aarch64}
+expected_package=${SILISILI_IDLE_COLD_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.57.aarch64}
 run_id=${SILISILI_IDLE_COLD_RUN_ID:-"idle-cold-$(date +%Y%m%d-%H%M%S)"}
 upload_url=${SILISILI_IDLE_COLD_UPLOAD_URL:-http://192.168.2.20:18103}
 upload_name=${SILISILI_IDLE_COLD_NAME:-silisili-cover-idle-cold.png}

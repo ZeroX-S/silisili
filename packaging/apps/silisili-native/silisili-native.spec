@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.56
+Release:        1.57
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
 Group:          Applications/Multimedia
@@ -104,6 +104,11 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Mon Aug 24 2026 silisili contributors <noreply@localhost> - 1.1.0-1.57
+- Make the in-application mini-player close button stop the complete playback
+  session, release its video surface and player resources, and return Cover to
+  the idle state with no playback actions.
+
 * Sun Aug 23 2026 silisili contributors <noreply@localhost> - 1.1.0-1.56
 - Keep one CoverActionList for the process lifetime and clear its three icon
   sources in place when playback stops, preventing stale controls on Sailfish

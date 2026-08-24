@@ -558,14 +558,22 @@ grep -Fq 'systemControls.restorePlaybackSession' "$NATIVE_ROOT/src/main.cpp" \
 if grep -Fq 'm_foregroundRefreshTimer.start();' "$NATIVE_ROOT/src/playbacksession.cpp"; then
     fail foreground-refresh-double-pulse-regression
 fi
-grep -Fq 'dismissCompactSurface()' "$NATIVE_ROOT/src/playbacksession.h" \
-    || fail compact-surface-dismiss-slot-missing
 grep -Fq 'systemPipController.setBackgroundPlaybackMode("cover")' \
     "$NATIVE_ROOT/qml/SystemPipWindow.qml" \
     || fail pip-close-returns-to-cover-missing
-grep -Fq 'playbackSession.dismissCompactSurface()' \
+grep -Fq 'native compact player: close stop handled' \
     "$NATIVE_ROOT/qml/main.qml" \
-    || fail compact-close-keeps-playback-missing
+    || fail compact-close-stop-marker-missing
+grep -A12 -F 'native compact player: close stop handled' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    | grep -Fq 'playbackSession.stop()' \
+    || fail compact-close-stop-route-missing
+grep -Fq 'native compact player: close stop completed' \
+    "$NATIVE_ROOT/qml/main.qml" \
+    || fail compact-close-stop-state-marker-missing
+if grep -R -Fq 'dismissCompactSurface' "$NATIVE_ROOT"; then
+    fail obsolete-compact-dismiss-surface-route-present
+fi
 grep -Fq 'id: compactDragArea' \
     "$NATIVE_ROOT/qml/main.qml" \
     || fail compact-full-surface-drag-area-missing
@@ -622,6 +630,14 @@ test -x "$SCRIPT_DIR/probe-silisili-native-volume-gesture.sh" \
     || fail system-volume-gesture-probe-not-executable
 test -x "$SCRIPT_DIR/probe-silisili-native-compact-system-controls.sh" \
     || fail compact-system-controls-negative-probe-not-executable
+test -x "$SCRIPT_DIR/probe-silisili-native-compact-close-stop.sh" \
+    || fail compact-close-stop-probe-not-executable
+grep -Fq 'native compact player: close stop completed' \
+    "$SCRIPT_DIR/probe-silisili-native-compact-close-stop.sh" \
+    || fail compact-close-stop-probe-state-gate-missing
+grep -Fq 'native cover: idle action icons cleared actions 0' \
+    "$SCRIPT_DIR/probe-silisili-native-compact-close-stop.sh" \
+    || fail compact-close-stop-probe-cover-idle-gate-missing
 test -x "$SCRIPT_DIR/stop-silisili-native-app.sh" \
     || fail native-stop-helper-not-executable
 test "$(grep -Fc '/tmp/bonito-direct-touch swipe 540 2157 540 1257 500 25' \

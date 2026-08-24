@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-expected_package=${SILISILI_COVER_STOP_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.56.aarch64}
+expected_package=${SILISILI_COVER_STOP_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.57.aarch64}
 test_bvid=${SILISILI_COVER_STOP_TEST_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_COVER_STOP_TEST_CID:-37630051884}
 run_id=${SILISILI_COVER_STOP_RUN_ID:-"cover-stop-$(date -u +%Y%m%dT%H%M%SZ)"}

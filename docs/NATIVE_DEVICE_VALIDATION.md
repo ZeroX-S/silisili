@@ -5,23 +5,43 @@ VM wrapper build target: `SailfishOS-5.1.0.11-aarch64`.
 
 Latest built development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.56.aarch64`
-- RPM SHA-256: `b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`
-- RPM bytes: `12540903`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.56.aarch64.rpm`
-- Build date: `2026-08-23`
-- Device install status: installed on `2026-08-23`; the exact transferred
-  SHA-256 was verified, 1.55 was upgraded, the final rebuilt 1.56 package was
-  reinstalled, and `rpm -V silisili-native-devel` finished clean.
+- NEVRA: `silisili-native-devel-1.1.0-1.57.aarch64`
+- RPM SHA-256: `6960aa8795478ecdabf70bad048ec924617be6ac06f91a5e0d92e8a322b0f9ae`
+- RPM bytes: `12540967`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.57.aarch64.rpm`
+- Build date: `2026-08-24`
+- Device install status: installed on `2026-08-24`; the exact transferred
+  SHA-256 was verified, 1.56 was upgraded, and
+  `rpm -V silisili-native-devel` finished clean.
 
 Latest installed development package:
 
-- NEVRA: `silisili-native-devel-1.1.0-1.56.aarch64`
-- RPM SHA-256: `b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`
-- RPM bytes: `12540903`
-- RPM: `outputs/silisili-native-devel-1.1.0-1.56.aarch64.rpm`
-- Build/install date: `2026-08-23`
+- NEVRA: `silisili-native-devel-1.1.0-1.57.aarch64`
+- RPM SHA-256: `6960aa8795478ecdabf70bad048ec924617be6ac06f91a5e0d92e8a322b0f9ae`
+- RPM bytes: `12540967`
+- RPM: `outputs/silisili-native-devel-1.1.0-1.57.aarch64.rpm`
+- Build/install date: `2026-08-24`
 - stable package state during this validation: absent
+
+## Latest 1.57 in-application compact-player close lifecycle
+
+- The compact-player close button no longer detaches only its visible surface.
+  It synchronously stops the complete `PlaybackSession`, stops mpv, releases
+  the shared video texture and direct host, and lets the existing Cover object
+  return to idle with all three action icon sources empty.
+- The device probe loaded a real 1080P VOD, required a live shared texture in
+  the in-application compact player, physically opened its controls, read the
+  close center `(1003,1920)` from current runtime geometry, and physically
+  tapped that coordinate.
+- The handling marker started with `sessionActiveBefore=true`,
+  `mediaKindBefore=video`, and `playingBefore=true`. The synchronous completion
+  marker reported `sessionActive=false|compact=false|playing=false|mediaKind=none`.
+  The same PID and start time survived while Cover reported
+  `content=idle|actionsEnabled=false|actions=0`; pause, presentation, and close
+  icon sources were all empty.
+- The terminal result was
+  `native_compact_close_stop=ready|run=compact-close-20260824T154700Z|package=silisili-native-devel-1.1.0-1.57.aarch64|pid=22696|close=1003,1920|session_active=0|playing=0|compact=0|cover=idle|actions=0|same_pid=1|rpm_verify=clean|visual_model=unused`
+  and `sailfish_test=ready|checks=12/12`. No visual model was used.
 
 ## Latest 1.56 Home compact-player Cover lifecycle
 

@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.56` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.57` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -140,17 +140,17 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-`1.1.0-1.56` 发布包已完成 Sailfish AArch64 VM 构建、源码门禁和 5.2 真机像素回归。1.56 在同一个 Cover 生命周期内保留 Lipstick 已注册的动作对象：主页应用内小窗活动时继续显示实时播放 Cover，停止播放后则原位清空三个动作图标，只显示 Logo 与斜铺水印。1.55 的匿名 VOD/番剧默认 720P（QN 64）、登录用户 1080P（QN 80）及匿名渐进式 720P 回退均保留。将 RPM 复制到已启用开发者模式的设备后安装：
+`1.1.0-1.57` 开发包已完成 Sailfish AArch64 VM 构建、源码门禁和 5.2 真机回归。1.57 将应用内小窗关闭按钮改为停止完整播放会话：关闭后 mpv 停止、视频纹理和宿主释放，小窗隐藏，Cover 立即回到无操作按钮的空闲状态。1.56 的常驻 Cover 动作对象与空闲图标清理、1.55 的匿名 VOD/番剧默认 720P（QN 64）均继续保留。将 RPM 复制到已启用开发者模式的设备后安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.56.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.57.aarch64.rpm
 ```
 
-当前 `1.56` AArch64 RPM SHA-256 为
-`b28f307b84dc6c7fc1087e41782b4faa01995be11d85b5011b5d023dc3bddfb6`。
+当前 `1.57` AArch64 RPM SHA-256 为
+`6960aa8795478ecdabf70bad048ec924617be6ac06f91a5e0d92e8a322b0f9ae`。
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
 
@@ -215,7 +215,7 @@ bash vm-deploy/scripts/build-silisili-native-rpm.sh
 
 ## 验证基线
 
-`1.1.0-1.56` 已完成 AArch64 构建、RPM 摘要校验、源码门禁与 Sailfish OS 5.2 真机 Cover 生命周期回归。真实点播从详情页进入主页应用内小窗后，物理切到后台仍保持 `compact_active=1|content=playback|actions=3`，PID/启动时间不变。随后物理点击 Cover 关闭按钮，同一进程内会话变为 `content=idle`，三个动作图标源同时清空，`rpm -V` 干净；关闭后的三个 `48x48` 动作区域与当前包冷启动空闲 Cover 逐像素一致，关闭模板相关系数从 `0.9932` 降为 `0.1080`。验证同时覆盖了应用语义状态和 Lipstick 实际像素，未使用视觉模型。1.55 的匿名默认 720P、1.53 的小窗整面拖动及系统亮度/媒体音量隔离回归继续保留在设备验证记录中。
+`1.1.0-1.57` 已完成 AArch64 构建、RPM 摘要校验、源码门禁与 Sailfish OS 5.2 真机应用内小窗关闭回归。真实 1080P 点播进入应用内小窗后，探针根据运行时布局读取关闭按钮中心 `(1003,1920)` 并发送物理点击；同一 PID 内会话变为 `session_active=0|playing=0|compact=0`，mpv 停止并撤回共享纹理，Cover 变为 `idle|actions=0` 且三个图标源为空，`rpm -V` 干净。1.56 的主页小窗后台 Cover 与空闲 Cover 像素回归、1.55 的匿名默认 720P、1.53 的小窗整面拖动及系统亮度/媒体音量隔离回归继续保留在设备验证记录中。验证未使用视觉模型。
 
 开发机可使用 `vm-deploy/scripts/install-silisili-native-fast.sh PATH_TO_RPM` 执行单次传输、SHA-256 比对、`rpm -Uvh --replacepkgs`、NEVRA 查询和 `rpm -V` 校验；它只会替换 `silisili-native-devel` 开发包，并在完成后删除设备上的临时 RPM。
 

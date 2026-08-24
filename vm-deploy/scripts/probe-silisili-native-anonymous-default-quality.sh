@@ -4,7 +4,7 @@ set -eu
 # Launch one direct VOD regression with an isolated, credential-free HOME.
 # The production account files are never copied, modified or removed.
 
-expected_package=${SILISILI_ANONYMOUS_QUALITY_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.56.aarch64}
+expected_package=${SILISILI_ANONYMOUS_QUALITY_EXPECTED_PACKAGE:-silisili-native-devel-1.1.0-1.57.aarch64}
 test_bvid=${SILISILI_ANONYMOUS_QUALITY_BVID:-BV1P4ddBBEJF}
 test_cid=${SILISILI_ANONYMOUS_QUALITY_CID:-37630051884}
 run_id=${1:-anonymous-quality-$(date -u +%Y%m%dT%H%M%SZ)}

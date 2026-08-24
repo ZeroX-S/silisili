@@ -377,7 +377,12 @@ ApplicationWindow {
                         "overlayFraction",
                         compactControlBar.height / Math.max(1, height),
                         "unobscuredFraction",
-                        1 - compactControlBar.height / Math.max(1, height))
+                        1 - compactControlBar.height / Math.max(1, height),
+                        "closeCenterX",
+                        Math.round(x + width - Theme.paddingSmall
+                                   - compactControlBar.height / 2),
+                        "closeCenterY",
+                        Math.round(y + height - compactControlBar.height / 2))
         }
 
         function hideControls(reason) {
@@ -603,9 +608,17 @@ ApplicationWindow {
                 height: compactControlBar.height
                 icon.source: "image://theme/icon-m-close"
                 onClicked: {
-                    console.log("native compact player: closed")
-                    compactPlayer.hideControls("closed")
-                    playbackSession.dismissCompactSurface()
+                    console.log("native compact player: close stop handled",
+                                "sessionActiveBefore", playbackSession.active,
+                                "mediaKindBefore", playbackSession.mediaKind,
+                                "playingBefore", playbackSession.playing)
+                    compactPlayer.hideControls("close-stop")
+                    playbackSession.stop()
+                    console.log("native compact player: close stop completed",
+                                "sessionActive", playbackSession.active,
+                                "compact", playbackSession.compact,
+                                "playing", playbackSession.playing,
+                                "mediaKind", playbackSession.mediaKind)
                 }
             }
         }

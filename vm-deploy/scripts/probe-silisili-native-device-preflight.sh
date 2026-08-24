@@ -4,7 +4,7 @@ set -eu
 # Read-only baseline for Sailfish deployment and regression transactions.
 
 run_id=${1:-manual}
-rpm_path=${2:-/tmp/silisili-native-devel-1.1.0-1.56.aarch64.rpm}
+rpm_path=${2:-/tmp/silisili-native-devel-1.1.0-1.57.aarch64.rpm}
 
 run_bounded() {
     limit=$1
