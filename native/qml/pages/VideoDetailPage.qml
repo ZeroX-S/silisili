@@ -21,7 +21,6 @@ Page {
         requestedInitialPlaybackQuality > 0
         ? requestedInitialPlaybackQuality : accountService.defaultPlaybackQuality
     property bool historyResumeConsumed: false
-    property bool deferAutoplayUntilPrefetched: false
     property bool inlineControlsVisible: true
     property bool wasInlinePlaying: false
     property bool initialPlaybackRequested: false
@@ -415,22 +414,9 @@ Page {
 
     Component.onCompleted: {
         if (videoCid.length > 0 && !initialPlaybackRequested) {
-            if (deferAutoplayUntilPrefetched) {
-                console.log("native playback quality: initial policy",
-                            "mediaKind", "video-prepare",
-                            "loggedIn", accountService.loggedIn,
-                            "sessionCredentials", accountService.hasSessionCredentials,
-                            "override", requestedInitialPlaybackQuality,
-                            "requestedQuality", effectiveInitialPlaybackQuality)
-                playbackSession.prepareVideo(videoBvid, videoCid,
-                                             effectiveInitialPlaybackQuality)
-                console.log("native detail perf: waiting for visible-card media prepare",
-                            videoBvid, videoCid)
-            } else {
-                initialPlaybackRequested = true
-                requestAutoplay(videoCid, videoTitle)
-                console.log("native detail perf: feed cid reused", videoBvid, videoCid)
-            }
+            initialPlaybackRequested = true
+            requestAutoplay(videoCid, videoTitle)
+            console.log("native detail perf: feed cid reused", videoBvid, videoCid)
         }
         videoDetail.load(videoBvid)
         updatePlayerSurface()
@@ -459,22 +445,6 @@ Page {
                         "pauseVisible", inlinePauseButton.visible,
                         "fullscreenVisible", inlineFullscreenButton.visible,
                         "duration", Math.round(playbackSession.duration))
-        }
-    }
-
-    Connections {
-        target: playbackSession
-        onVideoPrepared: {
-            if (!page.deferAutoplayUntilPrefetched
-                    || bvid !== page.videoBvid || cid !== page.videoCid
-                    || page.initialPlaybackRequested)
-                return
-            page.initialPlaybackRequested = true
-            page.requestAutoplay(page.videoCid, page.videoTitle)
-            console.log(ready
-                        ? "native detail perf: visible-card media prepared before tap"
-                        : "native detail perf: visible-card media prepare failed; direct fallback",
-                        bvid, cid, quality)
         }
     }
 
@@ -611,8 +581,7 @@ Page {
                 maybeLoadSupplementaryContent()
                 ensureCompactRestoreContent()
             }
-            if (videoDetail.firstCid.length > 0 && !initialPlaybackRequested
-                    && !deferAutoplayUntilPrefetched) {
+            if (videoDetail.firstCid.length > 0 && !initialPlaybackRequested) {
                 initialPlaybackRequested = true
                 if (!isCurrentVideo)
                     requestAutoplay(videoDetail.firstCid, videoDetail.title)

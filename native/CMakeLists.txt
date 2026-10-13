@@ -40,6 +40,8 @@ add_executable(silisili-native
     src/accountservice.h
     src/accountlibrarymodel.cpp
     src/accountlibrarymodel.h
+    src/qrcodeitem.cpp
+    src/qrcodeitem.h
     src/regionfeedmodel.cpp
     src/regionfeedmodel.h
     src/dynamicfeedmodel.cpp
@@ -58,6 +60,8 @@ add_executable(silisili-native
     src/droidvideodecoder.h
     src/playbacksession.cpp
     src/playbacksession.h
+    src/mpriscontroller.cpp
+    src/mpriscontroller.h
     src/displayframemonitor.cpp
     src/displayframemonitor.h
     src/systempipcontroller.cpp
@@ -78,6 +82,8 @@ add_executable(silisili-native
     src/authorspacemodel.h
     src/configmigration.cpp
     src/configmigration.h
+    ../library/QR-Code-generator/cpp/qrcodegen.cpp
+    ../library/QR-Code-generator/cpp/qrcodegen.hpp
     qml/qml.qrc
 )
 set_target_properties(silisili-native PROPERTIES
@@ -90,6 +96,7 @@ target_include_directories(silisili-native PRIVATE
     ${FFMPEG_INCLUDE_DIRS}
     ${MPV_INCLUDE_DIR}
     ${Qt5Gui_PRIVATE_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../library/QR-Code-generator/cpp
 )
 target_compile_options(silisili-native PRIVATE
     ${SAILFISHAPP_CFLAGS_OTHER}

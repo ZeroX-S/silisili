@@ -990,6 +990,11 @@ void MpvVideoItem::renderSharedTextureFrame() {
 bool MpvVideoItem::startHardwareDecode(const QString &videoUrl,
                                        double startPosition) {
     if (!m_hardwareDecoder || videoUrl.isEmpty()) return false;
+    if (!qgetenv("SILISILI_NATIVE_TEST_PAGE").isEmpty()
+            && qgetenv("SILISILI_NATIVE_TEST_SOFTWARE_VIDEO") == QByteArrayLiteral("1")) {
+        qInfo() << "native player: software video route requested for regression";
+        return false;
+    }
     DroidMediaCodecMetaData capability;
     std::memset(&capability, 0, sizeof(capability));
     capability.type = "video/avc";
@@ -1958,8 +1963,11 @@ void MpvVideoItem::loadSourceInternal(const QString &sourceUrl,
     withdrawPresentedFrame("load-request");
     resetVideoGeometry("load-request");
     if (startPosition < 0.0) startPosition = 0.0;
-    m_initialPositionGatePending = startPosition > 0.0;
-    m_initialPositionConfirmed = !m_initialPositionGatePending;
+    // Every video start holds audio until the current file and its first
+    // texture are ready, including the usual zero-position start. Restricting
+    // this to history resume let the independent DASH audio run ahead.
+    m_initialPositionGatePending = videoEnabled;
+    m_initialPositionConfirmed = !videoEnabled;
     m_initialVideoFrameReady = false;
     const bool hardwareStarted = videoEnabled && !forceSoftwareForThisLoad
             && startHardwareDecode(sourceUrl, startPosition);
@@ -1991,7 +1999,7 @@ void MpvVideoItem::loadSourceInternal(const QString &sourceUrl,
     // Do not present a frame or release audio until the new file confirms the
     // same clock position; a bounded exact seek remains only as compatibility
     // fallback for older libmpv builds.
-    m_seekPending = m_initialPositionGatePending;
+    m_seekPending = startPosition > 0.0;
     m_buffering = false;
     m_speed = 1.0;
     m_errorMessage.clear();
@@ -2117,6 +2125,7 @@ void MpvVideoItem::seek(double position) {
         mpv_command_async(m_backend->mpv, 0, command);
     }
     if (m_hardwareDecodeActive && m_hardwareDecoder)
+        // The decoder primes the target texture even while audio stays paused.
         m_hardwareDecoder->seek(position);
     syncHardwareClock();
     emit stateChanged();
@@ -2482,6 +2491,12 @@ void MpvVideoItem::drainMpvEvents() {
                             << "audioHeld" << true
                             << "loadSerial" << m_loadSerial;
                 }
+            } else if (m_initialPositionGatePending) {
+                // A zero start needs no seek or advancing audio clock. The
+                // paused video decoder may already have retained its frame.
+                m_initialPositionConfirmed = true;
+                enableSourceFramePresentation("initial-zero-start-confirmed");
+                releaseInitialPositionGate(m_position);
             } else {
                 int paused = pausedAfterLoad ? 1 : 0;
                 mpv_set_property_async(mpv, 0, "pause",
@@ -2639,7 +2654,7 @@ void MpvVideoItem::updatePositionFromMpv(double position) {
 
 void MpvVideoItem::releaseInitialPositionGate(double confirmedPosition) {
     if (!m_initialPositionGatePending || !m_initialPositionConfirmed
-            || !m_initialVideoFrameReady)
+            || !m_initialVideoFrameReady || !m_backend || m_backend->loadPending)
         return;
     m_initialPositionGatePending = false;
     const bool remainPaused = m_requestedPaused;
@@ -2667,6 +2682,9 @@ void MpvVideoItem::updateDurationFromMpv(double duration) {
 }
 
 void MpvVideoItem::updatePausedFromMpv(bool paused) {
+    // The load gate's internal pause is not a user pause. Preserve the user's
+    // intent in the controls until releaseInitialPositionGate applies it.
+    if (m_initialPositionGatePending) paused = m_requestedPaused;
     if (paused && m_playing && !m_seekPending) {
         m_position = position();
         resetProgressAnchor();
@@ -2711,6 +2729,7 @@ void MpvVideoItem::updateSourceFrameRateFromMpv(double framesPerSecond) {
 }
 
 void MpvVideoItem::updateLoadingFromMpv(bool loading) {
+    if (m_initialPositionGatePending) loading = true;
     if (loading && m_playing && !m_seekPending) {
         m_position = position();
         resetProgressAnchor();
@@ -2735,9 +2754,10 @@ void MpvVideoItem::updateStartFileFromMpv() {
 }
 
 void MpvVideoItem::updatePlaybackRestartFromMpv() {
-    const bool nextPlaying = !m_paused && !m_requestedPaused && m_errorMessage.isEmpty();
+    const bool nextPlaying = !m_initialPositionGatePending
+            && !m_paused && !m_requestedPaused && m_errorMessage.isEmpty();
     const bool changed = m_loading || m_ended || m_playing != nextPlaying;
-    m_loading = false;
+    m_loading = m_initialPositionGatePending;
     m_ended = false;
     m_playbackStarted = true;
     m_playing = nextPlaying;

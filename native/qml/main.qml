@@ -115,14 +115,8 @@ ApplicationWindow {
             historyResumeRequested: nativeTestPage === "history-resume"
             historyResumePosition: nativeTestStartPosition
             requestedInitialPlaybackQuality: nativeTestQuality
-            // Direct regression models a tap after the visible home cards
-            // have finished their bounded metadata prefetch.
-            deferAutoplayUntilPrefetched: nativeTestPage !== "history-resume"
-                                           && nativeTestContentMode !== "direct"
-                                           && nativeTestContentMode !== "fullscreen"
-                                           && nativeTestContentMode !== "home-cover"
-                                           && nativeTestContentMode !== "system-volume-gesture"
-                                           && nativeTestContentMode !== "quality-matrix"
+            // Measure the real entry path, without an invisible decoder
+            // priming a frame before the regression starts its playback clock.
         }
     }
 

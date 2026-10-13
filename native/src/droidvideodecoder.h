@@ -51,6 +51,7 @@ private:
     struct PendingFrame {
         _DroidMediaBuffer *buffer;
         long long ptsUs;
+        int seekSerial;
     };
 
     static void eosCallback(void *data);
@@ -79,6 +80,7 @@ private:
     std::atomic<bool> m_failed;
     std::atomic<bool> m_ultraHdSource;
     std::atomic<int> m_seekSerial;
+    std::atomic<int> m_appliedSeekSerial;
     std::atomic<long long> m_seekTargetUs;
     std::atomic<long long> m_dropBeforeUs;
     std::atomic<bool> m_normalizeStreamingTimeline;
@@ -89,6 +91,9 @@ private:
     AVBSFContext *m_bsf;
     int m_videoStream;
     _DroidMediaCodec *m_codec;
+    // Published only after callback/queue setup and codec start complete.
+    // stop() must never inspect the worker-owned partial m_codec before join.
+    std::atomic<_DroidMediaCodec *> m_startedCodec;
     _DroidMediaBufferQueue *m_bufferQueue;
     std::vector<_DroidMediaBuffer *> m_createdBuffers;
     mutable std::mutex m_createdBufferMutex;

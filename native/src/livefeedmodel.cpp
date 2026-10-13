@@ -141,7 +141,6 @@ void LiveFeedModel::requestPage(bool reset) {
         if (m_activeReply == reply) m_activeReply.clear();
         reply->deleteLater();
         if (generation != m_generation) return;
-        setLoading(false);
         if (networkError != QNetworkReply::NoError) {
             setErrorMessage(networkChanged ? tr("网络已切换，请下拉重试")
                             : timedOut ? tr("直播列表请求超时，请下拉重试")
@@ -151,6 +150,7 @@ void LiveFeedModel::requestPage(bool reset) {
                        << "networkChanged" << networkChanged
                        << "error" << networkError;
             setHasMore(false);
+            setLoading(false);
             return;
         }
 
@@ -159,6 +159,7 @@ void LiveFeedModel::requestPage(bool reset) {
         if (parseError.error != QJsonParseError::NoError || root.value(QStringLiteral("code")).toInt(-1) != 0) {
             setErrorMessage(tr("直播列表解析失败"));
             setHasMore(false);
+            setLoading(false);
             return;
         }
 
@@ -234,5 +235,6 @@ void LiveFeedModel::requestPage(bool reset) {
                 << "page" << requestPage << "added" << next.size()
                 << "total" << m_items.size() << "hasMore" << hasMore;
         if (m_items.isEmpty()) setErrorMessage(tr("当前没有可显示的直播"));
+        setLoading(false);
     });
 }

@@ -54,6 +54,13 @@ Page {
             // list accepts an assignment but is not barcode payload data and
             // leaves Amber.Barcode showing its "No data" error.
             item.sourceText = source
+            if (candidate.requiresValid && !item.valid) {
+                console.log("native account: built-in QR renderer rejected payload",
+                            "sourceLength", source.length,
+                            "error", String(item.error || ""))
+                item.destroy()
+                return null
+            }
             qrRenderer = candidate.module + "." + candidate.type
             qrRendererProperty = "sourceText"
             return item
@@ -65,15 +72,33 @@ Page {
     }
 
     function rendererCandidates() {
-        var amber = [
-            { module: "Amber.Barcode", type: "BarcodeImage",
-              initializer: "format: BarcodeImage.QRCode;" }
-        ]
-        var qrShare = [
-            { module: "QrShareImage", type: "QrShareImage",
-              initializer: "" }
-        ]
-        return amberPreferred() ? amber.concat(qrShare) : qrShare.concat(amber)
+        var amber = { module: "Amber.Barcode", type: "BarcodeImage",
+                      initializer: "format: BarcodeImage.QRCode;",
+                      requiresValid: false }
+        var qrShare = { module: "QrShareImage", type: "QrShareImage",
+                        initializer: "", requiresValid: false }
+        var builtIn = { module: "cn.silisili.native.qr", type: "QrCodeImage",
+                        initializer: "", requiresValid: true }
+        var candidates = []
+        if (amberPreferred()) {
+            // 5.2 can expose Amber through a vendor import root not covered by
+            // the filesystem probe, so retain one guarded dynamic attempt.
+            if (qrBarcodeAvailable
+                    || qrSailfishVersionMajor > 5
+                    || (qrSailfishVersionMajor === 5
+                        && qrSailfishVersionMinor >= 2))
+                candidates.push(amber)
+            if (qrShareAvailable)
+                candidates.push(qrShare)
+        } else {
+            if (qrShareAvailable)
+                candidates.push(qrShare)
+            if (qrBarcodeAvailable)
+                candidates.push(amber)
+        }
+        if (qrBuiltInAvailable)
+            candidates.push(builtIn)
+        return candidates
     }
 
     function qrItemError(item) {
@@ -218,8 +243,9 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: page.qrSize()
                 height: width
-                color: "black"
+                color: "white"
                 radius: Theme.paddingSmall
+                clip: true
                 visible: accountService.qrUrl.length > 0
 
                 Item {

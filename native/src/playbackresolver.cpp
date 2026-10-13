@@ -364,7 +364,7 @@ QNetworkRequest PlaybackResolver::playurlRequest(bool pgc, const QString &aid,
 }
 
 void PlaybackResolver::prefetchVideo(const QString &bvid, const QString &cid, int quality) {
-    if (bvid.isEmpty() || cid.isEmpty()) return;
+    if (bvid.isEmpty() || cid.isEmpty() || m_loading) return;
     const int requestedQuality = normalizedQuality(quality);
     // Every advertised profile is selected through exact-qn DASH. The old
     // 64-and-below progressive branch could answer a 720P selection with a
@@ -374,6 +374,14 @@ void PlaybackResolver::prefetchVideo(const QString &bvid, const QString &cid, in
     const QString key = requestKey(false, QString(), bvid, cid, QString(),
                                    requestedQuality, highQualityAttempt);
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    // Speculative work must stay bounded even after a long browsing session.
+    for (auto it = m_prefetchedResponses.begin(); it != m_prefetchedResponses.end();) {
+        if (now - it.value().storedAtMs >= 5 * 60 * 1000
+                || now < it.value().storedAtMs)
+            it = m_prefetchedResponses.erase(it);
+        else
+            ++it;
+    }
     const auto cached = m_prefetchedResponses.constFind(key);
     if (cached != m_prefetchedResponses.constEnd()
             && now - cached.value().storedAtMs < 5 * 60 * 1000) {
@@ -381,6 +389,7 @@ void PlaybackResolver::prefetchVideo(const QString &bvid, const QString &cid, in
         return;
     }
     if (m_prefetchReplies.contains(key) && m_prefetchReplies.value(key)) return;
+    if (m_prefetchReplies.size() >= 2) return;
 
     QNetworkReply *reply = m_network.get(playurlRequest(false, QString(), bvid, cid,
                                                        QString(), requestedQuality,
@@ -406,6 +415,15 @@ void PlaybackResolver::prefetchVideo(const QString &bvid, const QString &cid, in
                 CachedResponse response;
                 response.payload = payload;
                 response.storedAtMs = QDateTime::currentMSecsSinceEpoch();
+                if (m_prefetchedResponses.size() >= 16) {
+                    auto oldest = m_prefetchedResponses.begin();
+                    for (auto it = m_prefetchedResponses.begin();
+                         it != m_prefetchedResponses.end(); ++it) {
+                        if (it.value().storedAtMs < oldest.value().storedAtMs)
+                            oldest = it;
+                    }
+                    m_prefetchedResponses.erase(oldest);
+                }
                 m_prefetchedResponses.insert(key, response);
             }
         }
@@ -463,6 +481,8 @@ void PlaybackResolver::resolveInternal(bool pgc, const QString &aid, const QStri
     // previous reply saves radio/JSON work, while the serial also protects us
     // against a queued finished() signal from publishing stale media URLs.
     const quint64 requestSerial = ++m_requestSerial;
+    m_waitingPrefetchKey.clear();
+    m_waitingPrefetchSerial = 0;
     if (m_activeReply) m_activeReply->abort();
 
     m_loading = true;

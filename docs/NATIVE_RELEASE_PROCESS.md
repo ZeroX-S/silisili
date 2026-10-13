@@ -37,6 +37,18 @@ then run:
 bash vm-deploy/scripts/publish-silisili-native-github-release.sh --publish
 ```
 
+Use `--rpm PATH` for a dedicated output directory and `--notes-file PATH` for
+the complete changes since the previous published release. The script adds the
+exact source commit, RPM identity and checksum before those notes. For 1.58:
+
+```sh
+bash vm-deploy/scripts/publish-silisili-native-github-release.sh --publish \
+  --rpm /path/to/silisili-native-devel-1.1.0-1.58.aarch64.rpm \
+  --notes-file docs/releases/native-v1.1.0-1.58.md
+```
+
+The release tag targets the verified commit SHA rather than a moving branch.
+
 The script revalidates the source manifest, RPM filename, optional RPM metadata
 and the checked-in SHA-256. It then creates the release or replaces both assets
 on the existing release only when the tag still points to the same commit. It

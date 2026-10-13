@@ -193,6 +193,8 @@ for license_name in "${RUNTIME_LICENSE_NAMES[@]}"; do
     install -m0644 "$license_source" "$stage/licenses/$license_name"
 done
 install -m0644 "$PROJECT_ROOT/LICENSE" "$stage/licenses/LICENSE.silisili-GPLv3"
+install -m0644 "$PROJECT_ROOT/library/QR-Code-generator/Readme.markdown" \
+    "$stage/licenses/LICENSE.qrcodegen-MIT"
 install -m0644 "$PACKAGE_DIR/NOTICE.RooTheater" "$stage/licenses/NOTICE.RooTheater"
 install -m0644 "$PACKAGE_DIR/NOTICE.ScreenTapShotLipstick" \
     "$stage/licenses/NOTICE.ScreenTapShotLipstick"

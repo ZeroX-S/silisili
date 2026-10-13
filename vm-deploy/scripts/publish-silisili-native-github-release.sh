@@ -11,6 +11,7 @@ mode=check
 repository="${GITHUB_REPOSITORY:-ZeroX-S/silisili}"
 rpm_path=""
 release_tag=""
+custom_notes=""
 
 fail() {
     printf 'native_github_release=failed|reason=%s\n' "$1" >&2
@@ -19,13 +20,14 @@ fail() {
 
 usage() {
     printf '%s\n' \
-        "Usage: $0 [--check|--publish] [--rpm PATH] [--repo OWNER/REPO] [--tag TAG]" \
+        "Usage: $0 [--check|--publish] [--rpm PATH] [--repo OWNER/REPO] [--tag TAG] [--notes-file PATH]" \
         "" \
         "--check    Validate the release asset and manifest without changing GitHub (default)." \
         "--publish  Require a clean, already-pushed commit, then create/update the prerelease." \
         "--rpm      AArch64 RPM path; defaults to the conversation output directory." \
         "--repo     GitHub repository; defaults to ZeroX-S/silisili." \
-        "--tag      Release tag; defaults to native-vVERSION-RELEASE."
+        "--tag      Release tag; defaults to native-vVERSION-RELEASE." \
+        "--notes-file  Full change notes since the previous published release."
 }
 
 while (($#)); do
@@ -50,6 +52,12 @@ while (($#)); do
             shift
             (($#)) || fail missing-release-tag
             release_tag=$1
+            ;;
+        --notes-file)
+            shift
+            (($#)) || fail missing-notes-file
+            custom_notes=$1
+            test -f "$custom_notes" || fail invalid-notes-file
             ;;
         -h|--help)
             usage
@@ -144,8 +152,12 @@ printf '%s  %s\n' "$actual_sha" "$expected_filename" >"$checksum_asset"
     printf -- '- Source commit: `%s`\n\n' "$head_commit"
     printf 'Install on a developer-mode device:\n\n```sh\n'
     printf 'devel-su rpm -Uvh --replacepkgs %s\n' "$expected_filename"
-    printf '```\n\nChanges:\n\n'
-    awk '
+    printf '```\n\n'
+    if test -n "$custom_notes"; then
+        cat "$custom_notes"
+    else
+        printf 'Changes:\n\n'
+        awk '
         /^%changelog/ { in_changelog = 1; next }
         in_changelog && /^\*/ {
             if (entry_seen) exit
@@ -153,7 +165,8 @@ printf '%s  %s\n' "$actual_sha" "$expected_filename" >"$checksum_asset"
             next
         }
         entry_seen { print }
-    ' "$SPEC"
+        ' "$SPEC"
+    fi
 } >"$notes_file"
 
 release_title="SiliSili Native ${spec_version}-${spec_release}"
@@ -164,7 +177,7 @@ if gh release view "$release_tag" --repo "$repository" >/dev/null 2>&1; then
         --title "$release_title" --notes-file "$notes_file" --prerelease
 else
     gh release create "$release_tag" "$rpm_path" "$checksum_asset" \
-        --repo "$repository" --target "$branch" --title "$release_title" \
+        --repo "$repository" --target "$head_commit" --title "$release_title" \
         --notes-file "$notes_file" --prerelease
 fi
 

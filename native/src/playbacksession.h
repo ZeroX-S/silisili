@@ -135,8 +135,6 @@ signals:
     void changed();
     void positionChanged();
     void surfaceChanged();
-    void videoPrepared(const QString &bvid, const QString &cid, int quality,
-                       bool ready);
 
 private slots:
     void resolverChanged();
@@ -189,8 +187,6 @@ private:
     bool m_inAppMiniPlayerEnabled;
     bool m_resumeAfterForeground;
     bool m_firstFrameReady;
-    bool m_preparingVideo;
-    bool m_preparedVideoReady;
     bool m_finishedSmallWindowStopScheduled;
     bool m_nextVideoPartScheduled;
     bool m_dropFirstFrameEdgeForTest;
@@ -203,11 +199,9 @@ private:
     QElapsedTimer m_startupElapsed;
     int m_loadedRevision;
     int m_awaitedLoadSerial;
-    int m_preparedLoadSerial;
     double m_pendingPosition;
     double m_requestedResumePosition;
     bool m_pendingPaused;
-    int m_preparedQuality;
     QVariantList m_videoParts;
     QString m_videoPartsBvid;
     QString m_videoAidBvid;
@@ -217,6 +211,5 @@ private:
     QString m_lastHistoryBvid;
     QString m_lastHistoryCid;
     int m_lastHistoryProgress;
-    QString m_preparedBvid, m_preparedCid;
     QString m_title, m_cover, m_aid, m_bvid, m_cid, m_epId;
 };

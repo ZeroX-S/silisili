@@ -56,7 +56,7 @@ void SearchModel::search(const QString &query) {
     m_page = 0; m_hasMore = true; requestPage(true);
 }
 
-void SearchModel::loadMore() { if (!m_loading && m_hasMore && !m_query.isEmpty()) requestPage(false); }
+void SearchModel::loadMore() { if (!m_loading && m_hasMore && m_errorMessage.isEmpty() && !m_query.isEmpty()) requestPage(false); }
 void SearchModel::clearHistory() { m_history.clear(); QSettings().remove(QStringLiteral("search/history")); emit historyChanged(); }
 
 void SearchModel::requestPage(bool reset) {
@@ -86,7 +86,6 @@ void SearchModel::requestPage(bool reset) {
         reply->deleteLater();
         if (requestSerial != m_requestSerial) return;
         if (m_activeReply == reply) m_activeReply.clear();
-        setLoading(false);
         if (networkError != QNetworkReply::NoError) {
             qWarning() << "native search: request failed" << "page" << requestedPage
                        << "authenticated" << authenticated << "HTTP" << statusCode
@@ -95,10 +94,15 @@ void SearchModel::requestPage(bool reset) {
                 setErrorMessage(tr("搜索请求受到限制，请确认登录状态后重试"));
             else
                 setErrorMessage(tr("搜索请求失败：%1").arg(errorString));
+            setLoading(false);
             return;
         }
         QJsonParseError error; const QJsonObject root = QJsonDocument::fromJson(payload, &error).object();
-        if (error.error != QJsonParseError::NoError || root.value("code").toDouble(-1) != 0) { setErrorMessage(tr("搜索结果解析失败")); return; }
+        if (error.error != QJsonParseError::NoError || root.value("code").toDouble(-1) != 0) {
+            setErrorMessage(tr("搜索结果解析失败"));
+            setLoading(false);
+            return;
+        }
         QVector<Item> next; const QJsonArray results = root.value("data").toObject().value("result").toArray();
         for (const QJsonValue &value : results) {
             const QJsonObject object = value.toObject(); Item item;
@@ -113,7 +117,9 @@ void SearchModel::requestPage(bool reset) {
                 << "firstBvid" << (next.isEmpty() ? QString() : next.first().bvid);
         if (reset) { beginResetModel(); m_items = next; endResetModel(); }
         else if (!next.isEmpty()) { const int start=m_items.size(); beginInsertRows(QModelIndex(),start,start+next.size()-1); m_items += next; endInsertRows(); }
-        ++m_page; m_hasMore = !next.isEmpty(); emit loadingChanged();
+        m_page = requestedPage;
+        m_hasMore = !next.isEmpty();
         if (m_items.isEmpty()) setErrorMessage(tr("没有找到相关视频"));
+        setLoading(false);
     });
 }

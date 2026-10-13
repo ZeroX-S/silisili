@@ -10,6 +10,7 @@ DEFINES += SILISILI_NATIVE_PACKAGE_NAME=\\\"silisili-native-devel\\\"
 DEFINES += SILISILI_NATIVE_HAVE_DROIDMEDIA=1
 QT += core dbus gui qml quick network
 INCLUDEPATH += /usr/include/sailfishapp /usr/include/mdeclarativecache5
+INCLUDEPATH += ../library/QR-Code-generator/cpp
 LIBS += -lsailfishapp -lmdeclarativecache5 -lmpv -lEGL -lGLESv2
 QMAKE_CXXFLAGS += $$system(pkg-config --cflags droidmedia)
 LIBS += $$system(pkg-config --libs droidmedia)
@@ -35,6 +36,7 @@ SOURCES += \
     src/videodetailmodel.cpp \
     src/accountservice.cpp \
     src/accountlibrarymodel.cpp \
+    src/qrcodeitem.cpp \
     src/regionfeedmodel.cpp \
     src/dynamicfeedmodel.cpp \
     src/inboxmodel.cpp \
@@ -44,6 +46,7 @@ SOURCES += \
     src/mpvvideoitem.cpp \
     src/droidvideodecoder.cpp \
     src/playbacksession.cpp \
+    src/mpriscontroller.cpp \
     src/displayframemonitor.cpp \
     src/systempipcontroller.cpp \
     src/systemcontrols.cpp \
@@ -53,7 +56,8 @@ SOURCES += \
     src/pgcfeedmodel.cpp \
     src/pgcdetailmodel.cpp \
     src/authorspacemodel.cpp \
-    src/configmigration.cpp
+    src/configmigration.cpp \
+    ../library/QR-Code-generator/cpp/qrcodegen.cpp
 
 HEADERS += \
     src/appsettings.h \
@@ -64,6 +68,7 @@ HEADERS += \
     src/videodetailmodel.h \
     src/accountservice.h \
     src/accountlibrarymodel.h \
+    src/qrcodeitem.h \
     src/regionfeedmodel.h \
     src/dynamicfeedmodel.h \
     src/inboxmodel.h \
@@ -73,6 +78,7 @@ HEADERS += \
     src/mpvvideoitem.h \
     src/droidvideodecoder.h \
     src/playbacksession.h \
+    src/mpriscontroller.h \
     src/displayframemonitor.h \
     src/systempipcontroller.h \
     src/systemcontrols.h \
@@ -82,6 +88,7 @@ HEADERS += \
     src/pgcfeedmodel.h \
     src/pgcdetailmodel.h \
     src/authorspacemodel.h \
-    src/configmigration.h
+    src/configmigration.h \
+    ../library/QR-Code-generator/cpp/qrcodegen.hpp
 
 RESOURCES += qml/qml.qrc

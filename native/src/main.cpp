@@ -5,6 +5,7 @@
 #include "videodetailmodel.h"
 #include "accountservice.h"
 #include "accountlibrarymodel.h"
+#include "qrcodeitem.h"
 #include "regionfeedmodel.h"
 #include "dynamicfeedmodel.h"
 #include "inboxmodel.h"
@@ -13,6 +14,7 @@
 #include "playbackresolver.h"
 #include "mpvvideoitem.h"
 #include "playbacksession.h"
+#include "mpriscontroller.h"
 #include "danmakumodel.h"
 #include "livefeedmodel.h"
 #include "liveresolver.h"
@@ -110,12 +112,36 @@ QString mpvApiVersionText() {
     return QStringLiteral("%1.%2").arg(version >> 16).arg(version & 0xffff);
 }
 
-DirectVideoCapabilities directDroidMediaCapabilities() {
+DirectVideoCapabilities directDroidMediaCapabilities(int sailfishVersionMajor,
+                                                     int sailfishVersionMinor) {
     static bool probed = false;
     static DirectVideoCapabilities cached;
     if (probed) return cached;
     probed = true;
 #ifdef SILISILI_NATIVE_HAVE_DROIDMEDIA
+    const bool sailfish50 = sailfishVersionMajor == 5
+            && sailfishVersionMinor == 0;
+    const bool forceSailfish50Hardware = qgetenv(
+                "SILISILI_NATIVE_ENABLE_SFOS50_DROIDMEDIA")
+            == QByteArrayLiteral("1");
+    if (sailfish50 && !forceSailfish50Hardware) {
+        // Sailfish 5.0's device-side libdroidmedia BufferQueue permits only
+        // two acquired buffers. Later official droidmedia fixes raise that
+        // limit for devices and Codec2 B-frames. The statically linked
+        // libdroidmedia.a is only a hybris symbol wrapper, so it cannot patch
+        // the old device implementation. Avoid its audio-continues/video-
+        // freezes failure mode by using the existing software path on 5.0.
+        qWarning() << "native hardware video: Sailfish 5.0 compatibility route"
+                   << "hardware" << false
+                   << "fallback" << "libmpv-software"
+                   << "reason" << "device-droidmedia-bufferqueue-two-buffer"
+                   << "override" << "SILISILI_NATIVE_ENABLE_SFOS50_DROIDMEDIA=1";
+        return cached;
+    }
+    if (sailfish50 && forceSailfish50Hardware) {
+        qWarning() << "native hardware video: Sailfish 5.0 diagnostic override"
+                   << "hardware" << true;
+    }
     if (!droid_media_init()) {
         qWarning() << "native hardware video: droidmedia initialization failed"
                    << "fallback" << "software";
@@ -308,11 +334,17 @@ int main(int argc, char *argv[]) {
     const bool qrShareAvailable = QFileInfo::exists(qrPluginPath)
                                   && qrPluginLoader->load()
                                   && qrPluginLoader->instance();
+    int qrBuiltInSelfTestModules = 0;
+    const bool qrBuiltInAvailable = QrCodeItem::selfTest(
+                &qrBuiltInSelfTestModules);
     qInfo() << "native account: system QR renderer" << qrShareAvailable
             << (qrShareAvailable ? QString() : qrPluginLoader->errorString());
     qInfo() << "native account: Amber.Barcode module" << qrBarcodeAvailable
             << "Sailfish release" << qrSailfishRelease
             << "version" << qrSailfishVersionMajor << qrSailfishVersionMinor;
+    qInfo() << "native account: built-in QR renderer" << qrBuiltInAvailable
+            << "selfTestModules" << qrBuiltInSelfTestModules
+            << "backend" << "Nayuki-QtQuick-painted";
 
     qmlRegisterType<VideoDetailModel>("cn.silisili.native.models", 1, 0, "VideoDetailModel");
     qmlRegisterType<CommentModel>("cn.silisili.native.models", 1, 0, "CommentModel");
@@ -321,13 +353,15 @@ int main(int argc, char *argv[]) {
     qmlRegisterType<PgcDetailModel>("cn.silisili.native.models", 1, 0, "PgcDetailModel");
     qmlRegisterType<AuthorSpaceModel>("cn.silisili.native.models", 1, 0, "AuthorSpaceModel");
     qmlRegisterType<AccountLibraryModel>("cn.silisili.native.models", 1, 0, "AccountLibraryModel");
+    qmlRegisterType<QrCodeItem>("cn.silisili.native.qr", 1, 0, "QrCodeImage");
     qmlRegisterType<MpvVideoItem>("cn.silisili.native.player", 1, 0, "MpvVideoItem");
     qmlRegisterType<MpvVideoMirrorItem>("cn.silisili.native.player", 1, 0,
                                         "MpvVideoMirrorItem");
 
     const QString configMigrationState = ConfigMigration::migrateStableConfig();
     const DirectVideoCapabilities directVideoCapabilities =
-            directDroidMediaCapabilities();
+            directDroidMediaCapabilities(qrSailfishVersionMajor,
+                                         qrSailfishVersionMinor);
     const bool nativeHardwareDecodeAvailable = directVideoCapabilities.available();
     AppSettings appSettings;
     AccountService accountService;
@@ -365,6 +399,9 @@ int main(int argc, char *argv[]) {
     DynamicFeedModel dynamicFeed(&accountService);
     InboxModel inboxModel(&accountService);
     QScopedPointer<QQuickView> view(SailfishApp::createView());
+    MprisController mprisController(&playbackSession);
+    QObject::connect(&mprisController, &MprisController::raiseRequested,
+                     view.data(), [&]() { view->requestActivate(); });
     SystemPipController systemPipController(view.data(), &playbackSession,
                                             &playbackVideo, app.data());
     ApplicationCloseFilter applicationCloseFilter(
@@ -440,6 +477,8 @@ int main(int argc, char *argv[]) {
     view->rootContext()->setContextProperty(QStringLiteral("configMigrationState"), configMigrationState);
     view->rootContext()->setContextProperty(QStringLiteral("qrShareAvailable"), qrShareAvailable);
     view->rootContext()->setContextProperty(QStringLiteral("qrBarcodeAvailable"), qrBarcodeAvailable);
+    view->rootContext()->setContextProperty(QStringLiteral("qrBuiltInAvailable"),
+                                            qrBuiltInAvailable);
     view->rootContext()->setContextProperty(QStringLiteral("qrSailfishRelease"), qrSailfishRelease);
     view->rootContext()->setContextProperty(QStringLiteral("qrSailfishVersionMajor"),
                                             qrSailfishVersionMajor);

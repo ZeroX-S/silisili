@@ -31,16 +31,15 @@ PlaybackSession::PlaybackSession(PlaybackResolver *vodResolver,
       m_pgc(false),
       m_backgroundPlayback(true), m_inAppMiniPlayerEnabled(true),
       m_resumeAfterForeground(false),
-      m_firstFrameReady(true), m_preparingVideo(false),
-      m_preparedVideoReady(false), m_finishedSmallWindowStopScheduled(false),
+      m_firstFrameReady(true), m_finishedSmallWindowStopScheduled(false),
       m_nextVideoPartScheduled(false),
       m_dropFirstFrameEdgeForTest(
           qgetenv("SILISILI_NATIVE_TEST_DROP_FIRST_FRAME_EDGE") == QByteArrayLiteral("1")),
       m_surfaceTransition(false), m_initialResumePending(false),
       m_retainedVideoAspectRatio(0.0),
-      m_loadedRevision(0), m_awaitedLoadSerial(0), m_preparedLoadSerial(0),
+      m_loadedRevision(0), m_awaitedLoadSerial(0),
       m_pendingPosition(0.0), m_requestedResumePosition(0.0),
-      m_pendingPaused(false), m_preparedQuality(0), m_loadedLiveRevision(0),
+      m_pendingPaused(false), m_loadedLiveRevision(0),
       m_lastHistoryProgress(-1) {
     connect(m_vodResolver, &PlaybackResolver::changed,
             this, &PlaybackSession::resolverChanged);
@@ -312,40 +311,11 @@ void PlaybackSession::setSurfaceHighResolution(QObject *hostObject, bool enabled
 }
 
 void PlaybackSession::prepareVideo(const QString &bvid, const QString &cid, int quality) {
-    if (m_active || !m_player || !m_vodResolver || bvid.isEmpty() || cid.isEmpty()) return;
-    // Visible-card preparation is a foreground latency optimization.  A Home
-    // model refresh can recreate delegate zero while a detail page remains in
-    // the Cover; decoding that new row into the persistent player leaks its
-    // first frame into the stopped detail lifecycle when the app is restored.
-    if (qApp && qApp->applicationState() != Qt::ApplicationActive) {
-        qInfo() << "native software video: visible-card prepare skipped in background"
-                << bvid << cid;
-        return;
-    }
-    const int requestedQuality = normalizedSoftwareQuality(quality);
-    if ((m_preparingVideo || m_preparedVideoReady)
-            && m_preparedBvid == bvid && m_preparedCid == cid
-            && m_preparedQuality == requestedQuality) {
-        if (m_preparedVideoReady)
-            emit videoPrepared(bvid, cid, requestedQuality, true);
-        return;
-    }
-
-    m_preparingVideo = true;
-    m_preparedVideoReady = false;
-    m_preparedBvid = bvid;
-    m_preparedCid = cid;
-    m_preparedQuality = requestedQuality;
-    m_preparedLoadSerial = 0;
-    m_pendingPosition = 0.0;
-    m_pendingPaused = true;
-    // Start one bounded metadata request for the first visible card, then join
-    // it from resolve(). The same persistent mpv instance opens the media
-    // paused and hidden; no second decoder or background audio is created.
-    m_vodResolver->prefetchVideo(bvid, cid, requestedQuality);
-    m_vodResolver->resolve(bvid, cid, requestedQuality);
-    qInfo() << "native software video: first visible card prepare requested"
-            << bvid << cid << "quality" << requestedQuality;
+    if (m_active || !m_vodResolver || bvid.isEmpty() || cid.isEmpty()) return;
+    if (qApp && qApp->applicationState() != Qt::ApplicationActive) return;
+    // Browsing may cache a playurl, but must never mutate the active resolver
+    // or load media. resolve() is reserved for an explicit playback request.
+    m_vodResolver->prefetchVideo(bvid, cid, normalizedSoftwareQuality(quality));
 }
 
 void PlaybackSession::playVideo(const QString &bvid, const QString &cid,
@@ -372,11 +342,6 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
     const bool sameVideoFamily = m_active && !m_pgc && m_bvid == bvid;
     if (m_active && !sameVideo) reportPlaybackProgress("video-switch", true);
     if (!sameVideoFamily) m_retainedVideoAspectRatio = 0.0;
-    const bool preparedVideo = !resumeRequested && !m_active
-            && (m_preparingVideo || m_preparedVideoReady)
-            && m_preparedBvid == bvid && m_preparedCid == cid
-            && m_preparedQuality == requestedQuality;
-    const bool preparedFrameReady = preparedVideo && m_preparedVideoReady;
     m_title = title;
     m_cover = cover;
     m_aid = m_videoAidBvid == bvid ? m_videoAid : QString();
@@ -410,42 +375,6 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
                 << "directMediaLoad" << true << "postStartSeek" << false;
     }
     m_startupElapsed.restart();
-    if (preparedVideo) {
-        m_preparingVideo = false;
-        m_preparedVideoReady = false;
-        m_pendingPosition = 0.0;
-        m_pendingPaused = false;
-        m_awaitedLoadSerial = m_preparedLoadSerial > 0
-                ? m_preparedLoadSerial : (m_player ? m_player->loadSerial() : 0);
-        if (m_player) {
-            m_player->setVisible(m_currentHost);
-            m_player->setPaused(false);
-            m_player->refreshVideoOutput();
-        }
-        if (preparedFrameReady) {
-            m_firstFrameReady = true;
-            qInfo() << "native software video: first frame ready"
-                    << "loadSerial" << -1
-                    << "position" << position()
-                    << "requestElapsedMs" << m_startupElapsed.elapsed()
-                    << "loadingCoverWithdrawn" << true
-                    << "preparedBeforeTap" << true;
-            reportPlaybackProgress("prepared-first-frame", true);
-        } else {
-            qInfo() << "native software video: tap joined in-flight first-card prepare"
-                    << bvid << cid;
-        }
-        reconcileFirstFrameReady("prepared-activation-level-check");
-        emit changed();
-        emit surfaceChanged();
-        return;
-    }
-    m_preparingVideo = false;
-    m_preparedVideoReady = false;
-    m_preparedBvid.clear();
-    m_preparedCid.clear();
-    m_preparedQuality = 0;
-    m_preparedLoadSerial = 0;
     m_awaitedLoadSerial = m_player ? m_player->loadSerial() + 1 : 0;
     if (m_player) m_player->beginSourceTransition();
     m_pendingPosition = requestedStartPosition;
@@ -699,12 +628,6 @@ void PlaybackSession::stop() {
     if (wasLive && m_liveResolver) m_liveResolver->cancel();
     m_surfaceHost.clear();
     useHost(0);
-    m_preparingVideo = false;
-    m_preparedVideoReady = false;
-    m_preparedBvid.clear();
-    m_preparedCid.clear();
-    m_preparedQuality = 0;
-    m_preparedLoadSerial = 0;
     m_awaitedLoadSerial = 0;
     m_nextVideoPartScheduled = false;
     m_resumeAfterForeground = false;
@@ -733,26 +656,6 @@ void PlaybackSession::setInAppMiniPlayerEnabled(bool enabled) {
 
 void PlaybackSession::resolverChanged() {
     if (live()) return;
-    if (!m_active && m_preparingVideo && m_player
-            && m_vodResolver->revision() != m_loadedRevision
-            && !m_vodResolver->sourceUrl().isEmpty()) {
-        m_player->setVisible(false);
-        m_player->loadSourceWithAudio(m_vodResolver->sourceUrl(), m_vodResolver->audioUrl(),
-                                      0.0, true, true);
-        m_preparedLoadSerial = m_player->loadSerial();
-        m_loadedRevision = m_vodResolver->revision();
-        qInfo() << "native software video: hidden paused first-card media prepare started"
-                << m_preparedBvid << m_preparedCid
-                << "quality" << m_preparedQuality;
-    } else if (!m_active && m_preparingVideo && !m_vodResolver->loading()
-               && !m_vodResolver->errorMessage().isEmpty()) {
-        const QString failedBvid = m_preparedBvid;
-        const QString failedCid = m_preparedCid;
-        const int failedQuality = m_preparedQuality;
-        m_preparingVideo = false;
-        m_preparedVideoReady = false;
-        emit videoPrepared(failedBvid, failedCid, failedQuality, false);
-    }
     if (m_active && m_player && m_vodResolver->revision() != m_loadedRevision
             && !m_vodResolver->sourceUrl().isEmpty()) {
         m_player->setVisible(m_currentHost && m_active);
@@ -836,18 +739,6 @@ void PlaybackSession::dismissFinishedSmallWindowPlayback() {
 }
 
 void PlaybackSession::firstFramePresented(int loadSerial, double framePosition) {
-    if (!m_active && m_preparingVideo) {
-        if (m_preparedLoadSerial > 0 && loadSerial != m_preparedLoadSerial) return;
-        m_preparingVideo = false;
-        m_preparedVideoReady = true;
-        qInfo() << "native software video: first visible card prepared"
-                << m_preparedBvid << m_preparedCid
-                << "quality" << m_preparedQuality
-                << "loadSerial" << loadSerial
-                << "position" << framePosition;
-        emit videoPrepared(m_preparedBvid, m_preparedCid, m_preparedQuality, true);
-        return;
-    }
     // A hardware first-frame failure restarts the same source internally in
     // software and advances MpvVideoItem's serial once. Reject genuinely stale
     // frames, but adopt a newer serial belonging to that current source so the

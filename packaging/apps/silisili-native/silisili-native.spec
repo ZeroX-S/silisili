@@ -1,8 +1,8 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.57
+Release:        1.58
 Summary:        Native Sailfish OS development version of silisili
-License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and WTFPL
+License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and MIT and WTFPL
 Group:          Applications/Multimedia
 BuildArch:      aarch64
 AutoReqProv:    no
@@ -16,6 +16,7 @@ Requires:       sailfishsilica-qt5
 Requires:       qt5-qtdeclarative
 Requires:       qt5-qtdeclarative-import-sensors
 Requires:       qt5-qtnetwork
+Requires:       qt5-qtdbus
 Requires:       zlib
 
 %description
@@ -104,6 +105,22 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Tue Oct 13 2026 silisili contributors <noreply@localhost> - 1.1.0-1.58
+- Replace home-feed hidden decoding with bounded, idle-only URL prefetch;
+  fix decoder startup cancellation and pagination notification ordering.
+- Gate every video start on the current file, target position and first frame,
+  preserving pause requests made during startup without audio running ahead.
+- Decode target frames while paused and reject obsolete seek/timeline output,
+  including delayed hardware callbacks after a backward seek.
+- Add shared-session MPRIS lockscreen controls, metadata and state updates;
+  expose VOD seeking/rate controls and accurate non-seekable live capabilities.
+- Add an application-owned QR fallback when private Amber.Barcode/QrShareImage
+  renderers are unavailable, retaining the optional system renderers.
+- Add experimental Sailfish 5.0 SDK tooling and default to software video on
+  its older droidmedia runtime; real-device 5.0 validation remains pending.
+- Ship the VM build entry point, source gates, regression probes and measured
+  playback/lifecycle validation notes alongside the source.
+
 * Mon Aug 24 2026 silisili contributors <noreply@localhost> - 1.1.0-1.57
 - Make the in-application mini-player close button stop the complete playback
   session, release its video surface and player resources, and return Cover to

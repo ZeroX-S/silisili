@@ -98,11 +98,11 @@ void inputBufferUnref(void *data) { std::free(data); }
 DroidVideoDecoder::DroidVideoDecoder(MpvVideoItem *owner)
     : m_owner(owner), m_generation(0), m_active(false), m_stop(true),
       m_paused(false), m_failed(false), m_ultraHdSource(false),
-      m_seekSerial(0), m_seekTargetUs(0),
+      m_seekSerial(0), m_appliedSeekSerial(0), m_seekTargetUs(0),
       m_dropBeforeUs(0), m_normalizeStreamingTimeline(false),
       m_inputTimestampOriginSet(false), m_inputTimestampOriginUs(0),
       m_format(0), m_bsf(0), m_videoStream(-1),
-      m_codec(0), m_bufferQueue(0),
+      m_codec(0), m_startedCodec(0), m_bufferQueue(0),
       m_createdBufferReferenceCount(0),
       m_destroyedBufferReferenceCount(0), m_bufferQueueReleased(false),
       m_inFlightPackets(0),
@@ -143,6 +143,7 @@ bool DroidVideoDecoder::start(const QString &url, double startPosition,
     }
     m_feedThrottleLogged.store(false);
     m_seekSerial.store(0);
+    m_appliedSeekSerial.store(0);
     m_seekTargetUs.store(static_cast<long long>(qMax(0.0, startPosition) * 1000000.0));
     m_dropBeforeUs.store(qMax<long long>(0, m_seekTargetUs.load() - 100000));
     m_normalizeStreamingTimeline.store(normalizeStreamingTimeline);
@@ -183,7 +184,7 @@ void DroidVideoDecoder::stop() {
     // before joining that thread so the queue call is interrupted instead of
     // freezing the GUI in std::thread::join(). Keep the codec object alive
     // until both worker threads have exited.
-    _DroidMediaCodec *interruptedCodec = m_codec;
+    _DroidMediaCodec *interruptedCodec = m_startedCodec.load();
     if (interruptedCodec) {
         qInfo() << "native hardware video: OMX stop requested before worker join"
                 << "generation" << m_generation.load()
@@ -206,7 +207,8 @@ void DroidVideoDecoder::seek(double position) {
     m_dropBeforeUs.store(qMax<long long>(0, targetUs - 100000));
     m_targetFrameReached.store(false);
     m_seekSerial.fetch_add(1);
-    m_firstVideoPtsUs = -1;
+    m_frameReady.notify_all();
+    m_frameSpace.notify_all();
     qInfo() << "native hardware video: in-place seek requested"
             << "position" << position
             << "generation" << m_generation.load();
@@ -323,11 +325,13 @@ bool DroidVideoDecoder::openInput(int generation) {
         postFailure(generation, QStringLiteral("hardware-codec-unsupported"));
         return false;
     }
+    if (m_stop.load()) return false;
     m_codec = droid_media_codec_create_decoder(&metadata);
     if (!m_codec) {
         postFailure(generation, QStringLiteral("hardware-codec-create"));
         return false;
     }
+    if (m_stop.load()) return false;
 
     DroidMediaCodecCallbacks codecCallbacks;
     std::memset(&codecCallbacks, 0, sizeof(codecCallbacks));
@@ -347,10 +351,16 @@ bool DroidVideoDecoder::openInput(int generation) {
     queueCallbacks.frame_available = &frameAvailableCallback;
     queueCallbacks.buffers_released = &buffersReleasedCallback;
     droid_media_buffer_queue_set_callbacks(m_bufferQueue, &queueCallbacks, this);
+    if (m_stop.load()) return false;
     if (!droid_media_codec_start(m_codec)) {
         postFailure(generation, QStringLiteral("hardware-codec-start"));
         return false;
     }
+    // Seq-cst publication + the stop flag handshake covers both orderings:
+    // stop sees the started codec and interrupts it, or the worker observes
+    // cancellation and exits without entering a potentially blocking queue.
+    m_startedCodec.store(m_codec);
+    if (m_stop.load()) return false;
 
     const long long startUs = m_seekTargetUs.load();
     if (startUs > 0 && !m_normalizeStreamingTimeline.load()) {
@@ -480,7 +490,7 @@ bool DroidVideoDecoder::queuePacket(const unsigned char *data, int size,
     // late frames at only a fraction of the source cadence.
     while (!m_stop.load() && !m_failed.load()
            && m_seekSerial.load() == seekSerial) {
-        if (m_paused.load()) {
+        if (m_paused.load() && m_targetFrameReached.load()) {
             QThread::msleep(10);
             continue;
         }
@@ -565,15 +575,13 @@ void DroidVideoDecoder::demuxLoop(int generation) {
     AVStream *stream = m_format->streams[m_videoStream];
     AVPacket *packet = av_packet_alloc();
     AVPacket *filtered = av_packet_alloc();
-    int appliedSeekSerial = m_seekSerial.load();
+    int appliedSeekSerial = m_appliedSeekSerial.load();
     while (!m_stop.load() && !m_failed.load()) {
-        if (m_paused.load()) {
-            QThread::msleep(10);
-            continue;
-        }
         const int requestedSeekSerial = m_seekSerial.load();
         if (requestedSeekSerial != appliedSeekSerial) {
             appliedSeekSerial = requestedSeekSerial;
+            // Reject callbacks while old codec output is being flushed.
+            m_appliedSeekSerial.store(-1);
             clearDecodedFrames();
             discardPendingFrame();
             droid_media_codec_flush(m_codec);
@@ -587,11 +595,19 @@ void DroidVideoDecoder::demuxLoop(int generation) {
                 m_inputTimestampOriginSet.store(false);
                 m_inputTimestampOriginUs.store(0);
             }
+            m_targetFrameReached.store(false);
+            m_appliedSeekSerial.store(appliedSeekSerial);
             qInfo() << "native hardware video: in-place seek applied"
                     << "generation" << generation
                     << "targetUs" << targetUs
                     << "streamingTimeline" << m_normalizeStreamingTimeline.load()
                     << "decoderRecreated" << false;
+        }
+        // A paused seek still needs enough input to decode its target image.
+        // Once that target is available, retain the user's paused state.
+        if (m_paused.load() && m_targetFrameReached.load()) {
+            QThread::msleep(10);
+            continue;
         }
         if (av_read_frame(m_format, packet) < 0) break;
         if (packet->stream_index == m_videoStream) {
@@ -634,6 +650,34 @@ void DroidVideoDecoder::onFrameAvailable(_DroidMediaBuffer *buffer) {
     std::memset(&info, 0, sizeof(info));
     droid_media_buffer_get_info(buffer, &info);
     const long long ptsUs = info.timestamp / 1000;
+    const int seekSerial = m_appliedSeekSerial.load();
+    if (seekSerial < 0 || seekSerial != m_seekSerial.load()) {
+        droid_media_buffer_release(buffer, 0, 0);
+        return;
+    }
+    // Some adaptations deliver an old output callback after codec_flush()
+    // returns. A callback-time serial alone then labels the old frame as new.
+    // Input is bounded to 1.5 seconds ahead of the master clock, so a frame
+    // outside that timeline cannot belong to the new seek. In particular it
+    // must not latch targetFrameReached and stop paused-seek input early.
+    bool clockValid = false;
+    const long long masterUs = masterClockUs(&clockValid);
+    const long long upperUs = !m_targetFrameReached.load()
+            ? m_seekTargetUs.load() + 750000
+            : (clockValid ? masterUs : m_seekTargetUs.load())
+              + kMaximumCompressedInputLeadUs + 500000;
+    if (ptsUs > upperUs) {
+        {
+            std::lock_guard<std::mutex> lock(m_frameMutex);
+            if (m_inFlightPackets > 0) --m_inFlightPackets;
+        }
+        droid_media_buffer_release(buffer, 0, 0);
+        m_frameSpace.notify_all();
+        qInfo() << "native hardware video: obsolete timeline frame discarded"
+                << "seekSerial" << seekSerial << "ptsUs" << ptsUs
+                << "upperUs" << upperUs;
+        return;
+    }
     if (ptsUs >= m_dropBeforeUs.load()) {
         bool expected = false;
         if (m_targetFrameReached.compare_exchange_strong(expected, true)) {
@@ -660,7 +704,7 @@ void DroidVideoDecoder::onFrameAvailable(_DroidMediaBuffer *buffer) {
         if (m_frames.size() >= queueLimit) {
             droppedIncoming = true;
         } else {
-            m_frames.push_back(PendingFrame{buffer, ptsUs});
+            m_frames.push_back(PendingFrame{buffer, ptsUs, seekSerial});
         }
     }
     if (droppedIncoming) {
@@ -681,12 +725,14 @@ void DroidVideoDecoder::onFrameAvailable(_DroidMediaBuffer *buffer) {
 }
 
 void DroidVideoDecoder::presentLoop(int generation) {
+    int primedSeekSerial = -1;
     while (!m_stop.load()) {
-        if (m_paused.load()) {
+        const int requestedSeekSerial = m_seekSerial.load();
+        if (m_paused.load() && primedSeekSerial == requestedSeekSerial) {
             QThread::msleep(10);
             continue;
         }
-        PendingFrame frame = {0, 0};
+        PendingFrame frame = {0, 0, -1};
         {
             std::unique_lock<std::mutex> lock(m_frameMutex);
             m_frameReady.wait(lock, [this]() {
@@ -697,8 +743,32 @@ void DroidVideoDecoder::presentLoop(int generation) {
             m_frames.pop_front();
         }
         m_frameSpace.notify_all();
-        if (frame.ptsUs < m_dropBeforeUs.load()) {
+        if (frame.seekSerial != m_seekSerial.load()
+                || frame.seekSerial != m_appliedSeekSerial.load()
+                || frame.ptsUs < m_dropBeforeUs.load()) {
             droid_media_buffer_release(frame.buffer, 0, 0);
+            continue;
+        }
+
+        // Prime one target frame before consulting the audio clock. Audio is
+        // intentionally paused until that texture is published; waiting for a
+        // positive first video PTS against a frozen clock would deadlock both.
+        // After priming, retain normal audio-master pacing and late-frame drops.
+        const int seekSerial = frame.seekSerial;
+        if (primedSeekSerial != seekSerial) {
+            if (m_stop.load() || seekSerial != m_seekSerial.load()) {
+                droid_media_buffer_release(frame.buffer, 0, 0);
+                continue;
+            }
+            primedSeekSerial = seekSerial;
+            qInfo() << "native hardware video: startup target frame primed"
+                    << "generation" << generation << "seekSerial" << seekSerial
+                    << "ptsUs" << frame.ptsUs << "audioClockWait" << false;
+            if (m_paused.load())
+                qInfo() << "native hardware video: paused seek target frame ready"
+                        << "seekSerial" << seekSerial << "ptsUs" << frame.ptsUs
+                        << "audioRemainsPaused" << true;
+            offerFrameToGui(frame.buffer, generation);
             continue;
         }
 
@@ -712,7 +782,8 @@ void DroidVideoDecoder::presentLoop(int generation) {
                      && steadyNowUs() - m_startWallUs < 1500000);
         }
         if (clockValid) {
-            while (!m_stop.load() && !m_paused.load()) {
+            while (!m_stop.load() && !m_paused.load()
+                   && seekSerial == m_seekSerial.load()) {
                 masterUs = masterClockUs(&clockValid);
                 const long long aheadUs = frame.ptsUs - masterUs;
                 if (!clockValid || aheadUs <= 2000) break;
@@ -734,9 +805,9 @@ void DroidVideoDecoder::presentLoop(int generation) {
                 QThread::usleep(static_cast<unsigned long>(qMin<long long>(
                     targetUs - elapsedUs, 20000)));
         }
-        if (m_stop.load()) {
+        if (m_stop.load() || m_paused.load() || seekSerial != m_seekSerial.load()) {
             droid_media_buffer_release(frame.buffer, 0, 0);
-            break;
+            continue;
         }
         offerFrameToGui(frame.buffer, generation);
     }
@@ -844,6 +915,7 @@ int DroidVideoDecoder::sizeChangedCallback(void *, int, int) {
 }
 
 void DroidVideoDecoder::teardownCodec() {
+    m_startedCodec.store(0);
     if (m_codec) {
         droid_media_codec_destroy(m_codec);
         m_codec = 0;

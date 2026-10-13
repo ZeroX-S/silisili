@@ -174,8 +174,8 @@ void HomeFeedModel::requestFeed(bool reset) {
                    << "parse" << parseError.error << parseError.errorString()
                    << "offset" << parseError.offset << "code" << root.value("code");
         if (parseError.error != QJsonParseError::NoError || root.value("code").toInt(-1) != 0) {
-            setLoading(false);
             setErrorMessage(tr("内容解析失败，请稍后重试"));
+            setLoading(false);
             return;
         }
         QVector<Item> next;

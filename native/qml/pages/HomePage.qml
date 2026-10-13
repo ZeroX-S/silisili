@@ -38,10 +38,12 @@ Page {
 
     Timer {
         id: foregroundPrepareTimer
-        interval: 120
+        interval: 350
         repeat: false
         onTriggered: {
-            if (page.status === PageStatus.Active && Qt.application.active)
+            if (page.status === PageStatus.Active && Qt.application.active
+                    && !listView.moving && !listView.dragging
+                    && !homeFeed.loading && !playbackSession.active)
                 listView.prepareCenteredVideo()
         }
     }
@@ -69,6 +71,9 @@ Page {
                 homeFeed.loadMore()
         }
         function prepareCenteredVideo() {
+            if (moving || dragging || homeFeed.loading || playbackSession.active
+                    || page.status !== PageStatus.Active || !Qt.application.active)
+                return
             var item = itemAt(width / 2, contentY + height * 0.48)
             if (item && typeof item.preparePlayback === "function")
                 item.preparePlayback()
@@ -76,13 +81,14 @@ Page {
         onAtYEndChanged: maybeLoadMore()
         onContentYChanged: maybeLoadMore()
         onMovementStarted: {
+            foregroundPrepareTimer.stop()
             if (nativeTestPage === "network-scroll")
                 console.log("native home: physical scroll movement started",
                             "contentY", Math.round(contentY))
         }
         onMovementEnded: {
             maybeLoadMore()
-            prepareCenteredVideo()
+            foregroundPrepareTimer.restart()
             if (nativeTestPage === "network-scroll") {
                 ++page.networkScrollReleaseCount
                 console.log("native home: physical scroll movement ended",
@@ -92,11 +98,19 @@ Page {
                             "error", homeFeed.errorMessage.length > 0)
             }
         }
-        onCountChanged: maybeLoadMore()
+        onCountChanged: {
+            maybeLoadMore()
+            foregroundPrepareTimer.restart()
+        }
 
         Connections {
             target: homeFeed
-            onLoadingChanged: if (!homeFeed.loading) listView.maybeLoadMore()
+            onLoadingChanged: {
+                if (!homeFeed.loading) {
+                    listView.maybeLoadMore()
+                    foregroundPrepareTimer.restart()
+                }
+            }
         }
 
         Timer {
@@ -173,24 +187,8 @@ Page {
                     playbackSession.prepareVideo(bvid, cid,
                                                  accountService.defaultPlaybackQuality)
             }
-            // The feed already includes CID. Resolve the first visible cards
-            // while the user is reading the list so a tap does not wait on a
-            // transient multi-second playurl API response. Metadata prefetch is
-            // limited to the first six cards; only one card at a time is ever
-            // prepared by the single paused software decoder.
-            Component.onCompleted: {
-                if (bvid.length === 0 || cid.length === 0)
-                    return
-                if (index === 0)
-                    preparePlayback()
-                else if (index < 6)
-                    playbackResolver.prefetchVideo(
-                                bvid, cid, accountService.defaultPlaybackQuality)
-            }
-            onPressedChanged: {
-                if (pressed)
-                    preparePlayback()
-            }
+            // Only the idle viewport timer prefetches metadata. A press may
+            // become a swipe; it must never start or replace a video decoder.
             onClicked: pageStack.push(Qt.resolvedUrl("VideoDetailPage.qml"), {
                 videoTitle: title,
                 videoOwner: owner,

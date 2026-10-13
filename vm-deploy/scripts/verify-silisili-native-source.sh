@@ -20,6 +20,32 @@ test -f "$PRIVILEGES" || fail missing-mapplauncherd-privileges
 test -f "$RELEASE_ASSET" || fail missing-release-asset-manifest
 test -f "$NATIVE_ROOT/CMakeLists.txt" || fail missing-cmake
 test -f "$NATIVE_ROOT/silisili-native.pro" || fail missing-qmake
+test -f "$NATIVE_ROOT/src/qrcodeitem.cpp" || fail missing-built-in-qr-source
+test -f "$NATIVE_ROOT/src/qrcodeitem.h" || fail missing-built-in-qr-header
+test -f "$PROJECT_ROOT/library/QR-Code-generator/cpp/qrcodegen.cpp" \
+    || fail missing-qr-encoder-source
+test -f "$PROJECT_ROOT/library/QR-Code-generator/cpp/qrcodegen.hpp" \
+    || fail missing-qr-encoder-header
+test -f "$NATIVE_ROOT/tests/qrcodegen-smoke.cpp" \
+    || fail missing-built-in-qr-smoke
+test -f "$NATIVE_ROOT/tests/playback-start-gate-smoke.js" \
+    || fail missing-playback-start-gate-smoke
+grep -Fq 'm_initialPositionGatePending = videoEnabled;' "$NATIVE_ROOT/src/mpvvideoitem.cpp" \
+    || fail zero-start-audio-barrier-missing
+grep -Fq '!m_initialVideoFrameReady || !m_backend || m_backend->loadPending' "$NATIVE_ROOT/src/mpvvideoitem.cpp" \
+    || fail startup-file-and-frame-barrier-missing
+grep -Fq 'startup target frame primed' "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail hardware-first-frame-clock-bypass-missing
+grep -Fq 'paused seek target frame ready' "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail hardware-paused-seek-frame-missing
+grep -Fq 'frame.seekSerial != m_appliedSeekSerial.load()' "$NATIVE_ROOT/src/droidvideodecoder.cpp" \
+    || fail hardware-obsolete-seek-frame-guard-missing
+grep -Fq 'MprisController mprisController(&playbackSession);' "$NATIVE_ROOT/src/main.cpp" \
+    || fail lockscreen-playback-session-bridge-missing
+grep -Fq 'org.mpris.MediaPlayer2.silisili' "$NATIVE_ROOT/src/mpriscontroller.cpp" \
+    || fail lockscreen-mpris-service-missing
+grep -Fq 'QDBusConnection::ExportAdaptors' "$NATIVE_ROOT/src/mpriscontroller.cpp" \
+    || fail lockscreen-mpris-adaptors-missing
 
 spec_version="$(awk '$1 == "Version:" { print $2; exit }' "$SPEC")"
 spec_release="$(awk '$1 == "Release:" { print $2; exit }' "$SPEC")"
@@ -81,7 +107,14 @@ grep -Fxq 'src/systemcontrols.cpp' "$temporary/cmake-files" \
     || fail missing-system-controls-cmake-source
 grep -Fxq 'src/systemcontrols.h' "$temporary/qmake-files" \
     || fail missing-system-controls-qmake-header
-vm_build_wrapper="$PROJECT_ROOT/../vm-build-native-rpm.sh"
+grep -Fq '../library/QR-Code-generator/cpp/qrcodegen.cpp' \
+    "$NATIVE_ROOT/CMakeLists.txt" \
+    || fail missing-qr-encoder-cmake-source
+grep -Fq '../library/QR-Code-generator/cpp/qrcodegen.cpp' \
+    "$NATIVE_ROOT/silisili-native.pro" \
+    || fail missing-qr-encoder-qmake-source
+vm_build_wrapper="$SCRIPT_DIR/build-silisili-native-vm-rpm.sh"
+test -x "$vm_build_wrapper" || fail tracked-vm-build-wrapper-missing
 if test -f "$vm_build_wrapper"; then
     grep -Fq "'\$source_copy/src/appsettings.cpp'" "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-app-settings-source
@@ -91,10 +124,30 @@ if test -f "$vm_build_wrapper"; then
         || fail vm-build-wrapper-missing-app-settings-moc
     grep -Fq "moc_systemcontrols.cpp" "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-system-controls-moc
+    grep -Fq 'qrcode_source=$project/library/QR-Code-generator/cpp' \
+        "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-source-stage
+    grep -Fq "'\$source_copy/src/qrcodeitem.cpp'" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-item-source
+    grep -Fq "'\$source_copy/third_party/qrcodegen/qrcodegen.cpp'" \
+        "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-encoder-source
+    grep -Fq 'moc_qrcodeitem.cpp' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-item-moc
+    grep -Fq "'\$source_copy/src/mpriscontroller.cpp'" "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-mpris-source
+    grep -Fq 'moc_mpriscontroller.cpp' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-mpris-moc
+    grep -Fq 'mpriscontroller.o' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-mpris-object
     grep -Fq "appsettings.o" "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-app-settings-object
     grep -Fq "systemcontrols.o" "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-system-controls-object
+    grep -Fq 'qrcodeitem.o qrcodegen.o' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-objects
+    grep -Fq 'moc_qrcodeitem.o' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-moc-object
     grep -Fq 'silisili-native.privileges' "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-privileges-stage
     grep -Fq 'libminimedia-audiosource-shim.so' "$vm_build_wrapper" \
@@ -107,7 +160,52 @@ if test -f "$vm_build_wrapper"; then
         || fail vm-build-wrapper-missing-cover-pip-stage
     grep -Fq 'cover-action-cover.png' "$vm_build_wrapper" \
         || fail vm-build-wrapper-missing-cover-cover-stage
+    grep -Fq 'OUTPUT_DIR' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-output-override
+    grep -Fq 'PACKAGE_RELEASE_OVERRIDE' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-release-override
+    grep -Fq 'GLIBC_CEILING' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-glibc-ceiling
+    grep -Fq 'GLIBCXX_CEILING' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-glibcxx-ceiling
+    grep -Fq 'CXXABI_CEILING' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-cxxabi-ceiling
+    grep -Fq 'LICENSE.qrcodegen-MIT' "$vm_build_wrapper" \
+        || fail vm-build-wrapper-missing-qr-license-stage
 fi
+
+sfos50_prepare="$SCRIPT_DIR/prepare-sailfish-5.0-sdk.sh"
+sfos50_build="$SCRIPT_DIR/build-silisili-native-sfos50-test-rpm.sh"
+test -x "$sfos50_prepare" || fail sailfish-50-sdk-prepare-not-executable
+test -x "$sfos50_build" || fail sailfish-50-build-not-executable
+grep -Fq 'SailfishOS-5.0.0.62-aarch64' "$sfos50_prepare" \
+    || fail sailfish-50-target-guard-missing
+grep -Fq 'PACKAGE_RELEASE_OVERRIDE' "$sfos50_build" \
+    || fail sailfish-50-release-override-missing
+grep -Fq 'GLIBC_CEILING=GLIBC_2.30' "$sfos50_build" \
+    || fail sailfish-50-glibc-ceiling-missing
+grep -Fq 'GLIBCXX_CEILING=GLIBCXX_3.4.28' "$sfos50_build" \
+    || fail sailfish-50-glibcxx-ceiling-missing
+grep -Fq 'CXXABI_CEILING=CXXABI_1.3.12' "$sfos50_build" \
+    || fail sailfish-50-cxxabi-ceiling-missing
+grep -Fq 'REUSE_OBJECTS=0' "$sfos50_build" \
+    || fail sailfish-50-clean-build-guard-missing
+grep -Fq 'device-droidmedia-bufferqueue-two-buffer' \
+    "$NATIVE_ROOT/src/main.cpp" \
+    || fail sailfish-50-droidmedia-runtime-compatibility-route-missing
+grep -Fq 'SILISILI_NATIVE_ENABLE_SFOS50_DROIDMEDIA=1' \
+    "$NATIVE_ROOT/src/main.cpp" \
+    || fail sailfish-50-droidmedia-diagnostic-override-missing
+
+qr_smoke_binary="$temporary/qrcodegen-smoke"
+"${CXX:-c++}" -std=c++11 \
+    -I"$PROJECT_ROOT/library/QR-Code-generator/cpp" \
+    "$NATIVE_ROOT/tests/qrcodegen-smoke.cpp" \
+    "$PROJECT_ROOT/library/QR-Code-generator/cpp/qrcodegen.cpp" \
+    -o "$qr_smoke_binary"
+qr_smoke_result=$("$qr_smoke_binary")
+printf '%s\n' "$qr_smoke_result" | grep -Fq 'qr_builtin_smoke=ready|' \
+    || fail built-in-qr-smoke-failed
 
 qrc="$NATIVE_ROOT/qml/qml.qrc"
 test -f "$qrc" || fail missing-qrc
@@ -116,6 +214,13 @@ sed -n 's|.*<file[^>]*>\([^<]*\)</file>.*|\1|p' "$qrc" \
         test -f "$NATIVE_ROOT/qml/$resource" \
             || fail "missing-qrc-resource:$resource"
     done
+grep -Fq 'module: "cn.silisili.native.qr"' \
+    "$NATIVE_ROOT/qml/pages/QrLoginPage.qml" \
+    || fail built-in-qr-qml-fallback-missing
+grep -Fq 'color: "white"' "$NATIVE_ROOT/qml/pages/QrLoginPage.qml" \
+    || fail qr-white-background-missing
+grep -Fq 'qmlRegisterType<QrCodeItem>' "$NATIVE_ROOT/src/main.cpp" \
+    || fail built-in-qr-qml-registration-missing
 
 grep -Fq 'Exec=/usr/bin/silisili-native' "$DESKTOP" || fail invalid-desktop-exec
 grep -Fq 'X-Nemo-Application-Type=generic' "$DESKTOP" \
@@ -647,6 +752,25 @@ if grep -Eq 'SILISILI_NATIVE_(TEST|FORCE_ORIENTATION)' "$DESKTOP"; then
     fail test-hook-enabled-in-desktop
 fi
 
+# Home speculation is metadata-only; it cannot resurrect the removed hidden
+# decoder or enter synchronous codec teardown while a list is being browsed.
+grep -Fq '!listView.moving && !listView.dragging' \
+    "$NATIVE_ROOT/qml/pages/HomePage.qml" || fail home-prefetch-idle-guard-missing
+if grep -Eq 'onPressedChanged:|Component.onCompleted:' \
+    "$NATIVE_ROOT/qml/pages/HomePage.qml"; then
+    fail home-eager-delegate-prefetch-returned
+fi
+if grep -Eq 'm_preparingVideo|m_preparedVideoReady' \
+    "$NATIVE_ROOT/src/playbacksession.cpp"; then
+    fail hidden-decoder-preparation-returned
+fi
+grep -Fq 'interruptedCodec = m_startedCodec.load()' \
+    "$NATIVE_ROOT/src/droidvideodecoder.cpp" || fail codec-start-publication-guard-missing
+grep -Fq 'm_prefetchReplies.size() >= 2' \
+    "$NATIVE_ROOT/src/playbackresolver.cpp" || fail metadata-prefetch-concurrency-unbounded
+grep -Fq 'm_prefetchedResponses.size() >= 16' \
+    "$NATIVE_ROOT/src/playbackresolver.cpp" || fail metadata-prefetch-cache-unbounded
+
 # Droidmedia grants buffer_created() an extra strong reference and requires
 # clients returning true to release it with droid_media_buffer_destroy(). The
 # user-data marker also prevents the adaptation from granting another reference
@@ -698,7 +822,7 @@ grep -Fq 'occupied_height=$2' \
     "$SCRIPT_DIR/probe-silisili-native-vod-cover-layout.sh" \
     || fail vod-cover-layout-runtime-geometry-gate-missing
 
-printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|droidmedia_buffer_refs=balanced|system_pip=notification-configurable-shutdown-safe|release_asset=declared|visual_model=unused\n' \
+printf 'native_source_verify=ready|version=%s|release=%s|sources=%s|qrc_resources=%s|cmake_qmake=aligned|desktop=production|playback_session=vod-pgc-live-separated|background_presentation=shared|droidmedia_buffer_refs=balanced|sfos50_video=software-default|qr=built-in-fallback|system_pip=notification-configurable-shutdown-safe|release_asset=declared|visual_model=unused\n' \
     "$spec_version" "$spec_release" \
     "$(wc -l <"$temporary/source-files" | tr -d ' ')" \
     "$(sed -n 's|.*<file[^>]*>\([^<]*\)</file>.*|\1|p' "$qrc" | wc -l | tr -d ' ')"
