@@ -1,5 +1,7 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
+import "../components/ImageUrls.js" as ImageUrls
 
 Page {
     id: page
@@ -17,7 +19,8 @@ Page {
 
         Column {
             id: content
-            width: parent.width
+            width: Math.min(parent.width, Theme.itemSizeHuge * 8)
+            x: (parent.width - width) / 2
             spacing: Theme.paddingMedium
 
             PageHeader { title: qsTr("消息详情"); description: messageCategory }
@@ -28,7 +31,7 @@ Page {
                 Rectangle {
                     id: avatarMask
                     x: Theme.horizontalPageMargin
-                    y: Theme.paddingMedium
+                    anchors.verticalCenter: parent.verticalCenter
                     width: Theme.iconSizeLarge
                     height: width
                     radius: width / 2
@@ -36,7 +39,9 @@ Page {
                     clip: true
                     Image {
                         anchors.fill: parent
-                        source: messageAvatar
+                        sourceSize.width: Math.max(1, width)
+                        sourceSize.height: Math.max(1, height)
+                        source: ImageUrls.thumbnail(messageAvatar, width)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
@@ -47,9 +52,9 @@ Page {
                     anchors.leftMargin: Theme.paddingMedium
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: avatarMask.verticalCenter
-                    Label { width: parent.width; text: messageAuthor; color: Theme.highlightColor }
-                    Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    AppLabel { width: parent.width; text: messageAuthor; color: Theme.highlightColor }
+                    AppLabel {
                         width: parent.width
                         text: messageTime
                         color: Theme.secondaryColor
@@ -59,7 +64,7 @@ Page {
             }
 
             SectionHeader { text: messageCategory }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: messageText
@@ -68,7 +73,7 @@ Page {
             }
 
             SectionHeader { visible: messageSubject.length > 0; text: qsTr("原内容") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: messageSubject.length > 0

@@ -12,8 +12,26 @@
 #include <QUrlQuery>
 
 AuthorSpaceModel::AuthorSpaceModel(QObject *parent)
-    : QObject(parent), m_loading(false), m_pendingRequests(0), m_generation(0),
+    : QAbstractListModel(parent), m_loading(false), m_pendingRequests(0), m_generation(0),
       m_videoPage(0), m_videoHasMore(false), m_dynamicHasMore(false) {}
+
+int AuthorSpaceModel::rowCount(const QModelIndex &parent) const {
+    return parent.isValid() ? 0 : m_videos.size() + m_dynamics.size();
+}
+
+QVariant AuthorSpaceModel::data(const QModelIndex &index, int role) const {
+    if (!index.isValid() || index.row() < 0 || index.row() >= rowCount()) return QVariant();
+    const bool video = index.row() < m_videos.size();
+    if (role == EntryRole)
+        return video ? m_videos.at(index.row()) : m_dynamics.at(index.row() - m_videos.size());
+    if (role == KindRole) return video ? QStringLiteral("video") : QStringLiteral("dynamic");
+    if (role == SectionRole) return video ? tr("最新作品") : tr("最新动态");
+    return QVariant();
+}
+
+QHash<int, QByteArray> AuthorSpaceModel::roleNames() const {
+    return {{EntryRole, "entryData"}, {KindRole, "entryKind"}, {SectionRole, "sectionTitle"}};
+}
 
 QString AuthorSpaceModel::normalizedUrl(QString value) {
     if (value.startsWith(QStringLiteral("//"))) value.prepend(QStringLiteral("https:"));
@@ -166,6 +184,7 @@ void AuthorSpaceModel::load(const QString &mid) {
     m_avatar.clear();
     m_signature.clear();
     m_followerText.clear();
+    beginResetModel();
     m_videos.clear();
     m_dynamics.clear();
     m_seenVideos.clear();
@@ -174,6 +193,7 @@ void AuthorSpaceModel::load(const QString &mid) {
     m_videoHasMore = true;
     m_dynamicHasMore = true;
     m_dynamicOffset.clear();
+    endResetModel();
     m_errorMessage.clear();
     m_loading = true;
     m_pendingRequests = 3;
@@ -301,6 +321,7 @@ void AuthorSpaceModel::sendVideoRequest(int generation, int page, const QUrl &vi
                                     .value(QStringLiteral("vlist")).toArray();
             if (ok && root.value(QStringLiteral("code")).toInt(-1) == 0) {
                 int added = 0;
+                QVariantList nextVideos;
                 for (const QJsonValue &value : list) {
                     const QJsonObject object = value.toObject();
                     const QString bvid = object.value(QStringLiteral("bvid")).toString();
@@ -312,14 +333,20 @@ void AuthorSpaceModel::sendVideoRequest(int generation, int page, const QUrl &vi
                     item.insert(QStringLiteral("duration"), object.value(QStringLiteral("length")).toString());
                     item.insert(QStringLiteral("stats"), tr("播放 %1")
                                 .arg(formatCount(static_cast<qint64>(object.value(QStringLiteral("play")).toDouble()))));
-                    m_videos.append(item);
+                    nextVideos.append(item);
                     m_seenVideos.insert(bvid);
                     ++added;
+                }
+                if (!nextVideos.isEmpty()) {
+                    const int first = m_videos.size();
+                    beginInsertRows(QModelIndex(), first, first + nextVideos.size() - 1);
+                    m_videos += nextVideos;
+                    endInsertRows();
                 }
                 m_videoPage = page;
                 const int total = data.value(QStringLiteral("page")).toObject()
                                   .value(QStringLiteral("count")).toInt();
-                m_videoHasMore = total > 0 ? page * 20 < total : list.size() >= 20;
+                m_videoHasMore = added > 0 && (total > 0 ? page * 20 < total : list.size() >= 20);
                 qInfo() << "native author space videos: page" << page
                         << "added" << added << "shown" << m_videos.size()
                         << "hasMore" << m_videoHasMore;
@@ -359,6 +386,7 @@ void AuthorSpaceModel::requestDynamics(int generation, const QString &offset) {
                 int added = 0;
                 int forwarded = 0;
                 int commentable = 0;
+                QVariantList nextDynamics;
                 for (const QJsonValue &value : items) {
                     const QJsonObject object = value.toObject();
                     QString dynamicId = jsonId(object.value(QStringLiteral("id_str")));
@@ -398,7 +426,7 @@ void AuthorSpaceModel::requestDynamics(int generation, const QString &offset) {
                             && item.value(QStringLiteral("title")).toString().isEmpty()
                             && item.value(QStringLiteral("imageUrls")).toStringList().isEmpty())
                         item.insert(QStringLiteral("text"), tr("发布了一条动态"));
-                    m_dynamics.append(item);
+                    nextDynamics.append(item);
                     if (!dynamicId.isEmpty()) m_seenDynamics.insert(dynamicId);
                     ++added;
                     if (isForward && !item.value(QStringLiteral("source")).toString().isEmpty())
@@ -406,10 +434,17 @@ void AuthorSpaceModel::requestDynamics(int generation, const QString &offset) {
                     if (!item.value(QStringLiteral("commentOid")).toString().isEmpty())
                         ++commentable;
                 }
+                if (!nextDynamics.isEmpty()) {
+                    const int first = rowCount();
+                    beginInsertRows(QModelIndex(), first, first + nextDynamics.size() - 1);
+                    m_dynamics += nextDynamics;
+                    endInsertRows();
+                }
+                const QString oldOffset = m_dynamicOffset;
                 m_dynamicOffset = data.value(QStringLiteral("offset")).toString();
                 const QJsonValue hasMore = data.value(QStringLiteral("has_more"));
                 m_dynamicHasMore = hasMore.isBool() ? hasMore.toBool() : hasMore.toInt() != 0;
-                if (m_dynamicOffset.isEmpty()) m_dynamicHasMore = false;
+                if (m_dynamicOffset.isEmpty() || m_dynamicOffset == oldOffset) m_dynamicHasMore = false;
                 qInfo() << "native author space dynamics: added" << added
                         << "shown" << m_dynamics.size()
                         << "forwarded" << forwarded

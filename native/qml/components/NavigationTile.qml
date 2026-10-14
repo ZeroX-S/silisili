@@ -9,14 +9,15 @@ BackgroundItem {
     property int titleFontSize: Theme.fontSizeSmall
     property bool selected: false
 
-    height: Theme.itemSizeLarge
+    height: Math.max(Theme.itemSizeLarge, tileContent.implicitHeight + 2 * Theme.paddingMedium)
 
     Column {
+        id: tileContent
         anchors.centerIn: parent
-        width: parent.width - 2 * Theme.paddingSmall
+        width: parent.width - 2 * Theme.paddingMedium
         spacing: Theme.paddingSmall / 2
 
-        Label {
+        AppLabel {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: root.title
@@ -25,11 +26,13 @@ BackgroundItem {
             truncationMode: TruncationMode.Fade
         }
 
-        Label {
+        AppLabel {
             width: parent.width
             visible: root.description.length > 0
             horizontalAlignment: Text.AlignHCenter
             text: root.description
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
             color: root.highlighted || root.selected
                    ? Theme.secondaryHighlightColor : Theme.secondaryColor
             font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)

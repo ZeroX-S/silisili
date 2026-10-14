@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import cn.silisili.native.models 1.0
 import "../components"
 
@@ -49,49 +50,219 @@ Page {
         })
     }
 
-    SilicaFlickable {
+    FeedPagination {
+        view: flickable
+        feed: authorSpace
+        pageActive: page.status === PageStatus.Active
+        loading: authorSpace.loading
+        hasMore: authorSpace.hasMore
+        itemCount: flickable.count
+        // Failed streams disable their own hasMore flag. A profile failure
+        // must not block a healthy video/dynamic stream from paginating.
+        errorMessage: ""
+    }
+
+    Component {
+        id: videoCardComponent
+        BackgroundItem {
+            property var modelData: parent.record
+            width: flickable.width
+            height: Math.max(poster.height, videoLabels.implicitHeight) + 2 * Theme.paddingMedium
+            onClicked: pageStack.push(Qt.resolvedUrl("VideoDetailPage.qml"), {
+                videoBvid: modelData.bvid,
+                videoTitle: modelData.title,
+                videoOwner: authorSpace.name || initialName,
+                videoCover: modelData.cover
+            })
+            Image {
+                id: poster
+                x: Theme.horizontalPageMargin
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(parent.width * 0.36, Theme.itemSizeHuge * 1.6)
+                height: width * 9 / 16
+                source: ImageUrls.thumbnail(modelData.cover, width)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                sourceSize.width: width
+                sourceSize.height: height
+            }
+            Column {
+                id: videoLabels
+                anchors.left: poster.right
+                anchors.leftMargin: Theme.paddingMedium
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.horizontalPageMargin
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.paddingSmall
+                AppLabel {
+                    width: parent.width
+                    text: modelData.title
+                    color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    maximumLineCount: 2
+                    wrapMode: Text.Wrap
+                    truncationMode: TruncationMode.Fade
+                }
+                AppLabel {
+                    width: parent.width
+                    text: modelData.stats + (modelData.duration.length > 0 ? " · " + modelData.duration : "")
+                    color: Theme.secondaryColor
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
+                    truncationMode: TruncationMode.Fade
+                }
+            }
+        }
+    }
+    Component {
+        id: dynamicCardComponent
+        BackgroundItem {
+            property var modelData: parent.record
+            id: dynamicCard
+            width: flickable.width
+            height: dynamicContent.implicitHeight + 2 * Theme.paddingMedium
+            property var pictures: modelData.imageUrls || []
+            property bool canComment: (modelData.commentOid || "").length > 0
+            onClicked: page.openDynamic(modelData)
+
+            function openComments() {
+                if (canComment)
+                    page.openDynamicComments(modelData)
+            }
+            Column {
+                id: dynamicContent
+                x: Theme.horizontalPageMargin
+                y: Theme.paddingMedium
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                spacing: Theme.paddingSmall
+                AppLabel {
+                    width: parent.width
+                    visible: modelData.time.length > 0
+                    text: modelData.time
+                    color: Theme.secondaryColor
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
+                }
+                AppLabel {
+                    width: parent.width
+                    text: modelData.text
+                    color: Theme.primaryColor
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 6
+                    truncationMode: TruncationMode.Fade
+                }
+                AppLabel {
+                    width: parent.width
+                    visible: (modelData.source || "").length > 0
+                    text: modelData.source || ""
+                    color: Theme.secondaryColor
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 5
+                    truncationMode: TruncationMode.Fade
+                }
+                Grid {
+                    id: dynamicPictures
+                    width: parent.width
+                    visible: dynamicCard.pictures.length > 0
+                    columns: Math.min(page.landscapeLayout ? 4 : 3,
+                                      Math.max(1, dynamicCard.pictures.length))
+                    spacing: Theme.paddingSmall
+                    property real cellWidth: (width - (columns - 1) * spacing) / columns
+                    height: visible
+                            ? Math.ceil(dynamicCard.pictures.length / columns) * (cellWidth + spacing) - spacing
+                            : 0
+                    Repeater {
+                        model: dynamicCard.pictures
+                        Image {
+                            width: dynamicPictures.cellWidth
+                            height: width
+                            source: ImageUrls.thumbnail(modelData, width)
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            sourceSize.width: width
+                            sourceSize.height: height
+                        }
+                    }
+                }
+                Rectangle {
+                    width: parent.width
+                    height: visible ? Math.max(dynamicCover.height, dynamicTitle.implicitHeight) + 2 * Theme.paddingSmall : 0
+                    visible: (modelData.title || "").length > 0
+                    color: Theme.rgba(Theme.highlightBackgroundColor, Theme.opacityFaint)
+                    Image {
+                        id: dynamicCover
+                        x: Theme.paddingSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: visible ? Math.min(parent.width * 0.30, Theme.itemSizeLarge * 1.6) : 0
+                        height: width * 9 / 16
+                        visible: (modelData.cover || "").length > 0
+                        sourceSize.width: Math.max(1, width)
+                        sourceSize.height: Math.max(1, height)
+                        source: ImageUrls.thumbnail(modelData.cover || "", width)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
+                    AppLabel {
+                        id: dynamicTitle
+                        anchors.left: dynamicCover.visible ? dynamicCover.right : parent.left
+                        anchors.leftMargin: Theme.paddingSmall
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.paddingSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.title || ""
+                        color: Theme.secondaryHighlightColor
+                        maximumLineCount: 2
+                        wrapMode: Text.Wrap
+                        truncationMode: TruncationMode.Fade
+                    }
+                }
+                AppLabel {
+                    width: parent.width
+                    visible: (modelData.stats || "").length > 0
+                    text: modelData.stats || ""
+                    horizontalAlignment: Text.AlignRight
+                    color: Theme.secondaryColor
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
+                }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: dynamicCard.canComment
+                    text: qsTr("查看动态评论")
+                    onClicked: dynamicCard.openComments()
+                }
+            }
+
+            ContextMenu {
+                MenuItem {
+                    text: qsTr("查看动态视频")
+                    visible: (modelData.bvid || "").length > 0
+                    enabled: visible
+                    onClicked: pageStack.push(Qt.resolvedUrl("VideoDetailPage.qml"), {
+                        videoBvid: modelData.bvid,
+                        videoTitle: modelData.title,
+                        videoOwner: authorSpace.name || initialName,
+                        videoCover: modelData.cover
+                    })
+                }
+                MenuItem {
+                    text: qsTr("查看动态评论")
+                    enabled: dynamicCard.canComment
+                    onClicked: dynamicCard.openComments()
+                }
+            }
+        }
+    }
+
+    SilicaListView {
         id: flickable
         anchors.fill: parent
-        contentHeight: content.height + Theme.paddingLarge
+        model: authorSpace
+        cacheBuffer: height
         clip: true
-
-        function nearBottom() {
-            return contentY + height >= contentHeight - Theme.itemSizeHuge * 3
-        }
-
-        function maybeLoadMore() {
-            if (authorSpace.hasMore && !authorSpace.loading && nearBottom())
-                authorSpace.loadMore()
-        }
-
-        onContentYChanged: maybeLoadMore()
-        onMovementEnded: maybeLoadMore()
-
-        Connections {
-            target: authorSpace
-            onChanged: if (!authorSpace.loading) spacePaginationTimer.restart()
-        }
-
-        Timer {
-            id: spacePaginationTimer
-            interval: 250
-            repeat: false
-            onTriggered: flickable.maybeLoadMore()
-        }
-
-        Timer {
-            interval: 700
-            repeat: true
-            running: page.status === PageStatus.Active
-                     && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
-            onTriggered: flickable.maybeLoadMore()
-        }
-
+        section.property: "sectionTitle"
+        section.delegate: SectionHeader { text: section }
         PullDownMenu {
             MenuItem { text: qsTr("刷新空间和动态"); onClicked: authorSpace.load(authorMid) }
         }
-
-        Column {
+        header: Column {
             id: content
             width: parent.width
             spacing: Theme.paddingSmall
@@ -129,14 +300,14 @@ Page {
                     anchors.rightMargin: Theme.horizontalPageMargin
                     anchors.verticalCenter: avatarMask.verticalCenter
                     spacing: Theme.paddingSmall
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: authorSpace.name || initialName
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         color: Theme.primaryColor
                         truncationMode: TruncationMode.Fade
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         visible: authorSpace.signature.length > 0
                         text: authorSpace.signature
@@ -149,7 +320,7 @@ Page {
                 }
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: authorSpace.errorMessage.length > 0
@@ -158,237 +329,43 @@ Page {
                 wrapMode: Text.Wrap
             }
 
-            SectionHeader { text: qsTr("最新作品") }
-            Repeater {
-                model: authorSpace.videos
-                BackgroundItem {
-                    width: content.width
-                    height: Math.max(poster.height, videoLabels.implicitHeight) + 2 * Theme.paddingMedium
-                    onClicked: pageStack.push(Qt.resolvedUrl("VideoDetailPage.qml"), {
-                        videoBvid: modelData.bvid,
-                        videoTitle: modelData.title,
-                        videoOwner: authorSpace.name || initialName,
-                        videoCover: modelData.cover
-                    })
-                    Image {
-                        id: poster
-                        x: Theme.horizontalPageMargin
-                        y: Theme.paddingMedium
-                        width: Math.min(parent.width * 0.36, Theme.itemSizeHuge * 1.6)
-                        height: width * 9 / 16
-                        source: modelData.cover
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        sourceSize.width: width
-                        sourceSize.height: height
-                    }
-                    Column {
-                        id: videoLabels
-                        anchors.left: poster.right
-                        anchors.leftMargin: Theme.paddingMedium
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.horizontalPageMargin
-                        anchors.verticalCenter: poster.verticalCenter
-                        spacing: Theme.paddingSmall
-                        Label {
-                            width: parent.width
-                            text: modelData.title
-                            color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor
-                            maximumLineCount: 2
-                            wrapMode: Text.Wrap
-                            truncationMode: TruncationMode.Fade
-                        }
-                        Label {
-                            width: parent.width
-                            text: modelData.stats + (modelData.duration.length > 0 ? " · " + modelData.duration : "")
-                            color: Theme.secondaryColor
-                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
-                            truncationMode: TruncationMode.Fade
-                        }
-                    }
-                }
+        }
+
+        delegate: Loader {
+            width: flickable.width
+            height: item ? item.height : Theme.itemSizeHuge
+            property var record: entryData
+            asynchronous: true
+            sourceComponent: entryKind === "video" ? videoCardComponent : dynamicCardComponent
+        }
+        footer: Item {
+            width: parent.width
+            height: authorSpace.loading || authorSpace.hasMore
+                    ? Theme.itemSizeHuge : Theme.itemSizeLarge
+            BusyIndicator {
+                anchors.centerIn: parent
+                running: authorSpace.loading
+                        && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
+                size: BusyIndicatorSize.Medium
             }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: !authorSpace.loading && authorSpace.videos.length === 0
-                text: qsTr("暂未取得公开作品")
+            Button {
+                anchors.centerIn: parent
+                visible: authorSpace.hasMore && !authorSpace.loading
+                text: qsTr("加载更多空间内容")
+                onClicked: authorSpace.loadMore()
+            }
+            AppLabel {
+                anchors.centerIn: parent
+                visible: !authorSpace.loading && !authorSpace.hasMore
+                         && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
+                text: qsTr("空间内容已全部加载")
                 color: Theme.secondaryColor
-            }
-
-            SectionHeader { text: qsTr("最新动态") }
-            Repeater {
-                model: authorSpace.dynamics
-                BackgroundItem {
-                    id: dynamicCard
-                    width: content.width
-                    height: dynamicContent.implicitHeight + 2 * Theme.paddingMedium
-                    property var pictures: modelData.imageUrls || []
-                    property bool canComment: (modelData.commentOid || "").length > 0
-                    onClicked: page.openDynamic(modelData)
-
-                    function openComments() {
-                        if (canComment)
-                            page.openDynamicComments(modelData)
-                    }
-                    Column {
-                        id: dynamicContent
-                        x: Theme.horizontalPageMargin
-                        y: Theme.paddingMedium
-                        width: parent.width - 2 * Theme.horizontalPageMargin
-                        spacing: Theme.paddingSmall
-                        Label {
-                            width: parent.width
-                            visible: modelData.time.length > 0
-                            text: modelData.time
-                            color: Theme.secondaryColor
-                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
-                        }
-                        Label {
-                            width: parent.width
-                            text: modelData.text
-                            color: Theme.primaryColor
-                            wrapMode: Text.Wrap
-                            maximumLineCount: 6
-                            truncationMode: TruncationMode.Fade
-                        }
-                        Label {
-                            width: parent.width
-                            visible: (modelData.source || "").length > 0
-                            text: modelData.source || ""
-                            color: Theme.secondaryColor
-                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
-                            wrapMode: Text.Wrap
-                            maximumLineCount: 5
-                            truncationMode: TruncationMode.Fade
-                        }
-                        Grid {
-                            id: dynamicPictures
-                            width: parent.width
-                            visible: dynamicCard.pictures.length > 0
-                            columns: Math.min(page.landscapeLayout ? 4 : 3,
-                                              Math.max(1, dynamicCard.pictures.length))
-                            spacing: Theme.paddingSmall
-                            property real cellWidth: (width - (columns - 1) * spacing) / columns
-                            height: visible
-                                    ? Math.ceil(dynamicCard.pictures.length / columns) * (cellWidth + spacing) - spacing
-                                    : 0
-                            Repeater {
-                                model: dynamicCard.pictures
-                                Image {
-                                    width: dynamicPictures.cellWidth
-                                    height: width
-                                    source: modelData
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    sourceSize.width: width
-                                    sourceSize.height: height
-                                }
-                            }
-                        }
-                        Rectangle {
-                            width: parent.width
-                            height: visible ? Math.max(dynamicCover.height, dynamicTitle.implicitHeight) + 2 * Theme.paddingSmall : 0
-                            visible: (modelData.title || "").length > 0
-                            color: Theme.rgba(Theme.highlightBackgroundColor, Theme.opacityFaint)
-                            Image {
-                                id: dynamicCover
-                                x: Theme.paddingSmall
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: visible ? Math.min(parent.width * 0.30, Theme.itemSizeLarge * 1.6) : 0
-                                height: width * 9 / 16
-                                visible: (modelData.cover || "").length > 0
-                                source: modelData.cover || ""
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                            }
-                            Label {
-                                id: dynamicTitle
-                                anchors.left: dynamicCover.visible ? dynamicCover.right : parent.left
-                                anchors.leftMargin: Theme.paddingSmall
-                                anchors.right: parent.right
-                                anchors.rightMargin: Theme.paddingSmall
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.title || ""
-                                color: Theme.secondaryHighlightColor
-                                maximumLineCount: 2
-                                wrapMode: Text.Wrap
-                                truncationMode: TruncationMode.Fade
-                            }
-                        }
-                        Label {
-                            width: parent.width
-                            visible: (modelData.stats || "").length > 0
-                            text: modelData.stats || ""
-                            horizontalAlignment: Text.AlignRight
-                            color: Theme.secondaryColor
-                            font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
-                        }
-                        Button {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            visible: dynamicCard.canComment
-                            text: qsTr("查看动态评论")
-                            onClicked: dynamicCard.openComments()
-                        }
-                    }
-
-                    ContextMenu {
-                        MenuItem {
-                            text: qsTr("查看动态视频")
-                            visible: (modelData.bvid || "").length > 0
-                            enabled: visible
-                            onClicked: pageStack.push(Qt.resolvedUrl("VideoDetailPage.qml"), {
-                                videoBvid: modelData.bvid,
-                                videoTitle: modelData.title,
-                                videoOwner: authorSpace.name || initialName,
-                                videoCover: modelData.cover
-                            })
-                        }
-                        MenuItem {
-                            text: qsTr("查看动态评论")
-                            enabled: dynamicCard.canComment
-                            onClicked: dynamicCard.openComments()
-                        }
-                    }
-                }
-            }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: !authorSpace.loading && authorSpace.dynamics.length === 0
-                text: qsTr("暂未取得公开动态")
-                color: Theme.secondaryColor
-            }
-
-            Item {
-                width: parent.width
-                height: authorSpace.loading || authorSpace.hasMore
-                        ? Theme.itemSizeHuge : Theme.itemSizeLarge
-                BusyIndicator {
-                    anchors.centerIn: parent
-                    running: authorSpace.loading
-                            && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
-                    size: BusyIndicatorSize.Medium
-                }
-                Button {
-                    anchors.centerIn: parent
-                    visible: authorSpace.hasMore && !authorSpace.loading
-                    text: qsTr("加载更多空间内容")
-                    onClicked: authorSpace.loadMore()
-                }
-                Label {
-                    anchors.centerIn: parent
-                    visible: !authorSpace.loading && !authorSpace.hasMore
-                             && (authorSpace.videos.length > 0 || authorSpace.dynamics.length > 0)
-                    text: qsTr("空间内容已全部加载")
-                    color: Theme.secondaryColor
-                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
-                }
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
             }
         }
         BusyIndicator {
             anchors.centerIn: parent
-            running: authorSpace.loading
+            running: authorSpace.loading && flickable.count === 0
             size: BusyIndicatorSize.Large
         }
         VerticalScrollDecorator {}

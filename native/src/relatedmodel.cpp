@@ -58,6 +58,7 @@ void RelatedModel::load(const QString &bvid) {
         return;
     m_bvid = bvid;
     m_loading = true;
+    m_error.clear();
     emit stateChanged();
 
     QUrl url(QStringLiteral("https://api.bilibili.com/x/web-interface/archive/related"));
@@ -76,6 +77,7 @@ void RelatedModel::load(const QString &bvid) {
         reply->deleteLater();
         m_loading = false;
         if (networkError != QNetworkReply::NoError) {
+            m_error = tr("推荐请求失败，请重试");
             if (m_bvid == bvid) m_bvid.clear();
             emit stateChanged();
             return;
@@ -85,6 +87,7 @@ void RelatedModel::load(const QString &bvid) {
         const QJsonObject root = QJsonDocument::fromJson(payload, &parseError).object();
         if (parseError.error != QJsonParseError::NoError
                 || root.value(QStringLiteral("code")).toDouble(-1) != 0) {
+            m_error = tr("推荐内容暂时不可用");
             if (m_bvid == bvid) m_bvid.clear();
             emit stateChanged();
             return;

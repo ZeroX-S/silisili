@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
 
 Dialog {
     id: dialog
@@ -45,9 +46,10 @@ Dialog {
                 dialog.accept()
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 2 * Theme.horizontalPageMargin - 2 * Theme.paddingMedium
                 text: modelData.label
                 color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
             }

@@ -1,5 +1,7 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
+import "../components/ImageUrls.js" as ImageUrls
 
 Page {
     id: page
@@ -29,10 +31,12 @@ Page {
             Image {
                 id: episodeCover
                 x: Theme.horizontalPageMargin
-                y: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width * 0.32, Theme.itemSizeHuge * 1.5)
                 height: width * 9 / 16
-                source: modelData.cover
+                sourceSize.width: Math.max(1, width)
+                sourceSize.height: Math.max(1, height)
+                source: ImageUrls.thumbnail(modelData.cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
             }
@@ -42,10 +46,10 @@ Page {
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: episodeCover.verticalCenter
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: modelData.title
                     color: modelData.cid === selectedCid || parent.parent.highlighted
@@ -54,7 +58,8 @@ Page {
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
+                    width: parent.width
                     text: modelData.duration > 0
                           ? qsTr("时长 %1 分钟").arg(Math.max(1, Math.round(modelData.duration / 60)))
                           : qsTr("点按播放")

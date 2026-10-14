@@ -37,6 +37,7 @@ public:
     void updateMasterClock(double position, double speed, bool running);
 
     bool active() const { return m_active.load(); }
+    bool seeking() const;
     int generation() const { return m_generation.load(); }
 
     _DroidMediaBuffer *takePendingFrame(int generation);
@@ -81,6 +82,9 @@ private:
     std::atomic<bool> m_ultraHdSource;
     std::atomic<int> m_seekSerial;
     std::atomic<int> m_appliedSeekSerial;
+    std::atomic<int> m_ioSeekSerial;
+    std::atomic<long long> m_seekRequestedAtUs;
+    bool m_interruptSeekIo;
     std::atomic<long long> m_seekTargetUs;
     std::atomic<long long> m_dropBeforeUs;
     std::atomic<bool> m_normalizeStreamingTimeline;

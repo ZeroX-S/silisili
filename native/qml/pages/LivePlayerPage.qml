@@ -291,14 +291,14 @@ Page {
             anchors.right: parent.right
             anchors.rightMargin: Theme.horizontalPageMargin
             anchors.verticalCenter: parent.verticalCenter
-            Label {
+            AppLabel {
                 width: parent.width
                 text: roomTitle
                 color: "white"
                 truncationMode: TruncationMode.Fade
                 maximumLineCount: 1
             }
-            Label {
+            AppLabel {
                 width: parent.width
                 text: roomOwner
                 color: Theme.secondaryHighlightColor
@@ -375,7 +375,7 @@ Page {
         size: BusyIndicatorSize.Large
     }
 
-    Label {
+    AppLabel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: Theme.horizontalPageMargin
@@ -400,7 +400,7 @@ Page {
         visible: false
         z: 40
 
-        Label {
+        AppLabel {
             id: orientationLabel
             anchors.centerIn: parent
             text: orientationModeLabel

@@ -219,16 +219,11 @@ void DynamicFeedModel::refresh() {
     m_seen.clear();
     m_hasMore = true;
     m_errorMessage.clear();
-    if (!m_items.isEmpty()) {
-        beginResetModel();
-        m_items.clear();
-        endResetModel();
-    }
     request(true);
 }
 
 void DynamicFeedModel::loadMore() {
-    if (!m_loading && m_hasMore) request(false);
+    if (!m_loading && m_hasMore && m_errorMessage.isEmpty()) request(false);
 }
 
 void DynamicFeedModel::request(bool reset) {

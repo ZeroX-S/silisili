@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
@@ -12,11 +13,22 @@ Page {
         columns: 1
     }
 
+    FeedPagination {
+        id: pagination
+        view: results
+        feed: searchModel
+        pageActive: page.status === PageStatus.Active
+        loading: searchModel.loading
+        hasMore: searchModel.hasMore
+        itemCount: results.count
+        errorMessage: searchModel.errorMessage
+    }
+
     SilicaListView {
         id: results
         anchors.fill: parent
+        cacheBuffer: height
         model: searchModel
-        onAtYEndChanged: if (atYEnd && count > 0) searchModel.loadMore()
         PullDownMenu { MenuItem { text: qsTr("清除搜索历史"); enabled: searchModel.history.length > 0; onClicked: searchModel.clearHistory() } }
         header: Column {
             id: searchHeader
@@ -60,7 +72,7 @@ Page {
             SectionHeader { text: searchModel.query.length ? qsTr("“%1”的结果").arg(searchModel.query) : qsTr("输入关键词开始搜索") }
             Repeater {
                 model: searchModel.query.length ? [] : searchModel.history
-                BackgroundItem { width: results.width; Label { x: Theme.horizontalPageMargin; anchors.verticalCenter: parent.verticalCenter; text: modelData; color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor } onClicked: { searchField.text = modelData; searchModel.search(modelData) } }
+                BackgroundItem { width: results.width; AppLabel { x: Theme.horizontalPageMargin; width: parent.width - 2 * Theme.horizontalPageMargin; anchors.verticalCenter: parent.verticalCenter; text: modelData; color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor } onClicked: { searchField.text = modelData; searchModel.search(modelData) } }
             }
         }
         delegate: BackgroundItem {
@@ -73,23 +85,23 @@ Page {
             Image {
                 id: coverImage
                 x: Theme.horizontalPageMargin
-                y: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width * 0.36, Theme.itemSizeHuge * 2.2)
                 height: width * 9 / 16
-                source: cover
+                source: ImageUrls.thumbnail(cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: width
                 sourceSize.height: height
             }
-            Column { id: labels; anchors.left: coverImage.right; anchors.leftMargin: Theme.paddingMedium; anchors.right: parent.right; anchors.rightMargin: Theme.horizontalPageMargin; anchors.verticalCenter: coverImage.verticalCenter; spacing: Theme.paddingSmall
-                Label { width: parent.width; text: title; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade; color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor }
-                Label { width: parent.width; text: owner; color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: qsTr("播放 %1 · %2").arg(playCount).arg(duration); font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
+            Column { id: labels; anchors.left: coverImage.right; anchors.leftMargin: Theme.paddingMedium; anchors.right: parent.right; anchors.rightMargin: Theme.horizontalPageMargin; anchors.verticalCenter: parent.verticalCenter; spacing: Theme.paddingSmall
+                AppLabel { width: parent.width; text: title; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade; color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor }
+                AppLabel { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                AppLabel { width: parent.width; text: qsTr("播放 %1 · %2").arg(playCount).arg(duration); font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); color: Theme.secondaryColor; truncationMode: TruncationMode.Fade }
             }
         }
-        BusyIndicator { anchors.centerIn: parent; running: searchModel.loading; size: BusyIndicatorSize.Large }
-        ViewPlaceholder { enabled: searchModel.errorMessage.length > 0; text: searchModel.errorMessage; hintText: qsTr("修改关键词后重试") }
+        BusyIndicator { anchors.centerIn: parent; running: searchModel.loading && results.count === 0; size: BusyIndicatorSize.Large }
+        ViewPlaceholder { enabled: results.count === 0 && searchModel.errorMessage.length > 0; text: searchModel.errorMessage; hintText: qsTr("修改关键词后重试") }
         VerticalScrollDecorator {}
     }
 }

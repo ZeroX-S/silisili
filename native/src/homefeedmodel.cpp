@@ -78,7 +78,14 @@ void HomeFeedModel::setErrorMessage(const QString &value) {
 }
 
 void HomeFeedModel::refresh() {
-    loadFeed(m_feedKind);
+    const QByteArray account = m_accountService ? m_accountService->cookieHeader() : QByteArray();
+    if (m_snapshotAccount != account) m_snapshots.clear();
+    m_snapshotAccount = account;
+    m_snapshots.remove(m_feedKind);
+    m_nextPage = 1;
+    m_seenBvids.clear();
+    setHasMore(true);
+    requestFeed(true);
 }
 
 void HomeFeedModel::loadMore() {
@@ -101,9 +108,39 @@ void HomeFeedModel::showPopular() {
 void HomeFeedModel::loadFeed(const QString &feedKind) {
     const QString nextKind = feedKind == QStringLiteral("popular")
             ? QStringLiteral("popular") : QStringLiteral("recommended");
+    const QByteArray account = m_accountService ? m_accountService->cookieHeader() : QByteArray();
+    const bool accountChanged = m_snapshotAccount != account;
+    if (accountChanged) {
+        m_snapshotAccount = account;
+        m_snapshots.clear();
+    } else if (nextKind == m_feedKind && (m_loading || (!m_items.isEmpty() && m_errorMessage.isEmpty()))) {
+        return;
+    }
+    if (!accountChanged && nextKind != m_feedKind && !m_loading && m_errorMessage.isEmpty() && !m_items.isEmpty())
+        m_snapshots.insert(m_feedKind, {m_items, m_seenBvids, m_nextPage, m_hasMore});
+    ++m_requestSerial;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+    }
+    setLoading(true);
     if (m_feedKind != nextKind) {
         m_feedKind = nextKind;
         emit feedChanged();
+    }
+    const auto cached = m_snapshots.constFind(nextKind);
+    beginResetModel();
+    m_items = cached == m_snapshots.constEnd() ? QVector<Item>() : cached->items;
+    endResetModel();
+    setErrorMessage(QString());
+    if (cached != m_snapshots.constEnd()) {
+        m_seenBvids = cached->seen;
+        m_nextPage = cached->nextPage;
+        setHasMore(cached->hasMore);
+        setLoading(false);
+        qInfo() << "native home: category cache restored" << nextKind << "shown" << m_items.size();
+        return;
     }
     m_nextPage = 1;
     m_seenBvids.clear();

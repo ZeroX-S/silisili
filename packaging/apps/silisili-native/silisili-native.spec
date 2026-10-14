@@ -1,6 +1,6 @@
 Name:           silisili-native-devel
 Version:        1.1.0
-Release:        1.58
+Release:        1.59
 Summary:        Native Sailfish OS development version of silisili
 License:        GPL-3.0-or-later and LGPL-2.1-or-later and BSD-3-Clause and Apache-2.0 and ISC and MIT and WTFPL
 Group:          Applications/Multimedia
@@ -105,6 +105,19 @@ exit 0
 %license /usr/share/licenses/%{name}/*
 
 %changelog
+* Wed Oct 14 2026 silisili contributors <noreply@localhost> - 1.1.0-1.59
+- Prefer ordinary HTTPS backups of the same media track when the primary
+  endpoint is a slow peer/custom-port URL; preserve rendition and signed URLs.
+- Cancel obsolete read/seek work and keep target-frame readiness, GPU buffer
+  release and bounded seek recovery synchronized without reopening media.
+- Fetch comments and related videos as soon as details are ready; replace
+  timed trickle loading with bounded asynchronous previews and viewport prefetch.
+- Virtualize author-space rows, retain content during refresh, cache home
+  categories, size CDN thumbnails and stop automatic retries after failures.
+- Unify scalable content typography and adaptive card heights; prevent related
+  text overlap and show landscape video/live lists as horizontal cards.
+- Add measured startup/seek/UI probes and record device regression boundaries.
+
 * Tue Oct 13 2026 silisili contributors <noreply@localhost> - 1.1.0-1.58
 - Replace home-feed hidden decoding with bounded, idle-only URL prefetch;
   fix decoder startup cancellation and pagination notification ordering.

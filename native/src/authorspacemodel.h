@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QObject>
+#include <QAbstractListModel>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QJsonObject>
@@ -8,7 +8,7 @@
 #include <QUrl>
 #include <QVariantList>
 
-class AuthorSpaceModel : public QObject {
+class AuthorSpaceModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(bool loading READ loading NOTIFY changed)
     Q_PROPERTY(QString mid READ mid NOTIFY changed)
@@ -22,7 +22,11 @@ class AuthorSpaceModel : public QObject {
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY changed)
 
 public:
+    enum Role { EntryRole = Qt::UserRole + 1, KindRole, SectionRole };
     explicit AuthorSpaceModel(QObject *parent = 0);
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    QHash<int, QByteArray> roleNames() const override;
     bool loading() const { return m_loading; }
     QString mid() const { return m_mid; }
     QString name() const { return m_name; }

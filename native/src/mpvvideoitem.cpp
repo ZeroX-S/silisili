@@ -1,5 +1,6 @@
 #include "mpvvideoitem.h"
 #include "droidvideodecoder.h"
+#include "playbackperf.h"
 
 #include <QByteArray>
 #include <QDebug>
@@ -1013,6 +1014,7 @@ bool MpvVideoItem::startHardwareDecode(const QString &videoUrl,
 }
 
 void MpvVideoItem::stopHardwareDecode() {
+    m_hardwareSeekElapsed.invalidate();
     const bool wasActive = m_hardwareDecodeActive;
     m_hardwareDecodeActive = false;
     m_hardwarePresentationTimer.stop();
@@ -1042,10 +1044,9 @@ void MpvVideoItem::drainDeferredHardwareBuffers(const char *reason) {
         return;
     }
 
-    // Decoder stop/restart is the one bounded point where waiting for all GPU
-    // reads is desirable. It guarantees no buffer from the outgoing
-    // BufferQueue remains attached to the persistent renderer and avoids
-    // carrying an old codec generation into the next playback session.
+    // At stop/restart/seek boundaries, finish the outstanding GPU reads before
+    // returning old gralloc slots to OMX. The application-owned FBO remains
+    // intact, so seeking can release those source buffers without a black frame.
     renderContext->functions()->glFinish();
     const int released = m_backend->deferredHardwareBuffers.size();
     for (int index = 0; index < released; ++index) {
@@ -1103,6 +1104,10 @@ void MpvVideoItem::resetHardwareStallWatchdog() {
 }
 
 void MpvVideoItem::monitorHardwareProgress() {
+    if (m_hardwareDecodeActive && m_hardwareDecoder && m_hardwareDecoder->seeking()) {
+        resetHardwareStallWatchdog();
+        return;
+    }
     const bool eligible = m_hardwareDecodeActive && m_hardwareDecoder
             && !m_hardwareFirstFramePending && m_sharedTextureFrameSerial > 0
             && m_playing && !m_paused && !m_loading && !m_ended
@@ -1659,6 +1664,18 @@ void MpvVideoItem::renderPendingHardwareFrame(int generation) {
     }
     if (!published) return;
     updatePresentedTextureGeometry(framebufferSize, presentedViewportSize);
+    const double framePosition = bufferInfo.timestamp / 1000000000.0;
+    if (m_hardwareSeekElapsed.isValid()
+            && qAbs(framePosition - m_requestedPosition) <= 0.75) {
+        qInfo() << "native hardware perf: seek texture ready"
+                << "generation" << generation << "target" << m_requestedPosition
+                << "framePosition" << framePosition
+                << "elapsedMs" << m_hardwareSeekElapsed.elapsed();
+        PlaybackPerf::record(QStringLiteral("perf_texture target %1 framePosition %2 elapsedMs %3")
+                            .arg(m_requestedPosition).arg(framePosition)
+                            .arg(m_hardwareSeekElapsed.elapsed()));
+        m_hardwareSeekElapsed.invalidate();
+    }
     resetHardwareStallWatchdog();
     if (firstPublishedFrame) {
         m_initialVideoFrameReady = true;
@@ -2115,6 +2132,7 @@ void MpvVideoItem::togglePaused() {
 void MpvVideoItem::seek(double position) {
     if (position < 0.0) position = 0.0;
     if (m_duration > 0.0 && position > m_duration) position = m_duration;
+    PlaybackPerf::record(QStringLiteral("perf_seek_request target %1").arg(position));
     m_requestedPosition = position;
     m_pendingLoadStart = position;
     if (m_backend && m_backend->loadPending) m_backend->pendingStart = position;
@@ -2124,9 +2142,19 @@ void MpvVideoItem::seek(double position) {
         const char *command[] = {"seek", value.constData(), "absolute+exact", 0};
         mpv_command_async(m_backend->mpv, 0, command);
     }
-    if (m_hardwareDecodeActive && m_hardwareDecoder)
-        // The decoder primes the target texture even while audio stays paused.
+    if (m_hardwareDecodeActive && m_hardwareDecoder) {
+        // Interrupt old input first, then release only decoder source buffers.
+        // Keep the shared texture and its Cover/PiP hosts untouched.
+        m_hardwareSeekElapsed.restart();
         m_hardwareDecoder->seek(position);
+        const bool baselineProfile = !qgetenv("SILISILI_NATIVE_TEST_PAGE").isEmpty()
+                && qgetenv("SILISILI_NATIVE_TEST_PERF_PROFILE") == QByteArrayLiteral("baseline");
+        if (!baselineProfile) {
+            m_hardwareDecoder->discardPendingFrame();
+            drainDeferredHardwareBuffers("seek");
+        }
+        resetHardwareStallWatchdog();
+    }
     syncHardwareClock();
     emit stateChanged();
     emit positionChanged();
@@ -2420,6 +2448,8 @@ void MpvVideoItem::submitPendingLoad() {
             << "startOption" << (m_backend->pendingStart > 0.0)
             << "audioStartGated" << m_initialPositionGatePending
             << "videoEnabled" << m_videoEnabled;
+    PlaybackPerf::record(QStringLiteral("perf_load serial %1 target %2")
+                        .arg(m_loadSerial).arg(m_backend->pendingStart));
 }
 
 void MpvVideoItem::drainMpvEvents() {
@@ -2673,6 +2703,8 @@ void MpvVideoItem::releaseInitialPositionGate(double confirmedPosition) {
             << "audioFromConfirmedTarget" << true
             << "firstVideoFrameReady" << true
             << "loadSerial" << m_loadSerial;
+    PlaybackPerf::record(QStringLiteral("perf_start_ready serial %1 target %2 audioReleased %3")
+                        .arg(m_loadSerial).arg(m_requestedPosition).arg(!remainPaused));
 }
 
 void MpvVideoItem::updateDurationFromMpv(double duration) {

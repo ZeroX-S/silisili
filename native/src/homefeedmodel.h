@@ -44,6 +44,7 @@ signals:
 
 private:
     struct Item { QString title, owner, cover, bvid, cid, play, danmaku, reason; };
+    struct Snapshot { QVector<Item> items; QSet<QString> seen; int nextPage; bool hasMore; };
     void setLoading(bool value);
     void setHasMore(bool value);
     void setErrorMessage(const QString &value);
@@ -59,4 +60,6 @@ private:
     bool m_loading, m_hasMore;
     int m_requestSerial, m_nextPage;
     QString m_errorMessage, m_feedKind;
+    QHash<QString, Snapshot> m_snapshots;
+    QByteArray m_snapshotAccount;
 };

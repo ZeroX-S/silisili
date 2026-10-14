@@ -8,6 +8,10 @@
     <file>assets/cover-idle-logo.png</file>
     <file>components/DanmakuOverlay.qml</file>
     <file>components/AvatarImage.qml</file>
+    <file>components/AppLabel.qml</file>
+    <file>components/CardTextMetrics.qml</file>
+    <file>components/FeedPagination.qml</file>
+    <file>components/ImageUrls.js</file>
     <file>components/NavigationTile.qml</file>
     <file>components/ResponsivePageMetrics.qml</file>
     <file>components/CommentActionButton.qml</file>

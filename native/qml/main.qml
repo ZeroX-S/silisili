@@ -26,6 +26,9 @@ ApplicationWindow {
     property bool networkRecoveryComplete: false
     allowedOrientations: runtimeOrientations
     initialPage: nativeTestPage === "navigation" ? navigationTestPage
+                 : nativeTestPage === "ui-search" ? searchLoadingTestPage
+                 : nativeTestPage === "ui-live-feed" ? liveFeedLoadingTestPage
+                 : nativeTestPage === "ui-region" ? regionLoadingTestPage
                  : nativeTestPage === "about" ? aboutTestPage
                  : nativeTestPage === "playback-presentation" ? playbackPresentationTestPage
                  : nativeTestPage === "account-library" ? accountLibraryTestPage
@@ -54,6 +57,12 @@ ApplicationWindow {
     }
 
     Component { id: homePage; HomePage {} }
+    Component {
+        id: searchLoadingTestPage
+        SearchPage { Component.onCompleted: searchModel.search("Sailfish") }
+    }
+    Component { id: liveFeedLoadingTestPage; LiveFeedPage {} }
+    Component { id: regionLoadingTestPage; RegionPage {} }
     Component { id: navigationTestPage; NavigationPage {} }
     Component { id: aboutTestPage; AboutPage {} }
     Component { id: playbackPresentationTestPage; PlaybackPresentationPage {} }

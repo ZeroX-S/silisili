@@ -99,7 +99,7 @@ void InboxModel::refresh() {
 }
 
 void InboxModel::loadMore() {
-    if (!m_loading && m_hasMore) request(false);
+    if (!m_loading && m_hasMore && m_errorMessage.isEmpty()) request(false);
 }
 
 void InboxModel::request(bool reset) {

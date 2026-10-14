@@ -10,7 +10,7 @@ BackgroundItem {
     property bool active: false
 
     width: actionContent.width + 2 * Theme.paddingMedium
-    height: Theme.itemSizeSmall
+    height: Math.max(Theme.itemSizeSmall, actionContent.implicitHeight + 2 * Theme.paddingSmall)
 
     Row {
         id: actionContent
@@ -29,7 +29,7 @@ BackgroundItem {
                                    : Theme.secondaryColor
         }
 
-        Label {
+        AppLabel {
             anchors.verticalCenter: parent.verticalCenter
             text: root.label
             color: !root.enabled ? Theme.rgba(Theme.secondaryColor,

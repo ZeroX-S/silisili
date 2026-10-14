@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
 
 Page {
     id: page
@@ -20,7 +21,8 @@ Page {
 
         Column {
             id: content
-            width: parent.width
+            width: Math.min(parent.width, Theme.itemSizeHuge * 8)
+            x: (parent.width - width) / 2
 
             PageHeader {
                 title: qsTr("关于 silisili")
@@ -42,7 +44,7 @@ Page {
                     anchors.margins: Theme.paddingLarge
                     spacing: Theme.paddingSmall
 
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: "silisili"
                         color: Theme.highlightColor
@@ -50,14 +52,14 @@ Page {
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: qsTr("原生开发版  %1").arg(nativePackageVersion)
                         color: Theme.primaryColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         horizontalAlignment: Text.AlignHCenter
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: qsTr("视频、直播、动态与个人内容，使用 Sailfish Silica 交互重新实现")
                         color: Theme.secondaryColor
@@ -87,7 +89,7 @@ Page {
             }
 
             SectionHeader { text: qsTr("播放与兼容性") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("视频优先由 FFmpeg 解复用并通过 droidmedia 送入 Android OMX 硬件解码器；解码后的 gralloc 帧使用 EGLImage 在 GPU 内写入应用共享纹理。全屏、详情页、应用内小窗、Cover 与可选系统小窗复用同一视频会话，切换时不重新定位。清晰度菜单保留当前视频接口实际返回的全部可用档位。")
@@ -95,7 +97,7 @@ Page {
                 wrapMode: Text.Wrap
             }
             Item { width: 1; height: Theme.paddingMedium }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: nativeHardwareDecodeAvailable
@@ -106,7 +108,7 @@ Page {
             }
 
             SectionHeader { text: qsTr("版本说明") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("这是可与旧版并行安装的原生开发包。登录信息保存在应用自己的配置目录中；卸载或升级不会主动修改旧版软件包。")
@@ -115,7 +117,7 @@ Page {
             }
 
             SectionHeader { text: qsTr("开源与许可") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("silisili 基于开源项目持续开发，应用代码采用 GPL-3.0-or-later；直接硬解架构参考并改造自 RooTheater-SailfishOS，Lipstick notification 小窗表面与输入区域机制参考 screentapshot-lipstick。系统小窗直接显示应用共享纹理，不使用其整屏录制协议。随包媒体运行库及上游署名文件安装在系统标准 licenses 目录。项目与哔哩哔哩官方无隶属关系。")
@@ -128,7 +130,7 @@ Page {
                 height: Theme.itemSizeLarge
                 onClicked: Qt.openUrlExternally("https://github.com/ZeroX-S/silisili")
 
-                Label {
+                AppLabel {
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.right: sourceIcon.left
@@ -147,7 +149,7 @@ Page {
             }
 
             Item { width: 1; height: Theme.paddingLarge }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("感谢所有上游项目贡献者与真机测试者。")

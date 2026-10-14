@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import cn.silisili.native.models 1.0
 import "../components"
 
@@ -47,27 +48,22 @@ Page {
 
     Component.onCompleted: commentSource.loadResource(commentAid, commentType)
 
+    FeedPagination {
+        id: pagination
+        view: commentList
+        feed: page.commentSource
+        pageActive: page.status === PageStatus.Active
+        loading: page.commentSource.loading
+        hasMore: page.commentSource.hasMore
+        itemCount: commentList.count
+        errorMessage: page.commentSource.errorMessage
+    }
+
     SilicaListView {
         id: commentList
         anchors.fill: parent
+        cacheBuffer: height
         model: commentSource
-        onAtYEndChanged: {
-            if (atYEnd && count > 0)
-                commentSource.loadMore()
-        }
-        onCountChanged: viewportCheckTimer.restart()
-
-        Timer {
-            id: viewportCheckTimer
-            interval: 250
-            repeat: false
-            onTriggered: {
-                if (commentList.count > 0 && commentList.contentHeight <= commentList.height
-                        && commentSource.hasMore && !commentSource.loading)
-                    commentSource.loadMore()
-            }
-        }
-
         PullDownMenu {
             MenuItem {
                 text: accountService.loggedIn ? qsTr("发表评论") : qsTr("登录后可发表评论")
@@ -85,7 +81,7 @@ Page {
                       ? qsTr("%1 条（含楼中楼回复）").arg(commentSource.totalCount)
                       : qsTr("评论")
             }
-            Label {
+            AppLabel {
                 x: page.readableStart
                 width: parent.width - 2 * page.readableStart
                 text: commentSource.totalCount > 0
@@ -138,7 +134,9 @@ Page {
                 Image {
                     id: avatarImage
                     anchors.fill: parent
-                    source: avatar
+                    sourceSize.width: Math.max(1, width)
+                    sourceSize.height: Math.max(1, height)
+                    source: ImageUrls.thumbnail(avatar, width)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
@@ -150,14 +148,14 @@ Page {
                 width: parent.width - x - page.readableStart
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: pinned ? qsTr("置顶 · %1").arg(author) : author
                     color: Theme.highlightColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: messageText
                     font.pixelSize: appSettings.scaledFontSize(
@@ -165,8 +163,9 @@ Page {
                                         appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                 }
-                Label {
+                AppLabel {
                     width: parent.width
+                    wrapMode: Text.Wrap
                     text: qsTr("%1  ·  赞 %2  ·  回复 %3")
                           .arg(commentTime).arg(likeCount).arg(replyCount)
                     color: Theme.secondaryColor
@@ -219,7 +218,7 @@ Page {
                                     "replyY", Math.round(replyPoint.y))
                     }
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: commentItem.repliesTotal > 0
                     text: qsTr("查看全部 %1 条回复 ›").arg(commentItem.repliesTotal)
@@ -258,9 +257,10 @@ Page {
                 anchors.centerIn: parent
                 visible: commentSource.hasMore && !commentSource.loading
                 text: qsTr("加载更多评论")
-                onClicked: commentSource.loadMore()
+                onClicked: commentSource.errorMessage.length > 0
+                           ? commentSource.refresh() : commentSource.loadMore()
             }
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !commentSource.loading && !commentSource.hasMore && commentList.count > 0
                 text: qsTr("主评论已全部加载；点按可查看楼中楼回复")

@@ -75,15 +75,12 @@ void LiveFeedModel::refresh() {
     setLoading(false);
     m_page = 1;
     m_seenRoomIds.clear();
-    beginResetModel();
-    m_items.clear();
-    endResetModel();
     setHasMore(true);
     requestPage(true);
 }
 
 void LiveFeedModel::loadMore() {
-    if (m_loading || !m_hasMore) return;
+    if (m_loading || !m_hasMore || !m_errorMessage.isEmpty()) return;
     requestPage(false);
 }
 

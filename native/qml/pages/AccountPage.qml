@@ -71,7 +71,7 @@ Page {
                 }
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 horizontalAlignment: Text.AlignHCenter
@@ -84,7 +84,7 @@ Page {
                 truncationMode: TruncationMode.Fade
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 horizontalAlignment: Text.AlignHCenter
@@ -176,7 +176,7 @@ Page {
                 visible: accountService.errorMessage.length > 0
                 enabled: false
 
-                Label {
+                AppLabel {
                     id: accountError
                     anchors {
                         left: parent.left
@@ -193,7 +193,7 @@ Page {
             }
 
             SectionHeader { text: qsTr("配置迁移") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("稳定版配置快照：%1。读取过程不会修改稳定版配置。").arg(configMigrationState)

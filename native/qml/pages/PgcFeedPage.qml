@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import cn.silisili.native.models 1.0
 import "../components"
 
@@ -103,16 +104,25 @@ Page {
         }
     }
 
+    FeedPagination {
+        id: pagination
+        view: feedList
+        feed: pgcFeed
+        pageActive: page.status === PageStatus.Active
+        loading: pgcFeed.loading
+        hasMore: pgcFeed.hasMore
+        itemCount: feedList.count
+        errorMessage: pgcFeed.errorMessage
+    }
+
     SilicaListView {
         id: feedList
         anchors.fill: parent
+        cacheBuffer: height
         model: pgcFeed
         clip: true
         spacing: Theme.paddingSmall
-        onAtYEndChanged: {
-            if (atYEnd && count > 0)
-                pgcFeed.loadMore()
-        }
+
 
         PullDownMenu {
             MenuItem { text: qsTr("刷新"); onClicked: pgcFeed.refresh() }
@@ -147,10 +157,10 @@ Page {
             Image {
                 id: poster
                 x: Theme.horizontalPageMargin
-                y: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width * 0.29, Theme.itemSizeHuge * 1.35)
                 height: width * 4 / 3
-                source: cover
+                source: ImageUrls.thumbnail(cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: width
@@ -162,29 +172,29 @@ Page {
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: poster.verticalCenter
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: title
                     color: feedItem.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    truncationMode: TruncationMode.Fade
-                }
-                Label {
-                    width: parent.width
-                    visible: descriptionText.length > 0
-                    text: descriptionText
-                    color: Theme.secondaryColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
+                    width: parent.width
+                    visible: descriptionText.length > 0
+                    text: descriptionText
+                    color: Theme.secondaryColor
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    truncationMode: TruncationMode.Fade
+                }
+                AppLabel {
                     width: parent.width
                     visible: badge.length > 0
                     text: badge
@@ -192,7 +202,7 @@ Page {
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: sectionTitle.length > 0
                     text: sectionTitle
@@ -215,7 +225,8 @@ Page {
                 anchors.centerIn: parent
                 visible: pgcFeed.hasMore && !pgcFeed.loading
                 text: qsTr("加载更多")
-                onClicked: pgcFeed.loadMore()
+                onClicked: pgcFeed.errorMessage.length > 0
+                           ? pgcFeed.refresh() : pgcFeed.loadMore()
             }
         }
 

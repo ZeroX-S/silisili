@@ -28,6 +28,12 @@ test -f "$PROJECT_ROOT/library/QR-Code-generator/cpp/qrcodegen.hpp" \
     || fail missing-qr-encoder-header
 test -f "$NATIVE_ROOT/tests/qrcodegen-smoke.cpp" \
     || fail missing-built-in-qr-smoke
+test -f "$NATIVE_ROOT/tests/mediaurlselector-smoke.cpp" \
+    || fail missing-media-url-selector-smoke
+test -x "$SCRIPT_DIR/probe-silisili-native-seek-performance.sh" \
+    || fail missing-seek-performance-probe
+grep -Fq 'MediaUrlSelector::select(media)' "$NATIVE_ROOT/src/playbackresolver.cpp" \
+    || fail media-url-selection-not-connected
 test -f "$NATIVE_ROOT/tests/playback-start-gate-smoke.js" \
     || fail missing-playback-start-gate-smoke
 grep -Fq 'm_initialPositionGatePending = videoEnabled;' "$NATIVE_ROOT/src/mpvvideoitem.cpp" \

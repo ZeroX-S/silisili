@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
 
 Dialog {
     allowedOrientations: Orientation.All
@@ -48,7 +49,7 @@ Dialog {
                 valueText: value.toFixed(1) + "×"
                 onReleased: danmakuModel.speed = value
             }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: danmakuModel.loading ? qsTr("正在加载弹幕…")

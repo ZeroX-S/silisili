@@ -30,6 +30,8 @@ add_executable(silisili-native
     src/bilibiliimagenetwork.h
     src/networkutils.cpp
     src/networkutils.h
+    src/mediaurlselector.h
+    src/playbackperf.h
     src/homefeedmodel.cpp
     src/homefeedmodel.h
     src/searchmodel.cpp

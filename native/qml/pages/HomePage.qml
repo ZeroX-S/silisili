@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
@@ -7,14 +8,17 @@ Page {
     property int networkScrollReleaseCount: 0
     readonly property int contentColumns: appSettings.contentColumns === 2 ? 2 : 1
     readonly property real gridCellWidth: width / contentColumns
+    readonly property bool horizontalCards: contentColumns === 1 || width > height
     readonly property real singleCoverWidth:
-        Math.min(width * 0.38, Theme.itemSizeHuge * 2)
-    readonly property real gridCellHeight: contentColumns === 1
-        ? Math.max(singleCoverWidth * 9 / 16, Theme.itemSizeLarge * 1.5)
+        Math.min(gridCellWidth * 0.38, Theme.itemSizeHuge * 2)
+    readonly property real gridCellHeight: horizontalCards
+        ? Math.max(singleCoverWidth * 9 / 16, cardTextHeight)
           + 2 * Theme.paddingMedium
-        : Math.max(Theme.itemSizeHuge * 1.65,
-                   (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
-                   + Theme.itemSizeHuge * 1.15 + 2 * Theme.paddingMedium)
+        : (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
+          + cardTextHeight + 3 * Theme.paddingMedium
+    readonly property real cardTextHeight: cardMetrics.titleHeight
+        + 3 * cardMetrics.metadataHeight + 3 * Theme.paddingSmall
+    CardTextMetrics { id: cardMetrics }
     allowedOrientations: Orientation.All
 
     ResponsivePageMetrics {
@@ -48,28 +52,27 @@ Page {
         }
     }
 
+    FeedPagination {
+        id: pagination
+        view: listView
+        feed: homeFeed
+        pageActive: page.status === PageStatus.Active
+        loading: homeFeed.loading
+        hasMore: homeFeed.hasMore
+        itemCount: listView.count
+        errorMessage: homeFeed.errorMessage
+    }
+
     SilicaGridView {
         id: listView
         anchors.fill: parent
+        cacheBuffer: height
         model: homeFeed
         cellWidth: page.gridCellWidth
         cellHeight: page.gridCellHeight
         clip: true
 
-        function nearBottom() {
-            return atYEnd
-                   || visibleArea.yPosition + visibleArea.heightRatio > 0.92
-                   || contentY + height >= contentHeight - Theme.itemSizeLarge * 2
-        }
-
-        function maybeLoadMore() {
-            if (count <= 0 || !homeFeed.hasMore || homeFeed.loading)
-                return
-            if (contentHeight <= height)
-                return
-            if (nearBottom())
-                homeFeed.loadMore()
-        }
+        function maybeLoadMore() { pagination.schedule() }
         function prepareCenteredVideo() {
             if (moving || dragging || homeFeed.loading || playbackSession.active
                     || page.status !== PageStatus.Active || !Qt.application.active)
@@ -113,12 +116,7 @@ Page {
             }
         }
 
-        Timer {
-            interval: 600
-            repeat: true
-            running: page.status === PageStatus.Active && listView.count > 0
-            onTriggered: listView.maybeLoadMore()
-        }
+
 
         PullDownMenu {
             MenuItem { text: qsTr("关于 silisili"); onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml")) }
@@ -199,14 +197,14 @@ Page {
 
             Image {
                 id: coverImage
-                x: page.contentColumns === 1
+                x: page.horizontalCards
                    ? Theme.horizontalPageMargin : Theme.paddingMedium
-                y: Theme.paddingMedium
-                width: page.contentColumns === 1
+                y: page.horizontalCards ? (parent.height - height) / 2 : Theme.paddingMedium
+                width: page.horizontalCards
                        ? page.singleCoverWidth
                        : parent.width - 2 * Theme.paddingMedium
                 height: width * 9 / 16
-                source: cover
+                source: ImageUrls.thumbnail(cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: width
@@ -214,27 +212,27 @@ Page {
             }
             Column {
                 id: details
-                x: page.contentColumns === 1
+                x: page.horizontalCards
                    ? coverImage.x + coverImage.width + Theme.paddingMedium
                    : Theme.paddingMedium
-                y: page.contentColumns === 1
+                y: page.horizontalCards
                    ? Math.max(Theme.paddingMedium,
                               coverImage.y + (coverImage.height - implicitHeight) / 2)
                    : coverImage.y + coverImage.height + Theme.paddingSmall
-                width: page.contentColumns === 1
+                width: page.horizontalCards
                        ? parent.width - x - Theme.horizontalPageMargin
                        : parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
-                Label { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; font.pixelSize: appSettings.scaledFontSize(page.contentColumns === 1 ? Theme.fontSizeMedium : Theme.fontSizeSmall, appSettings.fontSizeMode); wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; visible: recommendReason.length > 0; text: recommendReason; color: Theme.highlightColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
-                Label { width: parent.width; text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                AppLabel { width: parent.width; text: title; color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor; wrapMode: Text.Wrap; maximumLineCount: 2; truncationMode: TruncationMode.Fade }
+                AppLabel { width: parent.width; text: owner; color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                AppLabel { width: parent.width; visible: recommendReason.length > 0; text: recommendReason; color: Theme.highlightColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
+                AppLabel { width: parent.width; text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount); color: Theme.secondaryColor; font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode); truncationMode: TruncationMode.Fade }
             }
         }
 
         footer: Item {
             width: listView.width
-            height: Theme.itemSizeMedium
+            height: Math.max(Theme.itemSizeMedium, footerLabel.implicitHeight + Theme.iconSizeSmall + 3 * Theme.paddingSmall)
             visible: listView.count > 0
 
             BusyIndicator {
@@ -245,14 +243,15 @@ Page {
                 size: BusyIndicatorSize.Small
                 visible: running
             }
-            Label {
+            AppLabel {
                 id: footerLabel
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Theme.paddingSmall
                 horizontalAlignment: Text.AlignHCenter
-                text: homeFeed.loading
+                text: homeFeed.errorMessage.length > 0 ? homeFeed.errorMessage
+                      : homeFeed.loading
                       ? qsTr("正在加载更多")
                       : homeFeed.hasMore
                         ? qsTr("上滑到底自动加载")
@@ -265,10 +264,10 @@ Page {
 
         VerticalScrollDecorator {}
         ViewPlaceholder {
-            enabled: homeFeed.errorMessage.length > 0
+            enabled: listView.count === 0 && homeFeed.errorMessage.length > 0
             text: homeFeed.errorMessage
             hintText: qsTr("从顶部下拉即可重试")
         }
-        BusyIndicator { anchors.centerIn: parent; running: homeFeed.loading; size: BusyIndicatorSize.Large }
+        BusyIndicator { anchors.centerIn: parent; running: homeFeed.loading && listView.count === 0; size: BusyIndicatorSize.Large }
     }
 }

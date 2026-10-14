@@ -63,6 +63,8 @@ HEADERS += \
     src/appsettings.h \
     src/bilibiliimagenetwork.h \
     src/networkutils.h \
+    src/mediaurlselector.h \
+    src/playbackperf.h \
     src/homefeedmodel.h \
     src/searchmodel.h \
     src/videodetailmodel.h \

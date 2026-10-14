@@ -101,7 +101,7 @@ void PgcFeedModel::cancelActiveRequest() {
     }
 }
 
-void PgcFeedModel::clearCurrentState() {
+void PgcFeedModel::clearCurrentState(bool keepRows) {
     // Keep the loading latch raised while the old rows are reset. Otherwise a
     // ListView already positioned at the end can re-enter loadMore() between
     // clearing the cursor and starting the replacement request.
@@ -111,7 +111,7 @@ void PgcFeedModel::clearCurrentState() {
     m_initialSignature.clear();
     m_hasMore = true;
     m_error.clear();
-    if (!m_items.isEmpty()) {
+    if (!keepRows && !m_items.isEmpty()) {
         beginResetModel();
         m_items.clear();
         endResetModel();
@@ -184,7 +184,7 @@ void PgcFeedModel::refreshInternal(bool rotateContent) {
     // An explicit pull-down refresh is the only operation that replaces the
     // current page-lifetime snapshot. Other categories remain intact.
     m_snapshots.remove(m_category);
-    clearCurrentState();
+    clearCurrentState(true);
     qInfo() << "native pgc consistency: explicit refresh"
             << "category" << m_category
             << "rotateContent" << rotateContent
@@ -195,7 +195,7 @@ void PgcFeedModel::refreshInternal(bool rotateContent) {
 }
 
 void PgcFeedModel::loadMore() {
-    if (m_loading || !m_hasMore) return;
+    if (m_loading || !m_hasMore || !m_error.isEmpty()) return;
     if (m_category != QStringLiteral("bangumi_rank") && m_cursor.isEmpty()) {
         // Model resets can briefly report atYEnd. Pagination is only valid
         // after the initial response has atomically published its cursor.

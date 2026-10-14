@@ -140,6 +140,7 @@ QNetworkRequest AccountLibraryModel::requestFor(const QUrl &url) const {
 }
 
 void AccountLibraryModel::refresh() {
+    ++m_generation;
     if (m_activeReply) {
         m_activeReply->abort();
         m_activeReply.clear();
@@ -147,7 +148,6 @@ void AccountLibraryModel::refresh() {
     // A superseded reply ignores its old generation. Clear its loading latch
     // before issuing the replacement request.
     m_loading = false;
-    ++m_generation;
     m_page = 1;
     m_historyMax = 0;
     m_historyViewAt = 0;
@@ -155,15 +155,22 @@ void AccountLibraryModel::refresh() {
     m_hasMore = true;
     m_totalCount = 0;
     m_errorMessage.clear();
-    beginResetModel();
-    m_items.clear();
-    endResetModel();
+    const AccountService *account = AccountService::instance();
+    const QString identity = (account ? account->userId() : QString())
+            + QLatin1Char('/') + m_mode + QLatin1Char('/') + m_collectionId
+            + QLatin1Char('/') + QString::number(m_collectionType);
+    if (identity != m_displayedIdentity || !account || !account->hasSessionCredentials()) {
+        beginResetModel();
+        m_items.clear();
+        endResetModel();
+    }
+    m_displayedIdentity = identity;
     emit stateChanged();
     request(true);
 }
 
 void AccountLibraryModel::loadMore() {
-    if (m_loading || !m_hasMore) return;
+    if (m_loading || !m_hasMore || !m_errorMessage.isEmpty()) return;
     request(false);
 }
 

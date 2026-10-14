@@ -94,7 +94,7 @@ Item {
                 width: parent.width
                 height: Theme.itemSizeMedium
 
-                Label {
+                AppLabel {
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.right: closeButton.left
@@ -149,7 +149,7 @@ Item {
                         root.close()
                     }
 
-                    Label {
+                    AppLabel {
                         x: Theme.horizontalPageMargin
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 2 * Theme.horizontalPageMargin

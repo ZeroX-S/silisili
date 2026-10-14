@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
@@ -67,7 +68,8 @@ Page {
 
         Column {
             id: content
-            width: parent.width
+            width: Math.min(parent.width, Theme.itemSizeHuge * 8)
+            x: (parent.width - width) / 2
             spacing: Theme.paddingMedium
 
             PageHeader {
@@ -102,14 +104,14 @@ Page {
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.horizontalPageMargin
                     anchors.verticalCenter: avatarFrame.verticalCenter
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: page.author
                         color: Theme.primaryColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                         truncationMode: TruncationMode.Fade
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: page.publishTime
                         color: Theme.secondaryColor
@@ -119,7 +121,7 @@ Page {
                 }
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: bodyText.length > 0
@@ -128,7 +130,7 @@ Page {
                 wrapMode: Text.Wrap
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: sourceText.length > 0
@@ -155,7 +157,7 @@ Page {
                     Image {
                         width: pictureGrid.cellWidth
                         height: width
-                        source: modelData
+                        source: ImageUrls.thumbnail(modelData, width)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         sourceSize.width: width
@@ -179,7 +181,9 @@ Page {
                     width: visible ? Math.min(parent.width * 0.34, Theme.itemSizeHuge * 1.8) : 0
                     height: visible ? width * 9 / 16 : 0
                     visible: mediaCover.toString().length > 0
-                    source: mediaCover
+                    sourceSize.width: Math.max(1, width)
+                    sourceSize.height: Math.max(1, height)
+                    source: ImageUrls.thumbnail(mediaCover, width)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
@@ -190,13 +194,13 @@ Page {
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.paddingMedium
                     anchors.verticalCenter: parent.verticalCenter
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: mediaTitle
                         color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor
                         wrapMode: Text.Wrap
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         visible: parent.parent.enabled
                         text: bvid.length > 0 ? qsTr("打开视频 ›")
@@ -208,7 +212,7 @@ Page {
                 }
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: statsText.length > 0

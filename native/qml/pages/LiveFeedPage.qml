@@ -1,19 +1,23 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
     id: page
     readonly property int contentColumns: appSettings.contentColumns === 2 ? 2 : 1
     readonly property real gridCellWidth: width / contentColumns
+    readonly property bool horizontalCards: contentColumns === 1 || width > height
     readonly property real singleCoverWidth:
-        Math.min(width * 0.42, Theme.itemSizeHuge * 2)
-    readonly property real gridCellHeight: contentColumns === 1
-        ? Math.max(singleCoverWidth * 9 / 16, Theme.itemSizeLarge * 1.35)
+        Math.min(gridCellWidth * 0.42, Theme.itemSizeHuge * 2)
+    readonly property real gridCellHeight: horizontalCards
+        ? Math.max(singleCoverWidth * 9 / 16, cardTextHeight)
           + 2 * Theme.paddingMedium
-        : Math.max(Theme.itemSizeHuge * 1.5,
-                   (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
-                   + Theme.itemSizeLarge * 1.35 + 2 * Theme.paddingMedium)
+        : (gridCellWidth - 2 * Theme.paddingMedium) * 9 / 16
+          + cardTextHeight + 3 * Theme.paddingMedium
+    readonly property real cardTextHeight: cardMetrics.titleHeight
+        + 2 * cardMetrics.metadataHeight + 2 * Theme.paddingSmall
+    CardTextMetrics { id: cardMetrics }
     allowedOrientations: Orientation.All
 
     ResponsivePageMetrics {
@@ -22,19 +26,27 @@ Page {
         columns: page.contentColumns
     }
 
+    FeedPagination {
+        id: pagination
+        view: listView
+        feed: liveFeed
+        pageActive: page.status === PageStatus.Active
+        loading: liveFeed.loading
+        hasMore: liveFeed.hasMore
+        itemCount: listView.count
+        errorMessage: liveFeed.errorMessage
+    }
+
     SilicaGridView {
         id: listView
         anchors.fill: parent
+        cacheBuffer: height
         model: liveFeed
         cellWidth: page.gridCellWidth
         cellHeight: page.gridCellHeight
         clip: true
 
-        onContentYChanged: {
-            if (liveFeed.hasMore && !liveFeed.loading
-                    && contentY + height >= contentHeight - Theme.itemSizeHuge * 2)
-                liveFeed.loadMore()
-        }
+
 
         PullDownMenu {
             MenuItem { text: qsTr("刷新"); onClicked: liveFeed.refresh() }
@@ -59,14 +71,14 @@ Page {
 
             Image {
                 id: coverImage
-                x: page.contentColumns === 1
+                x: page.horizontalCards
                    ? Theme.horizontalPageMargin : Theme.paddingMedium
-                y: Theme.paddingMedium
-                width: page.contentColumns === 1
+                y: page.horizontalCards ? (parent.height - height) / 2 : Theme.paddingMedium
+                width: page.horizontalCards
                        ? page.singleCoverWidth
                        : parent.width - 2 * Theme.paddingMedium
                 height: width * 9 / 16
-                source: cover
+                source: ImageUrls.thumbnail(cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: width
@@ -74,38 +86,35 @@ Page {
             }
             Column {
                 id: details
-                x: page.contentColumns === 1
+                x: page.horizontalCards
                    ? coverImage.x + coverImage.width + Theme.paddingMedium
                    : Theme.paddingMedium
-                y: page.contentColumns === 1
+                y: page.horizontalCards
                    ? Math.max(Theme.paddingMedium,
                               coverImage.y + (coverImage.height - implicitHeight) / 2)
                    : coverImage.y + coverImage.height + Theme.paddingSmall
-                width: page.contentColumns === 1
+                width: page.horizontalCards
                        ? parent.width - x - Theme.horizontalPageMargin
                        : parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: title
                     color: delegateRoot.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: appSettings.scaledFontSize(
-                                        page.contentColumns === 1
-                                        ? Theme.fontSizeMedium
-                                        : Theme.fontSizeSmall, appSettings.fontSizeMode)
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: owner
                     color: Theme.secondaryHighlightColor
-                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: area + (watched.length > 0 ? "  ·  " + watched : "")
                     color: Theme.secondaryColor
@@ -128,9 +137,10 @@ Page {
                 anchors.centerIn: parent
                 visible: liveFeed.hasMore && !liveFeed.loading
                 text: qsTr("加载更多直播")
-                onClicked: liveFeed.loadMore()
+                onClicked: liveFeed.errorMessage.length > 0
+                           ? liveFeed.refresh() : liveFeed.loadMore()
             }
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !liveFeed.loading && !liveFeed.hasMore && listView.count > 0
                 text: qsTr("已加载全部直播")
@@ -141,7 +151,7 @@ Page {
 
         VerticalScrollDecorator {}
         ViewPlaceholder {
-            enabled: liveFeed.errorMessage.length > 0
+            enabled: listView.count === 0 && liveFeed.errorMessage.length > 0
             text: liveFeed.errorMessage
             hintText: qsTr("从顶部下拉即可重试")
         }

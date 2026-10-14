@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import Nemo.KeepAlive 1.2
 import cn.silisili.native.models 1.0
 import "../components"
@@ -270,7 +271,9 @@ Page {
         Image {
             anchors.fill: parent
             visible: !isCurrentEpisode()
-            source: (selectedEpisode && selectedEpisode.cover) || pgcDetail.cover || initialCover
+            sourceSize.width: Math.max(1, width)
+            sourceSize.height: Math.max(1, height)
+            source: ImageUrls.thumbnail((selectedEpisode && selectedEpisode.cover) || pgcDetail.cover || initialCover, width)
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
         }
@@ -400,7 +403,7 @@ Page {
             size: BusyIndicatorSize.Large
         }
 
-        Label {
+        AppLabel {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.margins: Theme.horizontalPageMargin
@@ -459,14 +462,14 @@ Page {
             id: detailColumn
             width: parent.width
             Item { width: 1; height: Theme.paddingLarge }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: pgcDetail.title || initialTitle
-                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeLarge, appSettings.fontSizeMode)
+                font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: selectedTitle.length > 0
@@ -475,7 +478,7 @@ Page {
                 font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 wrapMode: Text.Wrap
             }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: pgcDetail.ratingText
@@ -495,12 +498,16 @@ Page {
                 model: pgcDetail.episodes.length > 6 ? pgcDetail.episodes.slice(0, 6) : pgcDetail.episodes
                 BackgroundItem {
                     width: detailColumn.width
+                    height: Math.max(Theme.itemSizeMedium, episodePreviewLabel.implicitHeight + 2 * Theme.paddingMedium)
                     onClicked: selectEpisode(modelData, true)
-                    Label {
+                    AppLabel {
+                        id: episodePreviewLabel
                         x: Theme.horizontalPageMargin
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 2 * Theme.horizontalPageMargin
                         text: modelData.title
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
                         color: modelData.cid === selectedCid || parent.highlighted
                                ? Theme.highlightColor : Theme.primaryColor
                         truncationMode: TruncationMode.Fade
@@ -509,6 +516,7 @@ Page {
             }
             BackgroundItem {
                 width: detailColumn.width
+                height: Math.max(Theme.itemSizeMedium, allEpisodesLabel.implicitHeight + 2 * Theme.paddingMedium)
                 visible: pgcDetail.episodes.length > 6
                 onClicked: pageStack.push(Qt.resolvedUrl("PgcEpisodePage.qml"), {
                     episodes: pgcDetail.episodes,
@@ -516,9 +524,13 @@ Page {
                     seasonTitle: pgcDetail.title || initialTitle,
                     selectedCid: page.selectedCid
                 })
-                Label {
+                AppLabel {
+                    id: allEpisodesLabel
                     x: Theme.horizontalPageMargin
                     anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
                     text: qsTr("查看全部 %1 集 ›").arg(pgcDetail.episodes.length)
                     color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
                 }
@@ -527,18 +539,22 @@ Page {
             SectionHeader { text: qsTr("评论") }
             BackgroundItem {
                 width: detailColumn.width
+                height: Math.max(Theme.itemSizeMedium, episodeCommentsLabel.implicitHeight + 2 * Theme.paddingMedium)
                 enabled: selectedAid.length > 0
                 onClicked: openComments()
-                Label {
+                AppLabel {
+                    id: episodeCommentsLabel
                     x: Theme.horizontalPageMargin
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 2 * Theme.horizontalPageMargin
                     text: qsTr("查看当前分集的全部评论并参与讨论 ›")
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
                     color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
                     truncationMode: TruncationMode.Fade
                 }
             }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("播放会继续留在应用内小窗，可一边观看一边浏览或发表评论。")
@@ -548,14 +564,14 @@ Page {
             }
 
             SectionHeader { text: qsTr("简介") }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: pgcDetail.description || qsTr("加载中…")
                 color: Theme.secondaryColor
                 wrapMode: Text.Wrap
             }
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: pgcDetail.errorMessage.length > 0

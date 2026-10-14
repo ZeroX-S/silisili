@@ -58,11 +58,40 @@ assert(block(home, 'onMovementEnded:').includes('foregroundPrepareTimer.restart(
 assert(block(home, 'onTriggered:').includes('!listView.moving'));
 
 const paginate = block(home, 'function maybeLoadMore()');
+// Home now delegates to the shared event-driven pagination component.
+const pagination = read('qml/components/FeedPagination.qml');
+const paginationState = {
+    pageActive: true, loading: false, hasMore: true, itemCount: 30, errorMessage: '',
+    view: {contentY: 2500, height: 1800, contentHeight: 6000, originY: 0},
+    feed: state.homeFeed, Qt: state.Qt
+};
+const paginationContext = vm.createContext(paginationState);
+const shouldLoad = () => vm.runInContext(
+    `(function() {${block(pagination, 'function shouldLoadMore()')}})()`, paginationContext);
+state.pagination = {schedule: () => {
+    paginationState.loading = state.homeFeed.loading;
+    if (shouldLoad()) state.homeFeed.loadMore();
+}};
 run(paginate);
 assert.equal(pageRequests, 1);
 state.homeFeed.loading = true;
 for (let i = 0; i < 100; ++i) run(paginate);
 assert.equal(pageRequests, 1, 'scroll notifications must not duplicate loading request');
+state.homeFeed.loading = false;
+for (const [key, value] of [['pageActive', false], ['hasMore', false],
+                            ['itemCount', 0], ['errorMessage', 'offline']]) {
+    const saved = paginationState[key];
+    paginationState[key] = value;
+    assert.equal(shouldLoad(), false, `${key} must suppress pagination`);
+    paginationState[key] = saved;
+}
+paginationState.loading = false;
+paginationState.view.contentY = 0;
+assert.equal(shouldLoad(), false, 'do not download an unbounded feed at the top');
+paginationState.view.contentHeight = 1500;
+assert.equal(shouldLoad(), true, 'short first pages fill the viewport');
+paginationState.view.originY = 4000;
+assert.equal(shouldLoad(), false, 'account for nonzero origin after model changes');
 
 const session = read('src/playbacksession.cpp');
 const prepareSession = block(session, 'void PlaybackSession::prepareVideo(');

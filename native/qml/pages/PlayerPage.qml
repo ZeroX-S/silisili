@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import Nemo.KeepAlive 1.2
 import "../components"
 
@@ -219,7 +220,9 @@ Page {
         anchors.fill: parent
         z: -10
         visible: playbackSession.loading
-        source: playbackSession.cover
+        sourceSize.width: Math.max(1, width)
+        sourceSize.height: Math.max(1, height)
+        source: ImageUrls.thumbnail(playbackSession.cover, width)
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         onVisibleChanged: console.log("native player: loading cover",
@@ -286,7 +289,7 @@ Page {
             icon.source: "image://theme/icon-m-back"
             onClicked: leaveFullscreen()
         }
-        Label {
+        AppLabel {
             anchors.left: backButton.right
             anchors.leftMargin: Theme.paddingMedium
             anchors.right: parent.right
@@ -449,7 +452,7 @@ Page {
         running: playbackSession.loading && playbackSession.errorMessage.length === 0
         size: BusyIndicatorSize.Large
     }
-    Label {
+    AppLabel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: Theme.horizontalPageMargin
@@ -472,7 +475,7 @@ Page {
         color: Theme.rgba("black", Theme.opacityHigh)
         visible: false
         z: 40
-        Label {
+        AppLabel {
             id: orientationLabel
             anchors.centerIn: parent
             text: orientationModeLabel

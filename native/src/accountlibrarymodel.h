@@ -119,4 +119,5 @@ private:
     QString m_historyBusiness;
     int m_generation;
     QPointer<QNetworkReply> m_activeReply;
+    QString m_displayedIdentity;
 };

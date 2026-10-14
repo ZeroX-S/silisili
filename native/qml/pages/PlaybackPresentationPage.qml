@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components"
 
 Page {
     id: page
@@ -47,7 +48,7 @@ Page {
                 description: qsTr("列表、页内小窗与后台播放")
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("两种方式共用当前视频纹理和同一套解码，不会同时绘制。切换设置不会重新加载或重新定位视频。")
@@ -72,13 +73,13 @@ Page {
                     anchors.rightMargin: Theme.paddingMedium
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.paddingSmall / 2
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: qsTr("在 Cover 中播放")
                         color: coverChoice.highlighted ? Theme.highlightColor : Theme.primaryColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: qsTr("进入主屏后，应用 Cover 显示实时视频画面")
                         color: Theme.secondaryColor
@@ -116,13 +117,13 @@ Page {
                     anchors.rightMargin: Theme.paddingMedium
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.paddingSmall / 2
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: qsTr("在系统小窗中播放")
                         color: pipChoice.highlighted ? Theme.highlightColor : Theme.primaryColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeMedium, appSettings.fontSizeMode)
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: systemPipController.available
                               ? qsTr("离开应用后显示可拖动小窗；点按小窗返回播放页")
@@ -198,7 +199,7 @@ Page {
 
             SectionHeader { text: qsTr("播放手势") }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("全屏播放时，左侧上下滑动调整系统全局亮度，右侧上下滑动调整系统媒体音量；应用会在播放开始保存原值，并在播放结束、停止或退出时恢复。")
@@ -209,7 +210,7 @@ Page {
 
             SectionHeader { text: qsTr("行为说明") }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("锁屏、熄屏、停止播放或视频自然结束时，小窗会立即隐藏。系统小窗通过 Lipstick notification 表面显示，不会录制屏幕内容。")

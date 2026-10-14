@@ -1,5 +1,7 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
+import "../components"
 
 Page {
     id: page
@@ -7,17 +9,25 @@ Page {
 
     Component.onCompleted: inboxModel.refresh()
 
+    FeedPagination {
+        id: pagination
+        view: list
+        feed: inboxModel
+        pageActive: page.status === PageStatus.Active
+        loading: inboxModel.loading
+        hasMore: inboxModel.hasMore
+        itemCount: list.count
+        errorMessage: inboxModel.errorMessage
+    }
+
     SilicaListView {
         id: list
         anchors.fill: parent
+        cacheBuffer: height
         model: inboxModel
         clip: true
 
-        onContentYChanged: {
-            if (inboxModel.hasMore && !inboxModel.loading
-                    && contentY + height >= contentHeight - Theme.itemSizeHuge * 2)
-                inboxModel.loadMore()
-        }
+
 
         PullDownMenu {
             MenuItem { text: qsTr("刷新"); onClicked: inboxModel.refresh() }
@@ -68,7 +78,7 @@ Page {
                 clip: true
                 Image {
                     anchors.fill: parent
-                    source: avatar
+                    source: ImageUrls.thumbnail(avatar, width)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     sourceSize.width: width
@@ -83,34 +93,32 @@ Page {
                 anchors.rightMargin: Theme.horizontalPageMargin
                 y: Theme.paddingLarge
                 spacing: Theme.paddingSmall
-                Label {
+                AppLabel {
                     width: parent.width
                     text: author
                     color: messageItem.highlighted ? Theme.highlightColor : Theme.primaryColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: categoryLabel + (messageTime.length > 0 ? "  ·  " + messageTime : "")
                     color: Theme.secondaryHighlightColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: messageText
                     wrapMode: Text.Wrap
-                    height: Math.min(implicitHeight, Theme.fontSizeMedium * 5.6)
-                    clip: true
+                    maximumLineCount: 5
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: subject
                     visible: subject.length > 0
                     wrapMode: Text.Wrap
-                    height: visible ? Math.min(implicitHeight, Theme.fontSizeSmall * 3.0) : 0
-                    clip: true
+                    maximumLineCount: 3
                     color: Theme.secondaryColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                 }
@@ -129,7 +137,7 @@ Page {
                 running: inboxModel.loading && list.count > 0
                 size: BusyIndicatorSize.Medium
             }
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !inboxModel.loading && !inboxModel.hasMore && list.count > 0
                 text: qsTr("此分类已全部加载")

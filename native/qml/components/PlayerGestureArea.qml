@@ -172,7 +172,7 @@ Item {
         color: Theme.rgba("black", Theme.opacityHigh)
         visible: root.gestureMode !== 0 && root.previewText.length > 0
 
-        Label {
+        AppLabel {
             id: previewLabel
             anchors.centerIn: parent
             text: root.previewText

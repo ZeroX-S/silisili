@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import cn.silisili.native.models 1.0
 import "../components"
 
@@ -78,18 +79,26 @@ Page {
     }
     onContentModeChanged: if (initialized) libraryModel.refresh()
 
+    FeedPagination {
+        id: pagination
+        view: list
+        feed: libraryModel
+        pageActive: page.status === PageStatus.Active
+        loading: libraryModel.loading
+        hasMore: libraryModel.hasMore
+        itemCount: list.count
+        errorMessage: libraryModel.errorMessage
+    }
+
     SilicaListView {
         id: list
         anchors.fill: parent
+        cacheBuffer: height
         model: libraryModel
         clip: true
         spacing: Theme.paddingSmall
 
-        onContentYChanged: {
-            if (libraryModel.hasMore && !libraryModel.loading
-                    && contentY + height >= contentHeight - Theme.itemSizeHuge * 2)
-                libraryModel.loadMore()
-        }
+
 
         PullDownMenu {
             MenuItem { text: qsTr("刷新"); onClicked: libraryModel.refresh() }
@@ -137,7 +146,7 @@ Page {
             Rectangle {
                 id: coverFrame
                 x: Theme.horizontalPageMargin
-                y: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width * 0.34, Theme.itemSizeHuge * 1.7)
                 height: width * 9 / 16
                 radius: Theme.paddingSmall / 2
@@ -146,14 +155,14 @@ Page {
 
                 Image {
                     anchors.fill: parent
-                    source: cover
+                    source: ImageUrls.thumbnail(cover, width)
                     visible: cover.length > 0
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     sourceSize.width: width
                     sourceSize.height: height
                 }
-                Label {
+                AppLabel {
                     anchors.centerIn: parent
                     visible: cover.length === 0
                     text: kindLabel.length > 0 ? kindLabel : qsTr("内容")
@@ -181,10 +190,10 @@ Page {
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: coverFrame.verticalCenter
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: title
                     color: card.highlighted ? Theme.highlightColor : Theme.primaryColor
@@ -193,7 +202,7 @@ Page {
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: subtitle.length > 0
                     text: subtitle
@@ -203,7 +212,7 @@ Page {
                     maximumLineCount: 2
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: progressText.length > 0 || badge.length > 0 || kindLabel.length > 0
                     text: (progressText.length > 0 ? progressText : kindLabel)
@@ -212,7 +221,7 @@ Page {
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: !canOpen
                     text: qsTr("当前类型暂不支持打开")
@@ -235,9 +244,10 @@ Page {
                 anchors.centerIn: parent
                 visible: libraryModel.hasMore && !libraryModel.loading
                 text: qsTr("加载更多")
-                onClicked: libraryModel.loadMore()
+                onClicked: libraryModel.errorMessage.length > 0
+                           ? libraryModel.refresh() : libraryModel.loadMore()
             }
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !libraryModel.loading && !libraryModel.hasMore && list.count > 0
                 text: qsTr("已加载全部内容")

@@ -270,7 +270,7 @@ Page {
                 onValueChanged: page.qrScale = value
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: text.length > 0
@@ -289,7 +289,7 @@ Page {
                 size: BusyIndicatorSize.Large
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: accountService.qrStatus
@@ -299,7 +299,7 @@ Page {
                 wrapMode: Text.Wrap
             }
 
-            Label {
+            AppLabel {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: qsTr("使用另一台已登录哔哩哔哩的设备扫码并确认。扫码成功前不会替换当前账户；稳定版配置始终只读。")

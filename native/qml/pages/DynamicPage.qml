@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
@@ -62,46 +63,24 @@ Page {
         console.log("native dynamic page: ready section", feedSection)
     }
 
+    FeedPagination {
+        id: pagination
+        view: list
+        feed: dynamicFeed
+        pageActive: page.status === PageStatus.Active
+        loading: dynamicFeed.loading
+        hasMore: dynamicFeed.hasMore
+        itemCount: list.count
+        errorMessage: dynamicFeed.errorMessage
+    }
+
     SilicaListView {
         id: list
         anchors.fill: parent
+        cacheBuffer: height
         model: dynamicFeed
         spacing: Theme.paddingSmall
         clip: true
-
-        function nearBottom() {
-            return atYEnd
-                    || visibleArea.yPosition + visibleArea.heightRatio > 0.90
-                    || contentY + height >= contentHeight - Theme.itemSizeHuge * 3
-        }
-
-        function maybeLoadMore() {
-            if (count > 0 && dynamicFeed.hasMore && !dynamicFeed.loading && nearBottom())
-                dynamicFeed.loadMore()
-        }
-        onAtYEndChanged: maybeLoadMore()
-        onContentYChanged: maybeLoadMore()
-        onMovementEnded: maybeLoadMore()
-        onCountChanged: paginationTimer.restart()
-
-        Connections {
-            target: dynamicFeed
-            onStateChanged: if (!dynamicFeed.loading) paginationTimer.restart()
-        }
-
-        Timer {
-            id: paginationTimer
-            interval: 250
-            repeat: false
-            onTriggered: list.maybeLoadMore()
-        }
-
-        Timer {
-            interval: 700
-            repeat: true
-            running: page.status === PageStatus.Active && list.count > 0
-            onTriggered: list.maybeLoadMore()
-        }
 
         PullDownMenu {
             MenuItem { text: qsTr("刷新"); onClicked: dynamicFeed.refresh() }
@@ -189,6 +168,7 @@ Page {
 
                     Rectangle {
                         id: avatarMask
+                        anchors.verticalCenter: parent.verticalCenter
                         width: Theme.iconSizeMedium
                         height: width
                         radius: width / 2
@@ -205,15 +185,15 @@ Page {
                         anchors.left: avatarMask.right
                         anchors.leftMargin: Theme.paddingMedium
                         anchors.right: parent.right
-                        anchors.verticalCenter: avatarMask.verticalCenter
-                        Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        AppLabel {
                             width: parent.width
                             text: author
                             color: card.highlighted ? Theme.highlightColor : Theme.primaryColor
                             font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                             truncationMode: TruncationMode.Fade
                         }
-                        Label {
+                        AppLabel {
                             width: parent.width
                             text: publishTime + (kindLabel.length > 0 ? "  ·  " + kindLabel : "")
                             color: Theme.secondaryColor
@@ -223,7 +203,7 @@ Page {
                     }
                 }
 
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: bodyText.length > 0
                     text: bodyText
@@ -231,7 +211,7 @@ Page {
                     color: Theme.primaryColor
                 }
 
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: sourceText.length > 0
                     text: sourceText
@@ -259,7 +239,7 @@ Page {
                         Image {
                             width: pictureGrid.cellWidth
                             height: width
-                            source: modelData
+                            source: ImageUrls.thumbnail(modelData, width)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             sourceSize.width: width
@@ -283,7 +263,7 @@ Page {
                         width: visible ? Math.min(parent.width * 0.36, Theme.itemSizeHuge * 1.7) : 0
                         height: visible ? width * 9 / 16 : 0
                         visible: mediaCover.length > 0
-                        source: mediaCover
+                        source: ImageUrls.thumbnail(mediaCover, width)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         sourceSize.width: width
@@ -297,7 +277,7 @@ Page {
                         anchors.rightMargin: Theme.paddingMedium
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.paddingSmall
-                        Label {
+                        AppLabel {
                             width: parent.width
                             text: mediaTitle
                             wrapMode: Text.Wrap
@@ -305,7 +285,7 @@ Page {
                             truncationMode: TruncationMode.Fade
                             color: card.canOpen ? Theme.highlightColor : Theme.primaryColor
                         }
-                        Label {
+                        AppLabel {
                             width: parent.width
                             visible: card.canOpen
                             text: bvid.length > 0 ? qsTr("打开视频 ›")
@@ -317,7 +297,7 @@ Page {
                     }
                 }
 
-                Label {
+                AppLabel {
                     width: parent.width
                     visible: statsText.length > 0
                     text: statsText
@@ -360,7 +340,7 @@ Page {
                 running: dynamicFeed.loading && list.count > 0
                 size: BusyIndicatorSize.Medium
             }
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !dynamicFeed.loading && !dynamicFeed.hasMore && list.count > 0
                 text: qsTr("已加载全部动态")

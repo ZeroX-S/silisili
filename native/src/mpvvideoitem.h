@@ -232,6 +232,7 @@ private:
     bool m_hardwarePresentationCadenceLogged;
     QTimer m_hardwareStallTimer;
     QElapsedTimer m_hardwareStallElapsed;
+    QElapsedTimer m_hardwareSeekElapsed;
     int m_hardwareStallObservedSerial;
     double m_hardwareStallObservedPosition;
     int m_hardwareStallRecoveryCount;

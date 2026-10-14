@@ -74,7 +74,7 @@ private:
 
     void selectCategory(const QString &category);
     void cancelActiveRequest();
-    void clearCurrentState();
+    void clearCurrentState(bool keepRows = false);
     void storeCurrentSnapshot();
     bool restoreSnapshot(const QString &category);
     void refreshInternal(bool rotateContent);

@@ -1,4 +1,5 @@
 #include "playbacksession.h"
+#include "playbackperf.h"
 
 #include "accountservice.h"
 #include "liveresolver.h"
@@ -334,6 +335,7 @@ void PlaybackSession::playVideoInternal(const QString &bvid, const QString &cid,
                                         double startPosition, bool resumeRequested,
                                         int quality) {
     if (bvid.isEmpty() || cid.isEmpty() || !m_vodResolver) return;
+    PlaybackPerf::record(QStringLiteral("perf_request"));
     leaveLiveSourceForOnDemand("video");
     const double requestedStartPosition = qMax(0.0, startPosition);
     const int requestedQuality = normalizedSoftwareQuality(quality);

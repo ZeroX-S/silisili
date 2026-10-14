@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import "../components"
 
 Page {
@@ -76,10 +77,12 @@ Page {
             Image {
                 id: coverImage
                 x: Theme.horizontalPageMargin
-                y: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width * 0.36, Theme.itemSizeHuge * 2.2)
                 height: width * 9 / 16
-                source: cover
+                sourceSize.width: Math.max(1, width)
+                sourceSize.height: Math.max(1, height)
+                source: ImageUrls.thumbnail(cover, width)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
             }
@@ -89,10 +92,10 @@ Page {
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.horizontalPageMargin
-                anchors.verticalCenter: coverImage.verticalCenter
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: title
                     wrapMode: Text.Wrap
@@ -100,13 +103,15 @@ Page {
                     truncationMode: TruncationMode.Fade
                     color: regionItem.highlighted ? Theme.highlightColor : Theme.primaryColor
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: owner
+                    font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     color: Theme.secondaryColor
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
+                    width: parent.width
                     text: qsTr("播放 %1 · 弹幕 %2").arg(playCount).arg(danmakuCount)
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
                     color: Theme.secondaryColor

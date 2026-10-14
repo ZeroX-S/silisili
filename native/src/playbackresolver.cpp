@@ -2,6 +2,7 @@
 
 #include "accountservice.h"
 #include "networkutils.h"
+#include "mediaurlselector.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -32,10 +33,10 @@ int normalizedQuality(int requestedQuality) {
 }
 
 QString dashMediaUrl(const QJsonObject &media) {
-    QString url = media.value(QStringLiteral("base_url")).toString();
-    if (url.isEmpty()) url = media.value(QStringLiteral("baseUrl")).toString();
-    if (url.isEmpty()) url = media.value(QStringLiteral("url")).toString();
-    return url;
+    if (!qgetenv("SILISILI_NATIVE_TEST_PAGE").isEmpty()
+            && qgetenv("SILISILI_NATIVE_TEST_PERF_PROFILE") == QByteArrayLiteral("baseline"))
+        return MediaUrlSelector::primary(media);
+    return MediaUrlSelector::select(media);
 }
 
 int codecRank(int codecid) {
@@ -660,6 +661,9 @@ void PlaybackResolver::publishResponse(bool pgc, const QString &aid,
         if (!dashAudio.isEmpty()) {
             m_sourceUrl = dashMediaUrl(dashVideo);
             m_audioUrl = dashMediaUrl(dashAudio);
+            qInfo() << "native player: media transport selected"
+                    << "videoHost" << QUrl(m_sourceUrl).host()
+                    << "audioHost" << QUrl(m_audioUrl).host();
             m_selectedQuality = dashQuality;
             m_selectedQualityLabel = fallbackQualityLabel(labelsById, dashQuality, dashHeight);
             ++m_revision;
@@ -712,7 +716,7 @@ void PlaybackResolver::publishResponse(bool pgc, const QString &aid,
     const QJsonArray durl = data.value(QStringLiteral("durl")).toArray();
     QStringList urls;
     for (const QJsonValue &value : durl) {
-        const QString mediaUrl = value.toObject().value(QStringLiteral("url")).toString();
+        const QString mediaUrl = dashMediaUrl(value.toObject());
         if (!mediaUrl.isEmpty()) urls.append(mediaUrl);
     }
     if (urls.isEmpty()) {

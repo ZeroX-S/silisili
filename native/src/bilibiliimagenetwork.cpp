@@ -32,6 +32,12 @@ BilibiliImageNetworkAccessManager::BilibiliImageNetworkAccessManager(QObject *pa
 
     connect(this, &QNetworkAccessManager::finished, this, [](QNetworkReply *reply) {
         if (!reply || !isBilibiliImageHost(reply->url().host())) return;
+        // Virtualized delegates routinely cancel an image when it leaves the
+        // cache viewport. Logging every cancellation makes fast scrolling
+        // compete with journald. Keep genuine timeouts/bearer failures visible.
+        if (reply->error() == QNetworkReply::OperationCanceledError
+                && !NetworkUtils::replyTimedOut(reply)
+                && !NetworkUtils::replyNetworkChanged(reply)) return;
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (reply->error() == QNetworkReply::NoError && status >= 200 && status < 400)
             return;

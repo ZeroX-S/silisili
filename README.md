@@ -19,7 +19,7 @@
 
 | | 原生开发版 | 旧版稳定包 |
 | --- | --- | --- |
-| 当前版本 | `1.1.0-1.58` | `1.0.0-7`（`v1.0`） |
+| 当前版本 | `1.1.0-1.59` | `1.0.0-7`（`v1.0`） |
 | 软件包 | `silisili-native-devel` | `silisili-sailfish` |
 | 可执行文件 | `/usr/bin/silisili-native` | `/usr/bin/silisili` |
 | Desktop ID | `cn.silisili.native` | `cn.silisili.app` |
@@ -141,17 +141,17 @@ Bilibili playurl / DASH
 
 ### 原生开发版
 
-`1.1.0-1.58` 包含首页滑动、所有视频首帧与音频同步、暂停前后定位、锁屏媒体控制及二维码回退改进。完整变更见 [1.58 变更说明](docs/releases/native-v1.1.0-1.58.md)，本轮真机结果见 [验证记录](docs/playback-validation-20261013.md)。将 RPM 复制到已启用开发者模式的设备后安装：
+`1.1.0-1.59` 优化视频启播与拖动定位，提前加载评论和相关推荐，改进分页、图片与空间列表，并修复大字号卡片压叠及横屏排版。自上次 Release 以来的完整修改见 [1.59 变更说明](docs/releases/native-v1.1.0-1.59.md)，正式附件的测试边界见 [发布验证记录](docs/release-validation-20261014.md)。将 RPM 复制到已启用开发者模式的设备后安装：
 
 后续每次 GitHub 原生版本更新都会同时在 [GitHub Releases](https://github.com/ZeroX-S/silisili/releases) 发布经过真机回归的 AArch64 RPM 和 SHA-256 校验文件，不再只推送源码。
 
 ```sh
 devel-su rpm -Uvh --replacepkgs \
-  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.58.aarch64.rpm
+  /home/defaultuser/Downloads/silisili-native-devel-1.1.0-1.59.aarch64.rpm
 ```
 
-当前 `1.58` AArch64 RPM SHA-256 为
-`b3b7d9010ce64524fc1167fed4271c60553520ad4ab866d59b716eee20025325`。
+当前 `1.59` AArch64 RPM SHA-256 为
+`545bb815c0dcfcbfdae6b0ab36ab7d55bbfd35f4ebbbb2408319269fbd45dddb`。
 
 安装脚本会启用原生版硬解所需的最小兼容服务。原生包不会替换 `silisili-sailfish`，因此两版可以同时保留。
 
@@ -262,7 +262,9 @@ devel-su rpm -Uvh --replacepkgs \
 
 ## 验证基线
 
-`1.58` 发布候选版的本轮回归与测量见 [2026-10-13 播放与锁屏记录](docs/playback-validation-20261013.md)。涵盖普通/历史/软解启播、加载中暂停、暂停前后定位、完整画质矩阵、1080P60 横屏连续 60 秒、锁屏物理点击、两次前后台往返、两种小窗及资源回收、直播和分页异常恢复。下列内容为此前版本的历史验证，不能当作本轮重新执行的全部检查。
+`1.59` 的正式附件身份与复测见 [发布验证记录](docs/release-validation-20261014.md)，相关审计见 [播放性能](docs/playback-performance-20261014.md)、[界面加载](docs/ui-loading-audit-20261014.md) 与 [字体布局](docs/layout-audit-20261014.md)。
+
+`1.58` 的播放与锁屏回归保留在 [2026-10-13 记录](docs/playback-validation-20261013.md)，涵盖普通/历史/软解启播、加载中暂停、暂停前后定位、画质矩阵、长播、锁屏、前后台、Cover/小窗、直播和分页恢复。以下为历史验证，不能当作 1.59 的全部场景均已重新执行。
 
 `1.1.0-1.57` 已完成 AArch64 构建、RPM 摘要校验、源码门禁与 Sailfish OS 5.2 真机应用内小窗关闭回归。真实 1080P 点播进入应用内小窗后，探针根据运行时布局读取关闭按钮中心 `(1003,1920)` 并发送物理点击；同一 PID 内会话变为 `session_active=0|playing=0|compact=0`，mpv 停止并撤回共享纹理，Cover 变为 `idle|actions=0` 且三个图标源为空，`rpm -V` 干净。1.56 的主页小窗后台 Cover 与空闲 Cover 像素回归、1.55 的匿名默认 720P、1.53 的小窗整面拖动及系统亮度/媒体音量隔离回归继续保留在设备验证记录中。验证未使用视觉模型。
 

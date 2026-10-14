@@ -1,5 +1,6 @@
 import QtQuick 2.2
 import Sailfish.Silica 1.0
+import "../components/ImageUrls.js" as ImageUrls
 import cn.silisili.native.models 1.0
 import "../components"
 
@@ -55,14 +56,23 @@ Page {
         }
     }
 
+    FeedPagination {
+        id: pagination
+        view: replyList
+        feed: threadModel
+        pageActive: page.status === PageStatus.Active
+        loading: threadModel.loading
+        hasMore: threadModel.hasMore
+        itemCount: replyList.count
+        errorMessage: threadModel.errorMessage
+    }
+
     SilicaListView {
         id: replyList
         anchors.fill: parent
+        cacheBuffer: height
         model: threadModel
-        onAtYEndChanged: {
-            if (atYEnd && count > 0)
-                threadModel.loadMore()
-        }
+
 
         PullDownMenu {
             MenuItem {
@@ -95,7 +105,9 @@ Page {
 
                     Image {
                         anchors.fill: parent
-                        source: rootAvatar
+                        sourceSize.width: Math.max(1, width)
+                        sourceSize.height: Math.max(1, height)
+                        source: ImageUrls.thumbnail(rootAvatar, width)
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
@@ -108,14 +120,14 @@ Page {
                     width: parent.width - x - page.readableStart
                     spacing: Theme.paddingSmall
 
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: rootAuthor
                         color: Theme.highlightColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                         truncationMode: TruncationMode.Fade
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
                         text: rootMessage
                         font.pixelSize: appSettings.scaledFontSize(
@@ -123,8 +135,9 @@ Page {
                                             appSettings.fontSizeMode)
                         wrapMode: Text.Wrap
                     }
-                    Label {
+                    AppLabel {
                         width: parent.width
+                        wrapMode: Text.Wrap
                         text: qsTr("%1  ·  赞 %2").arg(rootTime).arg(rootLike)
                         color: Theme.secondaryColor
                         font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
@@ -185,7 +198,9 @@ Page {
                 Image {
                     id: replyAvatar
                     anchors.fill: parent
-                    source: avatar
+                    sourceSize.width: Math.max(1, width)
+                    sourceSize.height: Math.max(1, height)
+                    source: ImageUrls.thumbnail(avatar, width)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
@@ -198,14 +213,14 @@ Page {
                 width: parent.width - x - page.readableStart
                 spacing: Theme.paddingSmall
 
-                Label {
+                AppLabel {
                     width: parent.width
                     text: author
                     color: parent.parent.highlighted ? Theme.highlightColor : Theme.primaryColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeSmall, appSettings.fontSizeMode)
                     truncationMode: TruncationMode.Fade
                 }
-                Label {
+                AppLabel {
                     width: parent.width
                     text: messageText
                     font.pixelSize: appSettings.scaledFontSize(
@@ -213,8 +228,9 @@ Page {
                                         appSettings.fontSizeMode)
                     wrapMode: Text.Wrap
                 }
-                Label {
+                AppLabel {
                     width: parent.width
+                    wrapMode: Text.Wrap
                     text: qsTr("%1  ·  赞 %2").arg(commentTime).arg(likeCount)
                     color: Theme.secondaryColor
                     font.pixelSize: appSettings.scaledFontSize(Theme.fontSizeExtraSmall, appSettings.fontSizeMode)
@@ -266,10 +282,11 @@ Page {
                 anchors.centerIn: parent
                 visible: threadModel.hasMore && !threadModel.loading
                 text: qsTr("加载更多回复")
-                onClicked: threadModel.loadMore()
+                onClicked: threadModel.errorMessage.length > 0
+                           ? threadModel.refresh() : threadModel.loadMore()
             }
 
-            Label {
+            AppLabel {
                 anchors.centerIn: parent
                 visible: !threadModel.loading && !threadModel.hasMore && replyList.count > 0
                 text: qsTr("回复已全部加载")

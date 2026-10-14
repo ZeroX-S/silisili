@@ -126,12 +126,11 @@ void CommentModel::refresh() {
     m_refreshPending = false;
     m_next = m_threadMode ? 1 : 0;
     m_hasMore = true;
-    m_totalCount = 0;
     requestPage(true);
 }
 
 void CommentModel::loadMore() {
-    if (m_loading || !m_hasMore || m_aid.isEmpty()) return;
+    if (m_loading || !m_hasMore || m_aid.isEmpty() || !m_error.isEmpty()) return;
     requestPage(false);
 }
 

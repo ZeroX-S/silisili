@@ -49,7 +49,12 @@ void SearchModel::search(const QString &query) {
     const QString trimmed = query.trimmed();
     if (trimmed.isEmpty()) return;
     if (m_loading && m_query == trimmed) return;
-    if (m_activeReply) m_activeReply->abort();
+    ++m_requestSerial;
+    if (m_activeReply) {
+        QNetworkReply *obsolete = m_activeReply.data();
+        m_activeReply.clear();
+        obsolete->abort();
+    }
     if (m_query != trimmed) { m_query = trimmed; emit queryChanged(); }
     m_history.removeAll(trimmed); m_history.prepend(trimmed); while (m_history.size() > 12) m_history.removeLast();
     QSettings().setValue(QStringLiteral("search/history"), m_history); emit historyChanged();
